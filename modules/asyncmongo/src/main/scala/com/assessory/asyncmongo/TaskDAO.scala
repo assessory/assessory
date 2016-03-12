@@ -1,0 +1,29 @@
+package com.assessory.asyncmongo
+
+import com.assessory.api._
+import com.assessory.asyncmongo.converters.BsonHelpers._
+import com.assessory.asyncmongo.converters.{TaskBodyB, TaskB}
+import com.wbillingsley.handy._
+import com.wbillingsley.handy.appbase.Course
+import Ref._
+
+object TaskDAO extends DAO(classOf[Task], "task", TaskB.read) {
+
+  def saveSafe(c:Task) = {
+    findAndReplace("_id" $eq c.id, TaskB.write(c), upsert=true).toRef
+  }
+
+  def updateBody(t:Task) = updateAndFetch(
+    query="_id" $eq t.id,
+    update=$set("body" -> TaskBodyB.write(t.body))
+  )
+
+  def byCourse(c:Ref[Course]) = {
+    for {
+      cid <- c.refId
+      t <- findMany("course" $eq cid)
+    } yield t
+  }
+
+}
+
