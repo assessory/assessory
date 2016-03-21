@@ -8,6 +8,7 @@ import com.wbillingsley.handy._
 import Ref._
 import com.wbillingsley.handy.appbase._
 import org.mongodb.scala.bson._
+import org.mongodb.scala.model.Updates.addEachToSet
 
 class RegistrationDAO[T, R, P <: HasKind](collName:String, r:RegistrationB[T, R, P])
   extends DAO(clazz=classOf[Registration[T,R,P]], collName=collName, converter=r.read)
@@ -32,7 +33,7 @@ class RegistrationDAO[T, R, P <: HasKind](collName:String, r:RegistrationB[T, R,
   def register(user:Id[User, String], target:Id[T, String], roles:Set[R], provenance:P) = {
     updateAndFetch(
       query = ("user" $eq user) and ("target" $eq target),
-      update = $addToSet("roles" -> toBsonSeq(roles.toSeq)(r.rToFromBson))
+      update = addEachToSet("roles", roles.toSeq.map(r.rToFromBson.toBson):_*)
     ) orIfNone saveSafe(
       Registration[T,R,P](
         id = allocateId.asId,

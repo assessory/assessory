@@ -53,7 +53,7 @@ lazy val model = (project in file("modules/model"))
   )
 
 lazy val play = (project in file("modules/play"))
-  .dependsOn(api, mongo)
+  .dependsOn(api, mongo, model)
   .settings(commonSettings:_*)
   .settings(
     libraryDependencies ++= Seq(

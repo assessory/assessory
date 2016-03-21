@@ -3,8 +3,14 @@ GET     /webjars/*file                    controllers.WebJarAssets.at(file)
 GET     /vassets/*file                    controllers.Assets.versioned(path="/public", file: Asset)
 
 # Map static resources from the /public folder to the /assets URL path
-GET     /assets/*file               controllers.Assets.at(path="/public", file)
+GET     /assets/*file                     controllers.Assets.at(path="/public", file)
 
 
-GET     /                           controllers.Application.default
-POST    /ltiTest                    controllers.Application.ltiTest
+GET     /                                  controllers.Application.default
+GET     /whoami                            controllers.Application.whoAmI
+POST    /ltiTest                           controllers.Application.ltiTest
+
+POST    /lti/course/:cid/*path             controllers.LTIController.courseLtiAndRedirect(cid, path)
+
+POST    /lti/videopost/:cid               controllers.LTIController.ltiVideoForm(cid)
+POST    /videosubmit                     controllers.LTIController.ltiVideoSubmit

@@ -5,7 +5,7 @@ import com.assessory.api.{Task, TaskDetails}
 import com.assessory.asyncmongo.{RegistrationDAO, UserDAO}
 import com.assessory.model.{TaskModel, CourseModel, UserModel}
 import com.wbillingsley.handy.{Approval, Ref}
-import com.wbillingsley.handy.appbase.{ActiveSession, Course, User}
+import com.wbillingsley.handy.appbase.{LTIConsumer, ActiveSession, Course, User}
 import com.wbillingsley.handy.Id._
 import Ref._
 import org.scalatest.concurrent.ScalaFutures
@@ -29,7 +29,8 @@ class Courses2016Spec extends FlatSpec with Matchers with ScalaFutures {
           id = "invalid".asId,
           addedBy = "invalid".asId,
           title = Some("test course"),
-          shortName = Some("TEST101")
+          shortName = Some("TEST101"),
+          ltis = Seq(LTIConsumer("UNE moodle", "grumplestiltskin", Some("Term 1 at UNE")))
         )
       )
 

@@ -7,14 +7,15 @@ import com.wbillingsley.handy._
 import org.bson.conversions.Bson
 import org.bson.types.ObjectId
 import org.bson.{BsonArray, BsonObjectId}
-import org.mongodb.scala.Observable
+import org.mongodb.scala.{Subscription, Observer, Observable}
 import org.mongodb.scala.bson._
 import org.mongodb.scala.model.Filters._
 import org.mongodb.scala.model.{FindOneAndReplaceOptions, UpdateOptions}
 
 import scala.collection.JavaConverters._
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Promise, ExecutionContext, Future}
 import scala.util.Try
+import DAO._
 
 import DB.executionContext
 
@@ -70,14 +71,14 @@ class DAO[DataT <: HasStringId[DataT]] (
     obsToRefMany(coll.find(query).sort(sort))
   }
 
-  def fFindOne(query:Bson):Future[DataT] = {
+  def findOne(query:Bson):Ref[DataT] = {
     for {
-      doc <- coll.find(query).head()
-      converted <- Future.fromTry(converter(doc))
+      opt <- coll.find(query).headOption().toRef
+      doc <- opt.toRef
+      converted <- Future.fromTry(converter(doc)).toRef
     } yield converted
   }
 
-  def findOne(query:Bson) = new RefFuture(fFindOne(query))
 
 
   /**
@@ -176,4 +177,39 @@ class DAO[DataT <: HasStringId[DataT]] (
       conv <- Future.fromTry(converter(doc))
     } yield conv
   }
+}
+
+object DAO {
+
+  implicit class ObservableWithHeadOption[T](val observable:Observable[T]) extends AnyVal {
+
+    def headOption(): Future[Option[T]] = {
+      val promise = Promise[Option[T]]()
+      observable.subscribe(new Observer[T]() {
+        @volatile
+        var subscription: Option[Subscription] = None
+
+        override def onError(throwable: Throwable): Unit = promise.failure(throwable)
+
+        override def onSubscribe(sub: Subscription): Unit = {
+          subscription = Some(sub)
+          sub.request(1)
+        }
+
+        override def onComplete(): Unit = {
+          subscription.get.unsubscribe()
+          promise.success(None)
+        }
+
+        override def onNext(tResult: T): Unit = {
+          subscription.get.unsubscribe()
+          promise.success(Some(tResult))
+        }
+      })
+      promise.future
+    }
+
+  }
+
+
 }

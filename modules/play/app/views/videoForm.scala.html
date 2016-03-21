@@ -1,0 +1,37 @@
+@(course:String, name:String, email:String, code:String)
+
+<!DOCTYPE html>
+<html>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+
+
+    <div class="container">
+
+        <h1>
+            @course video task
+        </h1>
+
+        <p>
+            Welcome, @name. Please upload your video file using the form below. (And please keep a copy of the video in
+            case anything goes wrong!)
+        </p>
+
+        <form method="POST" enctype="multipart/form-data" action="/videosubmit">
+
+            <input type="hidden" name="course" value="@course" />
+            <input type="hidden" name="code" value="@code" />
+            <input type="hidden" name="email" value="@email" />
+            <input type="hidden" name="name" value="@name" />
+            <input type="file" name="video" />
+
+            <br />
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+
+    </div>
+
+</html>

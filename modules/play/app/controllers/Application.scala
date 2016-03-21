@@ -1,8 +1,24 @@
 package controllers
 
-import play.api.mvc.{Action, Controller}
+import com.assessory.asyncmongo.UserDAO
+import play.api.mvc.{RequestHeader, Request, Action, Controller}
+
+
+object Application {
+  def getSession(request:RequestHeader):String = {
+    request.session.get("sessionKey").getOrElse(java.util.UUID.randomUUID().toString)
+  }
+
+  def getUser(request:RequestHeader) = UserDAO.bySessionKey(getSession(request))
+}
 
 class Application extends Controller {
+
+  def whoAmI = Action.async { request =>
+    (for {
+      u <- Application.getUser(request)
+    } yield Ok(u.name.toString)).toFuture
+  }
 
   def default = Action {
     Ok("Default")
@@ -20,7 +36,7 @@ class Application extends Controller {
   }
 
   def ltiRegTest = {
-    
+
   }
 
 }
