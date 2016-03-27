@@ -5,10 +5,13 @@ import com.assessory.api._
 import com.assessory.api.Task
 import com.wbillingsley.handy.appbase.{Answer, Question, GroupSet}
 
+/**
+  * A critique is posted in response to something
+  */
 case class Critique(
   target: Target,
 
-  answers: Seq[Answer[_]]
+  task: TaskOutputBody
 ) extends TaskOutputBody {
   val kind = CritiqueTask.kind
 }
@@ -41,25 +44,30 @@ case class PreallocateGroupStrategy(
   val kind = PreallocateGroupStrategy.kind
 }
 
+case class AllocateStrategy(
+  what: TargetType,
+  number: Int
+)
+
+case class AnyStrategy(
+  what: TargetType,
+  number: Int
+)
+
 object PreallocateGroupStrategy {
   val kind = "group"
 }
 
 
 case class CritiqueTask (
-  questionnaire: Seq[Question],
-
-  strategy: CritTargetStrategy
+  strategy: CritTargetStrategy,
+  task: TaskBody
 ) extends TaskBody {
-
   val kind = CritiqueTask.kind
-
 }
 
 object CritiqueTask {
-
   val kind = "Critique"
-
 }
 
 

@@ -6,6 +6,8 @@ import au.com.bytecode.opencsv.CSVWriter
 import com.assessory.api._
 import com.assessory.api.client.WithPerms
 import com.assessory.api.critique.{Critique, CritiqueTask}
+import com.assessory.api.question.QuestionnaireTaskOutput
+import com.assessory.api.video.VideoTaskOutput
 import com.assessory.asyncmongo._
 import com.assessory.api.wiring.Lookups._
 import com.wbillingsley.handy.Ref._
@@ -103,7 +105,8 @@ object TaskOutputModel {
 
   /**
    * Produces a CSV file of all the outputs for this task
-   * @param a
+    *
+    * @param a
    * @param t
    * @return
    */
@@ -122,15 +125,21 @@ object TaskOutputModel {
 
     // We don't write a header because we don't know how many columns the "for" or "by" lines should take up.
 
+    def line(tob:TaskOutputBody):Ref[Seq[String]] = tob match {
+      case q: QuestionnaireTaskOutput => (for (answer <- q.answers) yield answer.answer.map(_.toString).getOrElse("")).itself
+      case c: Critique => for {
+        ofor <- targetAsCsvString(a, c.target)
+        cols <- line(c.task)
+      } yield ofor ++ cols
+      case _ => RefFailed(UserError(s"I don't know how to make a CSV for ${tob.kind}"))
+    }
+
+
     def write = (for {
       output <- outputs
       by <- targetAsCsvString(a, output.by)
-      line <- output.body match {
-        case c: Critique => for (ofor <- targetAsCsvString(a, c.target)) yield {
-          by ++ ofor ++ (for (answer <- c.answers) yield answer.answer.map(_.toString).getOrElse(""))
-        }
-        case _ => RefFailed(UserError(s"I don't know how to make a CSV for ${output.body.kind}"))
-      }
+      l <- line(output.body)
+      line = by ++ l
     } yield {
       writer.writeNext(line.toArray)
       true

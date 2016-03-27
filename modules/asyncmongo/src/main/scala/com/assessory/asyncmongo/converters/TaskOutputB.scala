@@ -1,8 +1,10 @@
 package com.assessory.asyncmongo.converters
 
 import com.assessory.api.critique._
+import com.assessory.api.question.QuestionnaireTaskOutput
+import com.assessory.api.video.VideoTaskOutput
 import com.wbillingsley.handy.Id
-import com.wbillingsley.handy.appbase.{User, Group, Course, Answer}
+import com.wbillingsley.handy.appbase.{User, Group, Course}
 import com.assessory.api._
 import org.mongodb.scala.bson._
 import scala.collection.JavaConverters._
@@ -39,14 +41,19 @@ object TaskOutputB  {
 }
 
 object TaskOutputBodyB {
-
-
-
-  def write(i: TaskOutputBody) = {
+  def write(i: TaskOutputBody):Document = {
     i match {
       case c:Critique =>
         Document("kind" -> "Critique", "target" -> TargetB.write(c.target),
-          "answers" -> c.answers.map { a => AnswerB.write(a) }
+          "task" -> write(c.task)
+        )
+      case q:QuestionnaireTaskOutput =>
+        Document("kind" -> "Questionnaire",
+          "answers" -> q.answers.map { a => AnswerB.write(a) }
+        )
+      case v:VideoTaskOutput =>
+        Document("kind" -> "Video",
+          "videoId" -> IdB.write(v.videoId)
         )
     }
   }
@@ -55,7 +62,13 @@ object TaskOutputBodyB {
     doc[BsonString]("kind").getValue match {
       case "Critique" => Critique(
         target = TargetB.read(Document(doc[BsonDocument]("target"))).get,
+        task = read(Document(doc[BsonDocument]("task"))).get
+      )
+      case "Questionnaire" => QuestionnaireTaskOutput(
         answers = doc[BsonArray]("answers").getValues.asScala.map({ case x => AnswerB.read(Document(x.asDocument())).get })
+      )
+      case "Video" => VideoTaskOutput(
+        videoId = doc.get[BsonObjectId]("videoId")
       )
     }
   }

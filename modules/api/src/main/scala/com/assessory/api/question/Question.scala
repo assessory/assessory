@@ -1,5 +1,6 @@
 package com.assessory.api.question
 
+import com.assessory.api.{TaskOutputBody, TaskOutput, TaskBody}
 import com.wbillingsley.handy.{Id, HasStringId}
 
 trait Question extends HasStringId[Question]
@@ -47,3 +48,15 @@ case class BooleanAnswer(
   var answer: Option[Boolean]
 ) extends Answer[Boolean]
 
+
+case class QuestionnaireTask(
+  questionnaire: Seq[Question]
+) extends TaskBody {
+  val kind = "Questionnaire"
+}
+
+case class QuestionnaireTaskOutput(
+  answers: Seq[Answer[_]]
+) extends TaskOutputBody {
+  val kind = "Questionnaire"
+}

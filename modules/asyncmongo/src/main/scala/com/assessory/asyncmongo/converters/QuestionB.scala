@@ -1,7 +1,7 @@
 package com.assessory.asyncmongo.converters
 
 import com.wbillingsley.handy.Id
-import com.wbillingsley.handy.appbase._
+import com.assessory.api.question._
 import org.mongodb.scala.bson._
 
 import scala.util.{Failure, Try}

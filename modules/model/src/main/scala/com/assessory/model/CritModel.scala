@@ -5,19 +5,20 @@ import java.io.StringWriter
 import au.com.bytecode.opencsv.CSVWriter
 import com.assessory.api._
 import com.assessory.api.critique._
+import com.assessory.api.question._
+import com.assessory.api.video.{VideoTaskOutput, VideoTask}
 import com.assessory.api.wiring.Lookups._
 import com.assessory.asyncmongo._
 import com.wbillingsley.handy.Id._
 import com.wbillingsley.handy.Ref._
 import com.wbillingsley.handy._
-import com.wbillingsley.handy.appbase._
+import com.wbillingsley.handy.appbase.{Group, User, UserError}
 
 object CritModel {
 
 
   /**
    * Allocates within these groups, taking no account of groups' parents
-   * @param groups
    * @param num
    * @return
    */
@@ -110,7 +111,7 @@ object CritModel {
 
   private def allocationsFor(a:Approval[User], task:Task):RefMany[Target] = {
     task.body match {
-      case CritiqueTask(qs, strategy) =>
+      case CritiqueTask(strategy, containedTask) =>
         strategy match {
           case PreallocateGroupStrategy(set, num) =>
             for {
@@ -171,12 +172,22 @@ object CritModel {
 
   /**
    * Creates a new TaskOutput for a critique, with blank answers
-   * @param by
+    *
+    * @param by
    * @param task
    * @param target
    * @return
    */
   private def createCrit(by:Target, task:Task, target:Target):Ref[TaskOutput] = {
+
+    def blankFor(t:TaskBody):TaskOutputBody = t match {
+      case qt:QuestionnaireTask => QuestionnaireTaskOutput(answers = for {
+        q <- qt.questionnaire
+      } yield blankAnswer(q))
+      case vt:VideoTask => VideoTaskOutput(videoId = None)
+      case ct:CritiqueTask => Critique(target = target, task = blankFor(ct.task))
+    }
+
     task.body match {
       case ct:CritiqueTask =>
         val unsaved = TaskOutput(
@@ -186,9 +197,7 @@ object CritModel {
           task = task.id,
           body = Critique(
             target = target,
-            answers = for {
-              q <- ct.questionnaire
-            } yield blankAnswer(q)
+            task = blankFor(ct.task)
           )
         )
         TaskOutputDAO.saveSafe(unsaved)
@@ -199,7 +208,8 @@ object CritModel {
 
   /**
    * Looks up a user's TaskOutput for a critique, or creates a blank one if there isn't one
-   * @param a
+    *
+    * @param a
    * @param rTask
    * @param target
    * @return

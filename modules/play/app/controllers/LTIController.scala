@@ -6,9 +6,11 @@ import com.assessory.asyncmongo.{RegistrationDAO, UserDAO, CourseDAO}
 import com.assessory.model.UserModel
 import com.wbillingsley.handy.appbase._
 import com.wbillingsley.handy.{RefNone, EmptyKind, Refused, RefFailed}
+import play.api.libs.Files.TemporaryFile
 import play.api.mvc.{Action, Controller}
 import com.wbillingsley.handy.Id._
 import com.wbillingsley.handy.Ref._
+import play.core.parsers.Multipart
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Try
@@ -95,7 +97,7 @@ class LTIController extends Controller {
 
   }
 
-  def ltiVideoSubmit = Action.async(parse.multipartFormData) { request =>
+  def ltiVideoSubmit = Action.async(parse.multipartFormData[TemporaryFile](Multipart.handleFilePartAsTemporaryFile, maxLength=1073741824)) { request =>
 
     def logSave(course:String, name:String, email:String, code:String, randString:String, filename:String) = Try {
       val fw = new FileWriter(s"videolog/$course", true)
@@ -109,11 +111,6 @@ class LTIController extends Controller {
       mw.write(s""""$course","$name","$email","$code","${code}_${randString}_${filename}","${System.currentTimeMillis}"\n""")
       mw.close()
       true
-    }
-
-    def moveFile(video:File, course:String, name:String, email:String, code:String, randString:String, filename:String) = Try {
-      new File(s"video/$course").mkdirs()
-      val moved =
     }
 
     (for {
@@ -134,8 +131,8 @@ class LTIController extends Controller {
       moved = video.ref.moveTo(new File(s"video/$course/${code}_${randString}_${filename}"))
     } yield {
       Ok("File uploaded")
-    }).getOrElse {
-      Ok("<h1>Oh no! It didn't work! Please email wbilling@une.edu.au</h2>")
+    }).toFuture.recover { case ex:Exception =>
+      Ok("<h1>Oh no! It didn't work! Please email wbilling@une.edu.au</h2><pre>" + ex.getMessage + "</pre>").as("text/html")
     }
 
   }

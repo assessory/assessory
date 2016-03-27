@@ -28,8 +28,10 @@ case class Video(
     updated: Long
 ) extends HasStringId[Video]
 
-case object VideoTask extends TaskBody
+case class VideoTask(
 
-case class VideoTaskOutput(video:Video) extends TaskOutputBody {
+) extends TaskBody
+
+case class VideoTaskOutput(videoId:Option[Id[Video,String]]) extends TaskOutputBody {
   def kind = "Video"
 }
