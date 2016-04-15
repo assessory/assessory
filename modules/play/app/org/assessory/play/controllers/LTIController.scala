@@ -1,15 +1,15 @@
-package controllers
+package org.assessory.play.controllers
 
-import java.io.{FileWriter, File}
+import java.io.{File, FileWriter}
 
-import com.assessory.asyncmongo.{RegistrationDAO, UserDAO, CourseDAO}
+import com.assessory.asyncmongo.{CourseDAO, RegistrationDAO, UserDAO}
 import com.assessory.model.UserModel
-import com.wbillingsley.handy.appbase._
-import com.wbillingsley.handy.{RefNone, EmptyKind, Refused, RefFailed}
-import play.api.libs.Files.TemporaryFile
-import play.api.mvc.{Action, Controller}
 import com.wbillingsley.handy.Id._
 import com.wbillingsley.handy.Ref._
+import com.wbillingsley.handy.appbase._
+import com.wbillingsley.handy.{EmptyKind, Refused}
+import play.api.libs.Files.TemporaryFile
+import play.api.mvc.{Action, Controller}
 import play.core.parsers.Multipart
 
 import scala.concurrent.ExecutionContext.Implicits.global

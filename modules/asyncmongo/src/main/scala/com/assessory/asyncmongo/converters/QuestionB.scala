@@ -29,14 +29,14 @@ object QuestionB {
 }
 
 object AnswerB {
-  def write(i: Answer[_]) = i match {
+  def write(i: Answer) = i match {
     case ShortTextAnswer(question, answer) =>
       Document("kind" -> "Short Text", "question" -> IdB.write(question), "answer" -> answer)
     case BooleanAnswer(question,answer) =>
       Document("kind" -> "Boolean", "question" -> IdB.write(question), "answer" -> answer)
   }
 
-  def read(doc: Document): Try[Answer[_]] = Try {
+  def read(doc: Document): Try[Answer] = Try {
     doc[BsonString]("kind").getValue match {
       case "Short Text" => ShortTextAnswer(
         question = doc[BsonObjectId]("question"),

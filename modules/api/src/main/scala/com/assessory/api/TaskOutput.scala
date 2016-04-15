@@ -3,6 +3,8 @@ package com.assessory.api
 import com.wbillingsley.handy._
 
 trait TaskOutputBody extends HasKind
+case class KindedTaskOutputBody[T <: TaskOutputBody](kind:String, body:T)
+
 
 object EmptyTaskOutputBody extends TaskOutputBody {
   val kind = "Empty"

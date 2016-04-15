@@ -91,16 +91,13 @@ object CritModel {
     for {
       t <- rTask
       approved <- a ask Permissions.EditCourse(t.course)
-      body <- t.body match {
-        case ct:CritiqueTask => ct.itself
-        case _ => RefFailed(UserError("I can only allocate crit tasks"))
-      }
-      strategy <- body.strategy match {
-        case p:PreallocateGroupStrategy => p.itself
+
+      (set, num) <- t.body match {
+        case CritiqueTask(AllocateStrategy(TTGroups(set), num), task) => (set, num).itself
         case _ => RefFailed(UserError("I can only allocate group crit tasks"))
       }
-      groups <- GroupDAO.bySet(strategy.set).toRefOne
-      alloc <- allocateGroups(groups.toSeq, strategy.number, t.id)
+      groups <- GroupDAO.bySet(set).toRefOne
+      alloc <- allocateGroups(groups.toSeq, num, t.id)
     } yield alloc
   }
 
@@ -113,13 +110,13 @@ object CritModel {
     task.body match {
       case CritiqueTask(strategy, containedTask) =>
         strategy match {
-          case PreallocateGroupStrategy(set, num) =>
+          case AllocateStrategy(what, num) =>
             for {
               u <- a.who
               alloc <- CritAllocationDAO.byUserAndTask(u.itself, task.itself)
               ac <- alloc.allocation.toRefMany
             } yield ac.target
-          case OfMyGroupsStrategy(inTask) =>
+          case TargetMyStrategy(inTask, what, num) =>
             for {
               group <- GroupModel.myGroupsInCourse(a, a.cache(task.course.lazily)) if Some(group.set) == task.details.groupSet
               to <- TaskOutputDAO.byTaskAndAttn(inTask.lazily, TargetGroup(group.id))

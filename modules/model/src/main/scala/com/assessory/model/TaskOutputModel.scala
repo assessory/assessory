@@ -6,7 +6,7 @@ import au.com.bytecode.opencsv.CSVWriter
 import com.assessory.api._
 import com.assessory.api.client.WithPerms
 import com.assessory.api.critique.{Critique, CritiqueTask}
-import com.assessory.api.question.QuestionnaireTaskOutput
+import com.assessory.api.question.{BooleanAnswer, ShortTextAnswer, QuestionnaireTaskOutput}
 import com.assessory.api.video.VideoTaskOutput
 import com.assessory.asyncmongo._
 import com.assessory.api.wiring.Lookups._
@@ -126,7 +126,10 @@ object TaskOutputModel {
     // We don't write a header because we don't know how many columns the "for" or "by" lines should take up.
 
     def line(tob:TaskOutputBody):Ref[Seq[String]] = tob match {
-      case q: QuestionnaireTaskOutput => (for (answer <- q.answers) yield answer.answer.map(_.toString).getOrElse("")).itself
+      case QuestionnaireTaskOutput(answers) => (answers map {
+        case ShortTextAnswer(q, ans) => ans.getOrElse("")
+        case BooleanAnswer(q, ans) => ans.map(_.toString).getOrElse("")
+      }).itself
       case c: Critique => for {
         ofor <- targetAsCsvString(a, c.target)
         cols <- line(c.task)

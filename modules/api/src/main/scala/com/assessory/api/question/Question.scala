@@ -3,16 +3,16 @@ package com.assessory.api.question
 import com.assessory.api.{TaskOutputBody, TaskOutput, TaskBody}
 import com.wbillingsley.handy.{Id, HasStringId}
 
-trait Question extends HasStringId[Question]
+sealed trait Question extends HasStringId[Question]
 
-trait Answer[T] {
+sealed trait Answer {
 
   val question: Id[Question,String]
 
-  var answer: Option[T]
-
 }
 
+case class KindedQuestion[T <: Question](kind:String, q:T)
+case class KindedAnswer[T <: Answer](kind:String, ans:T)
 
 case class ShortTextQuestion(
 
@@ -29,7 +29,7 @@ case class ShortTextAnswer(
   question: Id[Question, String],
 
   var answer: Option[String]
-) extends Answer[String]
+) extends Answer
 
 
 
@@ -46,7 +46,7 @@ case class BooleanAnswer(
   question: Id[Question, String],
 
   var answer: Option[Boolean]
-) extends Answer[Boolean]
+) extends Answer
 
 
 case class QuestionnaireTask(
@@ -56,7 +56,7 @@ case class QuestionnaireTask(
 }
 
 case class QuestionnaireTaskOutput(
-  answers: Seq[Answer[_]]
+  answers: Seq[Answer]
 ) extends TaskOutputBody {
   val kind = "Questionnaire"
 }

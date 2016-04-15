@@ -16,47 +16,30 @@ case class Critique(
   val kind = CritiqueTask.kind
 }
 
-abstract class CritTargetStrategy extends HasKind
+sealed trait TargetType
+case class TTGroups(set:Id[GroupSet, String]) extends TargetType
+case class TTOutputs(task:Id[Task, String]) extends TargetType
+case object TTSelf extends TargetType
 
-case class MyOutputStrategy(
-  task: Id[Task,String]
-) extends CritTargetStrategy {
-  val kind = MyOutputStrategy.kind
-}
+sealed trait CritTargetStrategy
+case class KindedTargetStrategy[T <: CritTargetStrategy](kind:String, strategy:T)
 
-object MyOutputStrategy {
-  val kind = "outputs relevant to me"
-}
-
-case class OfMyGroupsStrategy(
-  task: Id[Task,String]
-) extends CritTargetStrategy {
-  val kind = OfMyGroupsStrategy.kind
-}
-case object OfMyGroupsStrategy {
-  val kind = "critiques of my groups"
-}
-
-case class PreallocateGroupStrategy(
-  set: Id[GroupSet, String],
+case class TargetMyStrategy(
+  task: Id[Task,String],
+  what: TargetType,
   number: Int
-) extends CritTargetStrategy {
-  val kind = PreallocateGroupStrategy.kind
-}
+) extends CritTargetStrategy
 
 case class AllocateStrategy(
   what: TargetType,
   number: Int
-)
+) extends CritTargetStrategy
 
 case class AnyStrategy(
   what: TargetType,
   number: Int
-)
+) extends CritTargetStrategy
 
-object PreallocateGroupStrategy {
-  val kind = "group"
-}
 
 
 case class CritiqueTask (

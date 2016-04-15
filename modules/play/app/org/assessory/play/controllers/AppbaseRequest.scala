@@ -1,9 +1,8 @@
-package controllers
+package org.assessory.play.controllers
 
 import com.assessory.asyncmongo.UserDAO
 import com.wbillingsley.handy.Approval
-import com.wbillingsley.handyplay.UserFromRequest
-import play.api.mvc.{WrappedRequest, Request}
+import play.api.mvc.{Request, WrappedRequest}
 
 
 class AppbaseRequest[A, U](request:Request[A]) extends WrappedRequest(request) {

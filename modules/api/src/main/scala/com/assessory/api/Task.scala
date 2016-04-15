@@ -10,6 +10,8 @@ import com.wbillingsley.handy.appbase._
   */
 trait TaskBody
 
+case class KindedTaskBody[T <: TaskBody](kind:String, taskBody:T)
+
 /**
   * A sentinel for when a TaskBody has not been created
   */

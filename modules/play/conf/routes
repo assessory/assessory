@@ -1,16 +1,35 @@
 # WebJars
-GET     /webjars/*file                    controllers.WebJarAssets.at(file)
-GET     /vassets/*file                    controllers.Assets.versioned(path="/public", file: Asset)
+GET     /webjars/*file                      controllers.WebJarAssets.at(file)
+GET     /vassets/*file                      controllers.Assets.versioned(path="/public", file: Asset)
 
 # Map static resources from the /public folder to the /assets URL path
-GET     /assets/*file                     controllers.Assets.at(path="/public", file)
+GET     /assets/*file                       controllers.Assets.at(path="/public", file)
+
+GET     /                                   org.assessory.play.controllers.Application.index
+
+# LTI login and redirect route
+POST    /lti/course/:cid/*path              org.assessory.play.controllers.LTIController.courseLtiAndRedirect(cid, path)
 
 
-GET     /                                  controllers.Application.default
-GET     /whoami                            controllers.Application.whoAmI
-POST    /ltiTest                           controllers.Application.ltiTest
+# Temporary routes for video submission
+POST    /lti/videopost/:cid                 org.assessory.play.controllers.LTIController.ltiVideoForm(cid)
+POST    /videosubmit                        org.assessory.play.controllers.LTIController.ltiVideoSubmit
+GET     /whoami                             org.assessory.play.controllers.Application.whoAmI
+POST    /ltiTest                            org.assessory.play.controllers.Application.ltiTest
 
-POST    /lti/course/:cid/*path             controllers.LTIController.courseLtiAndRedirect(cid, path)
 
-POST    /lti/videopost/:cid               controllers.LTIController.ltiVideoForm(cid)
-POST    /videosubmit                     controllers.LTIController.ltiVideoSubmit
+# Logged in user
+POST	  /api/self						    org.assessory.play.controllers.UserController.self
+
+POST	/api/signUp					    	org.assessory.play.controllers.UserController.signUp
+POST	/api/logIn 				    		org.assessory.play.controllers.UserController.logIn
+POST	/api/logOut				    		org.assessory.play.controllers.UserController.logOut
+GET     /auto/:userId/:secret               org.assessory.play.controllers.UserController.autologin(userId, secret)
+
+
+# Courses
+POST    /api/course/my                      org.assessory.play.controllers.CourseController.myCourses
+GET     /api/course/:id                     org.assessory.play.controllers.CourseController.get(id)
+POST    /api/course/create                  org.assessory.play.controllers.CourseController.create
+POST    /api/course/findMany                org.assessory.play.controllers.CourseController.findMany
+GET     /api/course/:id/autolinks.csv       org.assessory.play.controllers.CourseController.autolinks(id)

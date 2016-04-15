@@ -74,20 +74,56 @@ object CritiqueTaskB  {
   }
 }
 
+object TargetTypeB {
+  def write(i:TargetType) = i match {
+    case TTGroups(set) => Document("kind" -> "Groups", "set" -> IdB.write(set))
+    case TTOutputs(task) => Document("kind" -> "Outputs", "task" -> IdB.write(task))
+    case TTSelf => Document("kind" -> "Self")
+  }
+
+  def read(doc: Document): Try[TargetType] = Try {
+    doc[BsonString]("kind").getValue match {
+      case "Groups" => TTGroups(set = doc[BsonObjectId]("set"))
+      case "Outputs" => TTOutputs(task = doc[BsonObjectId]("task"))
+      case "Self" => TTSelf
+    }
+
+  }
+}
+
 
 object CritTargetStrategyB  {
   def write(i: CritTargetStrategy) = i match {
-    case MyOutputStrategy(task) => Document("kind" -> "My output", "task" -> IdB.write(task))
-    case OfMyGroupsStrategy(task) => Document("kind" -> "My group", "task" -> IdB.write(task))
-    case PreallocateGroupStrategy(set, number) => Document("kind" -> "Preallocated groups", "set" -> IdB.write(set), "number" -> number)
+    case TargetMyStrategy(task, what, number) => Document(
+      "kind" -> "Target My", "task" -> IdB.write(task), "what" -> TargetTypeB.write(what), "number" -> number
+    )
+    case AllocateStrategy(what, number) => Document(
+      "kind" -> "Allocate", "what" -> TargetTypeB.write(what), "number" -> number
+    )
+    case AnyStrategy(what, number) => Document(
+      "kind" -> "Any", "what" -> TargetTypeB.write(what), "number" -> number
+    )
   }
 
-  def read(doc: Document): Try[CritTargetStrategy] = Try {
+  def read(doc: Document): Try[CritTargetStrategy] = {
     doc[BsonString]("kind").getValue match {
-      case "My output" => MyOutputStrategy(task = doc[BsonObjectId]("task"))
-      case "My group" => OfMyGroupsStrategy(task = doc[BsonObjectId]("task"))
-      case "Preallocated groups" => PreallocateGroupStrategy(
-        set = doc[BsonObjectId]("set"),
+      case "Target My" => for {
+        w <- TargetTypeB.read(Document(doc[BsonDocument]("what")))
+      } yield TargetMyStrategy(
+        task = doc[BsonObjectId]("task"),
+        what = w,
+        number = doc[BsonInt32]("number")
+      )
+      case "Allocate" => for {
+        w <- TargetTypeB.read(Document(doc[BsonDocument]("what")))
+      } yield AllocateStrategy(
+        what = w,
+        number = doc[BsonInt32]("number")
+      )
+      case "Any" => for {
+        w <- TargetTypeB.read(Document(doc[BsonDocument]("what")))
+      } yield AllocateStrategy(
+        what = w,
         number = doc[BsonInt32]("number")
       )
     }
