@@ -17,8 +17,7 @@ import scala.concurrent.Future
 import scala.language.implicitConversions
 import Pickles._
 
-class TaskOutputController extends Controller {
-
+object TaskOutputController {
   implicit def taskOutputToResult(rc:Ref[TaskOutput]):Future[Result] = {
     rc.map(c => Results.Ok(upickle.default.write(c)).as("application/json")).toFuture
   }
@@ -34,6 +33,20 @@ class TaskOutputController extends Controller {
       j <- strings.jsSource
     } yield Results.Ok.chunked(j).as("application/json")
   }
+
+  implicit def manyWptoToResult(rc:RefMany[WithPerms[TaskOutput]]):Future[Result] = {
+    val strings = rc.map(c => upickle.default.write(c))
+
+    for {
+      j <- strings.jsSource
+    } yield Results.Ok.chunked(j).as("application/json")
+  }
+
+}
+
+class TaskOutputController extends Controller {
+
+  import TaskOutputController._
 
   def get(id:String) = UserAction.async { implicit request =>
     TaskOutputModel.get(

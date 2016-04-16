@@ -61,3 +61,8 @@ POST    /api/taskoutput/:toId               org.assessory.play.controllers.TaskO
 POST    /api/task/:taskId/newOutput         org.assessory.play.controllers.TaskOutputController.create(taskId)
 GET     /api/task/:taskId/myOutputs         org.assessory.play.controllers.TaskOutputController.myOutputs(taskId)
 GET     /api/task/:id/outputs.csv           org.assessory.play.controllers.TaskOutputController.outputsAsCSV(id)
+
+# Critiques
+GET     /api/critique/:id/myAllocations            org.assessory.play.controllers.CritController.myAllocations(id)
+GET     /api/critique/:id/allocations.csv          org.assessory.play.controllers.CritController.allocationsAsCSV(id)
+POST    /api/critique/:taskId/findOrCreateCrit     org.assessory.play.controllers.CritController.findOrCreateCrit(taskId)
