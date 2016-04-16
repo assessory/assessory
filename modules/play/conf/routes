@@ -26,10 +26,38 @@ POST	/api/logIn 				    		org.assessory.play.controllers.UserController.logIn
 POST	/api/logOut				    		org.assessory.play.controllers.UserController.logOut
 GET     /auto/:userId/:secret               org.assessory.play.controllers.UserController.autologin(userId, secret)
 
-
 # Courses
 POST    /api/course/my                      org.assessory.play.controllers.CourseController.myCourses
 GET     /api/course/:id                     org.assessory.play.controllers.CourseController.get(id)
 POST    /api/course/create                  org.assessory.play.controllers.CourseController.create
 POST    /api/course/findMany                org.assessory.play.controllers.CourseController.findMany
 GET     /api/course/:id/autolinks.csv       org.assessory.play.controllers.CourseController.autolinks(id)
+
+# Users
+POST    /api/user/findMany                  org.assessory.play.controllers.UserController.findMany
+
+# Groups
+POST    /api/course/:courseId/group/my      org.assessory.play.controllers.GroupController.myGroupsInCourse(courseId)
+POST    /api/groupSet/:gsId/groups          org.assessory.play.controllers.GroupController.groupSetGroups(gsId)
+POST    /api/group/findMany                 org.assessory.play.controllers.GroupController.findMany
+POST    /api/group/my                       org.assessory.play.controllers.GroupController.myGroups
+GET     /api/group/:id                      org.assessory.play.controllers.GroupController.group(id)
+
+# GroupSets
+GET     /api/course/:courseId/groupSets     org.assessory.play.controllers.GroupController.courseGroupSets(courseId)
+GET     /api/groupSet/:gsId                 org.assessory.play.controllers.GroupController.groupSet(gsId)
+POST    /api/groupSet/:gsId                 org.assessory.play.controllers.GroupController.editGroupSet(gsId)
+POST    /api/course/:courseId/createGroupSet  org.assessory.play.controllers.GroupController.createGroupSet(courseId)
+
+# Tasks
+GET     /api/task/:id                       org.assessory.play.controllers.TaskController.get(id)
+POST    /api/course/:courseId/task/create   org.assessory.play.controllers.TaskController.create(courseId)
+GET     /api/course/:courseId/tasks         org.assessory.play.controllers.TaskController.courseTasks(courseId)
+POST    /api/task/:id/body                  org.assessory.play.controllers.TaskController.updateBody(id)
+
+# Task Output
+GET     /api/taskoutput/:toId               org.assessory.play.controllers.TaskOutputController.get(toId)
+POST    /api/taskoutput/:toId               org.assessory.play.controllers.TaskOutputController.updateBody(toId)
+POST    /api/task/:taskId/newOutput         org.assessory.play.controllers.TaskOutputController.create(taskId)
+GET     /api/task/:taskId/myOutputs         org.assessory.play.controllers.TaskOutputController.myOutputs(taskId)
+GET     /api/task/:id/outputs.csv           org.assessory.play.controllers.TaskOutputController.outputsAsCSV(id)
