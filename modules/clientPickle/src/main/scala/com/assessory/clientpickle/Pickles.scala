@@ -2,6 +2,7 @@ package com.assessory.clientpickle
 
 import com.assessory.api.critique._
 import com.assessory.api._
+import com.assessory.api.video.{VideoResource, VideoTaskOutput, VideoTask}
 import question._
 import com.wbillingsley.handy.appbase.{Used, IdentityLookup, CourseRole, Course}
 import com.wbillingsley.handy.{Ids, Id}
@@ -54,6 +55,7 @@ object Pickles {
       "task" -> upickle.default.writeJs(ct.task)(taskBodyWriter)
     )
     case q:QuestionnaireTask => upickle.default.writeJs(KindedTaskBody(q.kind, q))
+    case v:VideoTask => upickle.default.writeJs(KindedTaskBody("Video", v))
     case EmptyTaskBody => upickle.default.writeJs(KindedTaskBody("Empty", EmptyTaskBody))
   }
   implicit val taskBodyReader:upickle.default.Reader[TaskBody] = upickle.default.Reader[TaskBody] {
@@ -64,6 +66,7 @@ object Pickles {
           task = upickle.default.readJs(o("task"))(taskBodyReader)
         )
         case Js.Str("Questionnaire") => upickle.default.readJs[KindedTaskBody[QuestionnaireTask]](o).taskBody
+        case Js.Str("Video") => upickle.default.readJs[KindedTaskBody[VideoTask]](o).taskBody
         case Js.Str("Empty") => EmptyTaskBody
       }
   }
@@ -75,7 +78,11 @@ object Pickles {
       "task" -> upickle.default.writeJs(ct.task)(taskOutputBodyWriter)
     )
     case EmptyTaskOutputBody => upickle.default.writeJs(KindedTaskOutputBody(EmptyTaskOutputBody.kind, EmptyTaskOutputBody))
+    case v:VideoTaskOutput => Js.Obj(
+      "kind" -> Js.Str("video"), "video" -> upickle.default.writeJs(v.video)
+    )
   }
+
   implicit val taskOutputBodyReader:upickle.default.Reader[TaskOutputBody] = upickle.default.Reader {
     case o:Js.Obj =>
       o("kind") match {
@@ -83,6 +90,7 @@ object Pickles {
           target = upickle.default.readJs[Target](o("target")),
           task = upickle.default.readJs(o("task"))(taskOutputBodyReader)
         )
+        case Js.Str("video") => VideoTaskOutput(video = upickle.default.readJs[Option[VideoResource]](o("video")))
         case Js.Str(EmptyTaskOutputBody.kind) => EmptyTaskOutputBody
       }
   }

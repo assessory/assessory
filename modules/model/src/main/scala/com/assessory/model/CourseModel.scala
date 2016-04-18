@@ -40,7 +40,7 @@ object CourseModel {
       approved <- a ask Permissions.CreateCourse
 
       // The client cannot set IDs, so we need to generate an ID for the course and the user's registration to it
-      cid = CourseDAO.allocateId.asId[Course]
+      cid = if (CourseDAO.validId(clientCourse.id.id)) clientCourse.id else CourseDAO.allocateId.asId[Course]
       rid = RegistrationDAO.course.allocateId.asId[Course.Reg]
 
       // Create the course and registration

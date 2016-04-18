@@ -117,7 +117,13 @@ object UserAction extends ActionBuilder[AppbaseRequest] with ActionTransformer[R
     (for {
       r <- transform(request)
       res <- block(r)
-    } yield res.addingToSession("sessionKey" -> r.sessionKey)(r)).recover({
+    } yield {
+      res
+        .withHeaders(
+        "Cache-Control" -> "no-cache, no-store, must-revalidate", "Expires" -> "0", "Pragma" -> "no-cache"
+      )
+        .addingToSession("sessionKey" -> r.sessionKey)(r)
+    }).recover({
       case e:NoSuchElementException => Results.NotFound(Json.obj("error" -> e.getMessage))
       case UserError(e) => Results.BadRequest(Json.obj("error" -> e))
     })

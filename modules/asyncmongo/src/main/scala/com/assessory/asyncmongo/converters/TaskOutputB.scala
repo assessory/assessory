@@ -2,7 +2,7 @@ package com.assessory.asyncmongo.converters
 
 import com.assessory.api.critique._
 import com.assessory.api.question.QuestionnaireTaskOutput
-import com.assessory.api.video.VideoTaskOutput
+import com.assessory.api.video.{VideoResource, YouTube, VideoTaskOutput}
 import com.wbillingsley.handy.Id
 import com.wbillingsley.handy.appbase.{User, Group, Course}
 import com.assessory.api._
@@ -53,7 +53,7 @@ object TaskOutputBodyB {
         )
       case v:VideoTaskOutput =>
         Document("kind" -> "Video",
-          "videoId" -> IdB.write(v.videoId)
+          "video" -> v.video.map({ v => VideoResourceB.write(v) })
         )
     }
   }
@@ -68,8 +68,20 @@ object TaskOutputBodyB {
         answers = doc[BsonArray]("answers").getValues.asScala.map({ case x => AnswerB.read(Document(x.asDocument())).get })
       )
       case "Video" => VideoTaskOutput(
-        videoId = doc.get[BsonObjectId]("videoId")
+        video = doc.get[BsonDocument]("video").map({ d => VideoResourceB.read(Document(d)).get })
       )
+    }
+  }
+}
+
+object VideoResourceB {
+  def write(i:VideoResource) = i match {
+    case YouTube(ytId) => Document("kind" -> "YouTube", "youtubeId" -> ytId)
+  }
+
+  def read(doc:Document): Try[VideoResource] = Try {
+    doc[BsonString]("kind").getValue match {
+      case "YouTube" => YouTube(doc[BsonString]("youtubeId"))
     }
   }
 }

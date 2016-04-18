@@ -55,6 +55,15 @@ class DAO[DataT <: HasStringId[DataT]] (
     */
   def allocateId = new ObjectId().toHexString
 
+  /**
+    * Is this string valid as an ID?
+    */
+  def validId(s:String) = try {
+    new ObjectId(s).toHexString == s
+  } catch {
+    case ex:Exception => false
+  }
+
   def obsToRefMany(o:Observable[Document]):RefMany[DataT] = {
     for {
       seq <- o.toFuture().toRef

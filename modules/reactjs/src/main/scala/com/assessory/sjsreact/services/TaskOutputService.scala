@@ -24,6 +24,10 @@ object TaskOutputService {
     Ajax.get(s"/api/course/${courseId.id}/tasks", headers=AJAX_HEADERS).responseText.map(upickle.default.read[Seq[WithPerms[Task]]])
   )
 
+  def myOutputs(taskId:Id[Task,String]) = {
+    Ajax.get(s"/api/task/${taskId.id}/myOutputs", headers=AJAX_HEADERS).responseText.map(upickle.default.read[Seq[TaskOutput]])
+  }
+
   def myAllocations(taskId:Id[Task,String]) = {
     Ajax.get(s"/api/critique/${taskId.id}/myAllocations", headers=AJAX_HEADERS).responseText.map(upickle.default.read[Seq[Target]])
   }
@@ -43,6 +47,11 @@ object TaskOutputService {
     fto
   }
 
+  def createNew(to:TaskOutput) = {
+    val fto = Ajax.post(s"/api/task/${to.task.id}/newOutput", upickle.default.write(to), headers=AJAX_HEADERS).responseText.map(upickle.default.read[WithPerms[TaskOutput]])
+    cache.put(to.id.id, fto)
+    fto
+  }
 
   def loadId[KK <: String](id:Id[TaskOutput,KK]) = {
     val fwp = Ajax.get(s"/api/taskoutput/${id.id}", headers=AJAX_HEADERS).responseText.map(upickle.default.read[WithPerms[TaskOutput]])

@@ -19,19 +19,16 @@ case class VideoFile(
     updated: Long
 ) extends HasStringId[VideoFile] with File
 
-case class Video(
-    id: Id[Video, String],
-    addedBy: Id[User, String],
-    belongsTo: Target,
-    files: Seq[VideoFile],
-    created: Long,
-    updated: Long
-) extends HasStringId[Video]
+
 
 case class VideoTask(
 
 ) extends TaskBody
 
-case class VideoTaskOutput(videoId:Option[Id[Video,String]]) extends TaskOutputBody {
+
+sealed trait VideoResource
+case class YouTube(ytId:String) extends VideoResource
+
+case class VideoTaskOutput(video:Option[VideoResource]) extends TaskOutputBody {
   def kind = "Video"
 }

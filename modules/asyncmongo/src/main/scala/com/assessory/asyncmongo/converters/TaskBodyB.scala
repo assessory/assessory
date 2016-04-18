@@ -12,13 +12,14 @@ import org.mongodb.scala.bson._
 import scala.collection.JavaConverters._
 
 
-import scala.util.{Failure, Try}
+import scala.util.{Success, Failure, Try}
 
 object TaskBodyB {
   def write(i: TaskBody):Document = i match {
     case c:CritiqueTask => CritiqueTaskB.write(c)
     case q:QuestionnaireTask => QuestionnaireTaskB.write(q)
     case v:VideoTask => VideoTaskB.write(v)
+    case EmptyTaskBody => Document("kind" -> "empty")
   }
 
   def read(doc: Document): Try[TaskBody] = {
@@ -26,6 +27,7 @@ object TaskBodyB {
       case CritiqueTask.kind => CritiqueTaskB.read(doc)
       case "Questionnaire" => QuestionnaireTaskB.read(doc)
       case "Video" => VideoTaskB.read(doc)
+      case "empty" => Success(EmptyTaskBody)
       case k => Failure(new IllegalStateException("Couldn't parse task body with kind " + k))
     }
   }

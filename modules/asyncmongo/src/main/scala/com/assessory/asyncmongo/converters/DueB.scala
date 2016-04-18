@@ -14,7 +14,7 @@ object DueB {
   def write(i: Due) = i match {
     case DueDate(time) => Document("kind" -> "Date", "time" -> time)
     case DuePerGroup(times) => Document("kind" -> "Per Group", "times" -> times.toSeq.map { case (id, t) => Document("group" -> IdB.write(id), "time" -> t) })
-    case NoDue => Document("No due date")
+    case NoDue => Document("kind" -> "No due date")
   }
 
   def read(doc: Document): Try[Due] = Try {

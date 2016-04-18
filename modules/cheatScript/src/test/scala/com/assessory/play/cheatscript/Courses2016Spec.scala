@@ -2,8 +2,8 @@ package com.assessory.play.cheatscript
 
 
 import com.assessory.api.{Task, TaskDetails}
-import com.assessory.asyncmongo.{RegistrationDAO, UserDAO}
-import com.assessory.model.{TaskModel, CourseModel, UserModel}
+import com.assessory.asyncmongo.{DB, RegistrationDAO, UserDAO}
+import com.assessory.model.{DoWiring, TaskModel, CourseModel, UserModel}
 import com.wbillingsley.handy.{Approval, Ref}
 import com.wbillingsley.handy.appbase.{LTIConsumer, ActiveSession, Course, User}
 import com.wbillingsley.handy.Id._
@@ -17,6 +17,10 @@ class Courses2016Spec extends FlatSpec with Matchers with ScalaFutures {
 
   "setting up the courses" should "succeed" in {
 
+    DB.dbName = "assessory_2016_1"
+    // Wire up the lookups
+    DoWiring.doWiring
+
     val proc = for {
       will <- UserModel.signUp(
         Some("wbilling@une.edu.au"),
@@ -26,7 +30,7 @@ class Courses2016Spec extends FlatSpec with Matchers with ScalaFutures {
 
       testCourseWp <- CourseModel.create(
         Approval(will.itself), Course(
-          id = "invalid".asId,
+          id = "570fa8c4470b6bd820000000".asId,
           addedBy = "invalid".asId,
           title = Some("test course"),
           shortName = Some("TEST101"),

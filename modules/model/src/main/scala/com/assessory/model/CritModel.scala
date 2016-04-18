@@ -181,7 +181,7 @@ object CritModel {
       case qt:QuestionnaireTask => QuestionnaireTaskOutput(answers = for {
         q <- qt.questionnaire
       } yield blankAnswer(q))
-      case vt:VideoTask => VideoTaskOutput(videoId = None)
+      case vt:VideoTask => VideoTaskOutput(video = None)
       case ct:CritiqueTask => Critique(target = target, task = blankFor(ct.task))
     }
 

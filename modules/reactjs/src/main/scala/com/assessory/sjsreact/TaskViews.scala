@@ -1,6 +1,8 @@
 package com.assessory.sjsreact
 
 import com.assessory.api._
+import com.assessory.api.video.VideoTask
+import com.assessory.sjsreact.video.VideoViews
 import due._
 import com.assessory.api.client.WithPerms
 import com.assessory.api.critique.{AllocateStrategy, CritiqueTask, Critique}
@@ -120,6 +122,7 @@ object TaskViews {
     .render_P(task =>
       task.body match {
         case c:CritiqueTask => <.div("Sorry, this task doesn't appear to be open. (If you think it should be open, try refreshing the page -- maybe it's opened since I cached it.)")
+        case v:VideoTask => VideoViews.front(task)
       }
     ).build
 
@@ -128,6 +131,7 @@ object TaskViews {
     .render_P(task =>
       task.body match {
         case c:CritiqueTask => CritiqueViews.front(task)
+        case v:VideoTask => VideoViews.front(task)
       }
     )
     .build

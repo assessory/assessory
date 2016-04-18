@@ -3,6 +3,7 @@ package com.assessory.model
 import com.assessory.api.critique._
 import com.assessory.api.due.DueDate
 import com.assessory.api.question.{BooleanQuestion, ShortTextQuestion, Question, QuestionnaireTask}
+import com.assessory.api.video.VideoTask
 import com.assessory.api.{TaskDetails, Task}
 import com.assessory.clientpickle.Pickles
 import com.wbillingsley.handy.Id
@@ -150,6 +151,23 @@ class PickleSpec extends FlatSpec with Matchers {
           what = TTGroups(set=invalidId), number = 3
         )
       )
+    )
+    val pickled = write(made)
+    val unpickled = read[Task](pickled)
+
+    unpickled should be (made)
+  }
+
+  it should "Pickle and unpickle Video Task" in  {
+    val made = Task(
+      id = invalidId,
+      course = invalidId,
+      details = TaskDetails(
+        name = Some("test crit"),
+        description = Some("This is to test critiques can be sent between server and client"),
+        published = DueDate(System.currentTimeMillis())
+      ),
+      body = VideoTask()
     )
     val pickled = write(made)
     val unpickled = read[Task](pickled)

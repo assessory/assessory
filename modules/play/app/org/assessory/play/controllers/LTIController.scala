@@ -67,7 +67,7 @@ class LTIController extends Controller {
 
     for {
       c <- rCourse.toFuture
-    } yield Redirect("/" + path).withSession(request.session + ("sessionKey" -> session))
+    } yield Redirect(s"/#!/" + path).withSession(request.session + ("sessionKey" -> session))
 
   }
 

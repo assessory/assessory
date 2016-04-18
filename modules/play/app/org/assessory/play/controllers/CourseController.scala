@@ -16,9 +16,7 @@ import Id._
 import scala.concurrent.Future
 import scala.language.implicitConversions
 
-class CourseController extends Controller {
-
-
+object CourseController {
   implicit def courseToResult(rc:Ref[Course]):Future[Result] = {
     rc.map(c => Results.Ok(upickle.default.write(c)).as("application/json")).toFuture
   }
@@ -42,6 +40,11 @@ class CourseController extends Controller {
       j <- strings.jsSource
     } yield Results.Ok.chunked(j).as("application/json")
   }
+}
+
+class CourseController extends Controller {
+
+  import CourseController._
 
   /**
    * Retrieves a course
