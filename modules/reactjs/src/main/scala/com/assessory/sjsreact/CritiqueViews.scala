@@ -3,7 +3,11 @@ package com.assessory.sjsreact
 import com.assessory.api._
 import com.assessory.api.client.WithPerms
 import com.assessory.api.critique.{CritiqueTask, CritAllocation, Critique}
+import com.assessory.api.video.{YouTube, VideoTaskOutput}
+import com.assessory.sjsreact
 import com.assessory.sjsreact.services.{TaskService, TaskOutputService}
+import com.assessory.sjsreact.video.VideoViews
+import com.assessory.sjsreact.video.VideoViews.VTOState
 import com.wbillingsley.handy.Id
 import com.wbillingsley.handy.appbase._
 import japgolly.scalajs.react._
@@ -182,6 +186,74 @@ object CritiqueViews {
     })
       .build
   }
+
+
+  //
+  ///
+  //
+  ///
+  //
+
+
+  def latchR[T](l:Latched[T])(render: T => ReactElement):ReactElement = {
+    l.request.value match {
+      case Some(Success(x)) => render(x)
+      case Some(Failure(x)) => <.span(^.className := "error", x.getMessage)
+      case _ => <.i(^.className := "fa fa-spinner fa-spin")
+    }
+  }
+
+
+
+
+
+  def allocationsSwitchTwo[A,B](sel:Selection[A,B]) = {
+    <.ul(^.className := "nav nav-pills", ^.role := "group",
+      for ((targ, idx) <- sel.seq.zipWithIndex) yield {
+        <.li(^.className := (if (sel.selected == Some(targ)) "active" else ""), ^.role := "presentation",
+          <.a(^.onClick --> Callback { sel.selected = Some(targ) },
+            idx + 1
+          )
+        )
+      }
+    )
+  }
+
+
+  val frontIntTwo = ReactComponentB[Selection[TaskOutput,Task]]("critAllocationSelection")
+    .render_P({ sel =>
+      //val targets = sel.seq.map { case TaskOutput(_, _, _, _, Critique(targ, _), _, _, _) => targ }
+
+      <.div(
+        allocationsSwitchTwo(sel),
+        sel.selected match {
+          case Some(TaskOutput(_, _, _, _, Critique(TargetTaskOutput(toId), _), _, _, _)) =>
+            latchR(TaskOutputService.latch(toId)) { wp => wp.item.body match {
+              case VideoTaskOutput(Some(YouTube(ytId))) =>
+                <.div(
+                  VideoViews.youTubePlayer(ytId),
+                  <.div(^.cls := "alert alert-warning", "Form to submit your video will go up tomorrow. Check back here then")
+                )
+              case _ => <.div(
+                <.div("Unrenderable content"),
+                <.div(^.cls := "alert alert-warning", "Form to submit your critique video will go up tomorrow. Check back here then")
+              )
+            }}
+          case _ => <.div()
+        }
+      )
+    })
+    .build
+
+
+  val frontTwo = ReactComponentB[Task]("critiqueTaskView")
+    .initialState_P(task => Latched.lazily{
+      for {
+        alloc <- TaskOutputService.taskOutputsFor(task.id)
+      } yield new Selection(None, alloc, task)
+    })
+    .render_S(c => latchR(c) { frontIntTwo(_) })
+    .build
 
 
 

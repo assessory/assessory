@@ -14,11 +14,14 @@ import com.wbillingsley.handy.Ref._
 import com.wbillingsley.handy._
 import com.wbillingsley.handy.appbase.{Group, User, UserError}
 
+import scala.util.Random
+
 object CritModel {
 
 
   /**
    * Allocates within these groups, taking no account of groups' parents
+ *
    * @param num
    * @return
    */
@@ -261,5 +264,63 @@ object CritModel {
       writer.close()
       sWriter.toString
     }
+  }
+
+
+
+  /**
+    * Allocate me n things to critique, that I didn't write, choosing the ones that have been critiqued the fewest
+    * times
+    */
+  def allocateMe(by:Target, task:Task, t:TargetType, num:Int) = {
+    t match {
+      case TTOutputs(id) =>
+        for {
+          crits <- TaskOutputDAO.byTask(task.itself).collect
+          toCrit <- TaskOutputDAO.byTask(id.lazily).collect
+        } yield {
+          val critCounts = crits.collect(
+            { case TaskOutput(_, _, _, _, Critique(TargetTaskOutput(toId), _), _, _, _) => toId}
+          ).groupBy(identity).mapValues(_.size)
+
+          val selected = Random.shuffle(toCrit).sortBy({ c => -critCounts.getOrElse(c.id, 0) }).filterNot(_.by == by).take(num)
+          selected.map({ to => TargetTaskOutput(to.id) })
+        }
+    }
+  }
+
+  def fillUp(by:Target, task:Task, t:TargetType, num:Int):RefMany[TaskOutput] = {
+    for {
+      existing <- TaskOutputDAO.byTaskAndBy(task.id, by).collect
+
+      extraTargs <- {
+        if (num - existing.size > 0) allocateMe(by, task, t, num - existing.size) else Seq.empty[Target].itself
+      }
+
+      extraTOs <- (
+        for {
+          t <- extraTargs.toRefMany
+          saved <- createCrit(by, task, t)
+        } yield saved
+      ).collect
+
+      all = existing ++ extraTOs
+
+      to <- all.toRefMany
+    } yield to
+  }
+
+
+  def blankFor(taskBody:TaskBody):TaskOutputBody = taskBody match {
+    case v:VideoTask => VideoTaskOutput(None)
+      // FIXME: other task bodies
+  }
+
+  def makeTos(approval:Approval[User], task:Task) = task match {
+    case Task(_, _, _, CritiqueTask(AllocateStrategy(TTOutputs(id), num), critTask)) =>
+      for {
+        u <- approval.who
+        to <- fillUp(TargetUser(u.id), task, TTOutputs(id), num)
+      } yield to
   }
 }

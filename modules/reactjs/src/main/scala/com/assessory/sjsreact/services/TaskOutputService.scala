@@ -32,6 +32,11 @@ object TaskOutputService {
     Ajax.get(s"/api/critique/${taskId.id}/myAllocations", headers=AJAX_HEADERS).responseText.map(upickle.default.read[Seq[Target]])
   }
 
+  def taskOutputsFor(taskId:Id[Task,String]) = {
+    Ajax.post(s"/api/critique/${taskId.id}/taskOutputsFor", headers=AJAX_HEADERS).responseText.map(upickle.default.read[Seq[TaskOutput]])
+  }
+
+
   def findOrCreateCrit(taskId:Id[Task,String], target:Target) = {
     val fwp = Ajax.post(s"/api/critique/${taskId.id}/findOrCreateCrit", upickle.default.write(target), headers=AJAX_HEADERS).responseText.map(upickle.default.read[WithPerms[TaskOutput]])
     fwp.onComplete(_ => WebApp.rerender())

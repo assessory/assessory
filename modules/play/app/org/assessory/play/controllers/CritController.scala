@@ -6,6 +6,7 @@ import com.assessory.api.wiring.Lookups._
 import com.assessory.clientpickle.Pickles
 import com.assessory.model._
 import com.wbillingsley.handy.Ref._
+import com.wbillingsley.handy.Id._
 import com.wbillingsley.handy._
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.mvc.{Controller, Result, Results}
@@ -90,5 +91,15 @@ class CritController extends Controller {
     )
 
     lines.map(Ok(_).as("application/csv")).toFuture
+  }
+
+  def taskOutputsFor(taskId:String) = UserAction.async { implicit request =>
+    TaskOutputController.manyTaskOutputToResult(
+      for {
+        t <- taskId.asId[Task].lazily
+        a <- request.approval ask Permissions.ViewTask(t.itself)
+        to <- CritModel.makeTos(request.approval, t)
+      } yield to
+    )
   }
 }

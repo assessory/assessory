@@ -19,6 +19,22 @@ import scala.util.{Failure, Success}
 
 object VideoViews {
 
+  def extractYouTubeId(string:String) = {
+    val withWWW = "(https\\:\\/\\/www.youtube.com\\/watch\\?v=)([^#\\&\\?]*).*".r
+    val youTudotBe = ".*(youtu.be\\/)([^#\\&\\?]*).*".r
+    withWWW.findFirstMatchIn(string).map(_.group(2))
+      .orElse(youTudotBe.findFirstMatchIn(string).map(_.group(2)))
+      .getOrElse(string)
+  }
+
+  def youTubePlayer(ytId:String) = {
+    val extracted = extractYouTubeId(ytId)
+
+    <.iframe(
+      ^.width := "560", ^.height := "315",
+      ^.src := s"https://www.youtube.com/embed/${extracted}", ^.frameBorder := "0", ^.allowFullScreen := true
+    )
+  }
 
   def latchR[T](l:Latched[T])(render: T => ReactElement):ReactElement = {
     l.request.value match {
@@ -66,21 +82,6 @@ object VideoViews {
         }
       } else latched
     })
-
-
-    def extractYouTubeId(string:String) = {
-      val withWWW = "(https\\:\\/\\/www.youtube.com\\/watch\\?v=)([^#\\&\\?]*).*".r
-      val youTudotBe = ".*(youtu.be\\/)([^#\\&\\?]*).*".r
-      withWWW.findFirstMatchIn(string).map(_.group(2))
-        .orElse(youTudotBe.findFirstMatchIn(string).map(_.group(2)))
-          .getOrElse(string)
-    }
-
-    def youTubePlayer(ytId:String) = <.iframe(
-      ^.width := "560", ^.height := "315",
-      ^.src := s"https://www.youtube.com/embed/${ytId}", ^.frameBorder := "0", ^.allowFullScreen := true
-    )
-
 
     def render(state:Latched[VTOState]) = {
       latchR(state) { vto =>

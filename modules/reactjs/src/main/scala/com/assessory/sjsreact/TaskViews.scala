@@ -130,7 +130,7 @@ object TaskViews {
   val editOutputForTask = ReactComponentB[Task]("taskOutputForTask")
     .render_P(task =>
       task.body match {
-        case c:CritiqueTask => CritiqueViews.front(task)
+        case c:CritiqueTask => CritiqueViews.frontTwo(task)
         case v:VideoTask => VideoViews.front(task)
       }
     )
