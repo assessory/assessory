@@ -71,9 +71,15 @@ object RefConversions {
     import play.api.libs.concurrent.Execution.Implicits._
 
     def toFutureSource:Future[Source[T, NotUsed]] = {
+      //for {
+      //  enum <- rm.enumerateR.toFuture
+      //} yield Source.fromPublisher(Streams.enumeratorToPublisher(enum))
+
+      // FIXME: This isn't great, but it solves a transient bug where the generated Source was completing before the
+      // last element was sent
       for {
-        enum <- rm.enumerateR.toFuture
-      } yield Source.fromPublisher(Streams.enumeratorToPublisher(enum))
+        iter <- rm.collect.toFuture
+      } yield Source.apply[T](scala.collection.immutable.Iterable(iter:_*))
     }
 
   }
@@ -120,7 +126,7 @@ object UserAction extends ActionBuilder[AppbaseRequest] with ActionTransformer[R
     } yield {
       res
         .withHeaders(
-        "Cache-Control" -> "no-cache, no-store, must-revalidate", "Expires" -> "0", "Pragma" -> "no-cache"
+        "Cache-Control" -> "no-cache, no-store, must-revalidate", "Expires" -> "0", "Pragma" -> ""
       )
         .addingToSession("sessionKey" -> r.sessionKey)(r)
     }).recover({
