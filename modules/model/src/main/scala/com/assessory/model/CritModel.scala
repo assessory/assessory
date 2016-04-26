@@ -283,7 +283,7 @@ object CritModel {
             { case TaskOutput(_, _, _, _, Critique(TargetTaskOutput(toId), _), _, _, _) => toId}
           ).groupBy(identity).mapValues(_.size)
 
-          val selected = Random.shuffle(toCrit).sortBy({ c => -critCounts.getOrElse(c.id, 0) }).filterNot(_.by == by).take(num)
+          val selected = Random.shuffle(toCrit).sortBy({ c => critCounts.getOrElse(c.id, 0) }).filterNot(_.by == by).take(num)
           selected.map({ to => TargetTaskOutput(to.id) })
         }
     }
