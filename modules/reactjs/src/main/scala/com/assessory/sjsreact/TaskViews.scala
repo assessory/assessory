@@ -1,16 +1,16 @@
 package com.assessory.sjsreact
 
 import com.assessory.api._
-import com.assessory.api.video.VideoTask
+import com.assessory.api.video.{YouTube, VideoTaskOutput, VideoTask}
 import com.assessory.sjsreact.video.VideoViews
 import due._
 import com.assessory.api.client.WithPerms
 import com.assessory.api.critique.{AllocateStrategy, CritiqueTask, Critique}
-import com.assessory.sjsreact.services.{CourseService, TaskService, GroupService}
+import com.assessory.sjsreact.services.{TaskOutputService, CourseService, TaskService, GroupService}
 import com.wbillingsley.handy.Id
 import com.wbillingsley.handy.Ids._
 import com.wbillingsley.handy.appbase.{Group, Course}
-import japgolly.scalajs.react.ReactComponentB
+import japgolly.scalajs.react.{ReactElement, ReactComponentB}
 import japgolly.scalajs.react.vdom.prefix_<^._
 
 import scala.scalajs.js.Date
@@ -135,5 +135,26 @@ object TaskViews {
       }
     )
     .build
+
+
+  /**
+    * Shows a preview of a task output
+    * FIXME: Currently only matches videos
+    */
+  def preview(body:TaskOutputBody):ReactElement = body match {
+    case Critique(_, task) => preview(task)
+    case VideoTaskOutput(Some(YouTube(ytId))) =>
+      <.div(
+        VideoViews.youTubePlayer(ytId)
+      )
+    case _ => <.div(
+      <.div("Unrenderable content")
+    )
+  }
+
+
+  def preview(toId:Id[TaskOutput,String]):ReactElement = {
+    CommonComponent.latchR(TaskOutputService.latch(toId)) { wp => preview(wp.item.body )}
+  }
 }
 

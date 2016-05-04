@@ -27,7 +27,15 @@ object TaskOutputController {
   }
 
   implicit def manyTaskOutputToResult(rc:RefMany[TaskOutput]):Future[Result] = {
-    val strings = rc.map(c => upickle.default.write(c))
+    val strings = rc.map(c => {
+      try {
+        val p = upickle.default.write(c)
+        p
+      } catch {
+        case x:Exception => x.printStackTrace
+          throw x
+      }
+    })
 
     for {
       j <- strings.jsSource

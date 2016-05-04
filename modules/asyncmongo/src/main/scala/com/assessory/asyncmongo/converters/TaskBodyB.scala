@@ -114,7 +114,7 @@ object CritTargetStrategyB  {
       } yield TargetMyStrategy(
         task = doc[BsonObjectId]("task"),
         what = w,
-        number = doc[BsonInt32]("number")
+        number = doc.get[BsonInt32]("number")
       )
       case "Allocate" => for {
         w <- TargetTypeB.read(Document(doc[BsonDocument]("what")))

@@ -3,7 +3,11 @@ package com.assessory.api.question
 import com.assessory.api.{TaskOutputBody, TaskOutput, TaskBody}
 import com.wbillingsley.handy.{Id, HasStringId}
 
-sealed trait Question extends HasStringId[Question]
+sealed trait Question extends HasStringId[Question] {
+
+  def prompt:String
+
+}
 
 sealed trait Answer {
 
@@ -52,6 +56,9 @@ case class BooleanAnswer(
 case class QuestionnaireTask(
   questionnaire: Seq[Question]
 ) extends TaskBody {
+
+  lazy val questionMap:Map[Id[Question,String], Question] = (for { q <- questionnaire } yield q.id -> q ).toMap
+
   val kind = "Questionnaire"
 }
 

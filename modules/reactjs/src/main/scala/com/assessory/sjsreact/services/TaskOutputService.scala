@@ -42,7 +42,7 @@ object TaskOutputService {
     fwp.onComplete(_ => WebApp.rerender())
     for { wp <- fwp } yield {
       cache.put(wp.item.id.id, fwp)
-      wp.item.id
+      wp.item
     }
   }
 

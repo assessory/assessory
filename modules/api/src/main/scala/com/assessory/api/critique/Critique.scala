@@ -27,7 +27,7 @@ case class KindedTargetStrategy[T <: CritTargetStrategy](kind:String, strategy:T
 case class TargetMyStrategy(
   task: Id[Task,String],
   what: TargetType,
-  number: Int
+  number: Option[Int]
 ) extends CritTargetStrategy
 
 case class AllocateStrategy(

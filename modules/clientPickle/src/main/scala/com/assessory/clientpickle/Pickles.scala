@@ -81,6 +81,9 @@ object Pickles {
     case v:VideoTaskOutput => Js.Obj(
       "kind" -> Js.Str("video"), "video" -> upickle.default.writeJs(v.video)
     )
+    case q:QuestionnaireTaskOutput => Js.Obj(
+      "kind" -> Js.Str("questionnaire"), "answers" -> upickle.default.writeJs(q.answers)
+    )
   }
 
   implicit val taskOutputBodyReader:upickle.default.Reader[TaskOutputBody] = upickle.default.Reader {
@@ -91,6 +94,7 @@ object Pickles {
           task = upickle.default.readJs(o("task"))(taskOutputBodyReader)
         )
         case Js.Str("video") => VideoTaskOutput(video = upickle.default.readJs[Option[VideoResource]](o("video")))
+        case Js.Str("questionnaire") => QuestionnaireTaskOutput(answers = upickle.default.readJs[Seq[Answer]](o("answers")))
         case Js.Str(EmptyTaskOutputBody.kind) => EmptyTaskOutputBody
       }
   }

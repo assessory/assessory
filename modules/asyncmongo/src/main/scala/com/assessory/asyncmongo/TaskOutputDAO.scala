@@ -33,8 +33,14 @@ object TaskOutputDAO extends DAO(classOf[TaskOutput], "taskOutput", TaskOutputB.
     findMany (("task" $eq t) and ("by" $eq TargetB.write(by)))
   }
 
+  def byTaskAndAttn(t:Id[Task,String], attn:Target):RefMany[TaskOutput] = {
+    println(s"Searching for task $t and attn $attn")
 
-  def byTaskAndAttn(t:Ref[Task], attn:Target) = {
+    findMany (("task" $eq t) and ("attn" $eq TargetB.write(attn)))
+  }
+
+
+  def byTaskAndAttn(t:Ref[Task], attn:Target):RefMany[TaskOutput] = {
     for {
       tid <- t.refId
       to <- findMany(bsonDoc("task" -> tid, "attn" -> TargetB.write(attn)))

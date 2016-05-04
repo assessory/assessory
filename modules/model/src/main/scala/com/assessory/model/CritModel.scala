@@ -316,11 +316,50 @@ object CritModel {
       // FIXME: other task bodies
   }
 
-  def makeTos(approval:Approval[User], task:Task) = task match {
+  def strategyOf(t:Task) = t.body match {
+    case CritiqueTask(strategy, _) => strategy.itself
+    case _ => RefFailed(new IllegalArgumentException("Asked the critique strategy of a non-critique task"))
+  }
+
+  /**
+   * Given a critique task, what stuff of mine could have been critiqued?
+   */
+  def targetMySource(task:Task, u:User):RefMany[Target] = {
+    for {
+      strategy <- strategyOf(task)
+
+      tt <- strategy match {
+        case AllocateStrategy(tt, _) => tt.itself
+        case AnyStrategy(tt, _) => tt.itself
+      }
+
+      myTargs <- tt match {
+        case TTOutputs(ttTask) => for {
+          // FIXME: Needs to support groups
+          myOutput <- TaskOutputDAO.byTaskAndBy(ttTask, TargetUser(u.id))
+        } yield TargetTaskOutput(myOutput.id)
+      }
+    } yield {
+      myTargs
+    }
+  }
+
+  def makeTos(approval:Approval[User], task:Task):RefMany[TaskOutput] = task match {
     case Task(_, _, _, CritiqueTask(AllocateStrategy(TTOutputs(id), num), critTask)) =>
       for {
         u <- approval.who
         to <- fillUp(TargetUser(u.id), task, TTOutputs(id), num)
       } yield to
+    case Task(_, _, _, CritiqueTask(TargetMyStrategy(critTaskId, _, _), critTask)) =>
+      for {
+        u <- approval.who
+        critTask <- critTaskId.lazily
+
+        myTarget <- targetMySource(critTask, u)
+        critiqueMy <- TaskOutputDAO.byTaskAndAttn(critTaskId, myTarget)
+        to <- findOrCreateCrit(approval, task.itself, TargetTaskOutput(critiqueMy.id))
+      } yield {
+        to.item
+      }
   }
 }
