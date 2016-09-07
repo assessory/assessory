@@ -36,12 +36,34 @@ object TaskOutputModel {
     } yield wp
   }
 
+  /**
+    * Calculates an appropriate "by" for this task and this user (might be the user, or might be the group they are in)
+    * @param task
+    * @param u
+    * @return
+    */
+  def byForTask(task:Task, u:User):Ref[Target] = {
+    if (task.details.individual || task.details.groupSet.isEmpty) {
+      TargetUser(u.id).itself
+    } else {
+      for {
+        gsId <- task.details.groupSet.toRef
+        gs <- gsId.lookUp
+
+        g <- GroupModel.myGroupInSet(u, gs) orIfNone RefFailed(new IllegalArgumentException("You are not in a group but this is a group task"))
+      } yield TargetGroup(g.id)
+    }
+  }
+
 
   def myOutputs(a:Approval[User], rTask:Ref[Task]) = {
     for {
       task <- rTask
-      uid <- a.who.refId
-      to <- TaskOutputDAO.byTaskAndBy(task.id, TargetUser(uid))
+      u <- a.who
+
+      by <- byForTask(task, u)
+
+      to <- TaskOutputDAO.byTaskAndBy(task.id, by)
     } yield to
   }
 
@@ -49,11 +71,12 @@ object TaskOutputModel {
     for {
       u <- a.who
       t <- task
+      by <- byForTask(t, u)
       approved <- a ask Permissions.ViewCourse(t.course.lazily)
       to = clientTaskOutput.copy(
         id=TaskOutputDAO.allocateId.asId,
         task=t.id,
-        by=TargetUser(u.id)
+        by=by
       )
       saved <- TaskOutputDAO.saveSafe(to)
       finalised <- if (finalise) {

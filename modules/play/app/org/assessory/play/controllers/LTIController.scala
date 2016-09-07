@@ -36,7 +36,9 @@ class LTIController extends Controller {
       course <- CourseDAO.lookUp.one(cid.asId).withFilter(courseContainsLti(_, clientKey)) orIfNone Refused("Client key did not match")
 
       username <- getParam(body, "lis_person_contact_email_primary").toRef orIfNone Refused("Couldn't find a user identity (email) in the request")
-      service = (course.id.id, clientKey).toString
+
+      // TODO: Using the client key as the service name isn't safe (multiple organisations might use the same key), but we want to be able to keep the identity the same across courses in a Moodle
+      service = "LTI " + clientKey
 
       // log any previous user out
       prevUser <- optionally {

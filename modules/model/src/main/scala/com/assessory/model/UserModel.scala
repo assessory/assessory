@@ -4,7 +4,7 @@ import com.assessory.api.wiring.Lookups._
 import com.assessory.asyncmongo._
 import com.wbillingsley.handy.Ref._
 import com.wbillingsley.handy._
-import com.wbillingsley.handy.appbase.{User, ActiveSession, UserError}
+import com.wbillingsley.handy.appbase.{Identity, User, ActiveSession, UserError}
 
 object UserModel {
 
@@ -25,6 +25,10 @@ object UserModel {
       }
     ) yield user
   }
+
+  def byEmail(email:String) = UserDAO.byEmail(email)
+
+  def byIdentity(id:Identity) = UserDAO.byIdentity(id)
 
   /**
    * Logging a user in involves finding the user (if the password hash matches), and pushing the

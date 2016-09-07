@@ -30,6 +30,8 @@ object TaskModel {
   }
 
 
+  def byName(c:Ref[Course], n:String) = TaskDAO.byName(c, n)
+
   def create(a:Approval[User], clientTask:Task) = {
     for {
       approved <- a ask Permissions.EditCourse(clientTask.course.lazily)

@@ -18,6 +18,14 @@ object TaskDAO extends DAO(classOf[Task], "task", TaskB.read) {
     update=$set("body" -> TaskBodyB.write(t.body))
   )
 
+  def byName(c:Ref[Course], n:String) = {
+    for {
+      cid <- c.refId
+      t <- findOne(("course" $eq cid) and ("details.name" $eq n))
+    } yield t
+  }
+
+
   def byCourse(c:Ref[Course]) = {
     for {
       cid <- c.refId

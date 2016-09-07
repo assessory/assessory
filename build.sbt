@@ -96,6 +96,7 @@ lazy val play = (project in file("modules/play"))
   .settings(
     libraryDependencies ++= Seq(
       // JavaScript
+      ws,
       "org.webjars" %% "webjars-play" % "2.4.0-2",
       "org.webjars" % "bootstrap" % "3.1.1-2",
       "org.webjars" % "font-awesome" % "4.5.0",

@@ -59,6 +59,12 @@ object GroupModel {
     } yield wp
   }
 
+  def myGroupInSet(u:User, gs:GroupSet):Ref[Group] = {
+    GroupDAO.bySetAndUser(gs.id, u.id).first
+  }
+
+  def byName(rc:Ref[Course], n:String) = GroupSetDAO.byCourse(rc).withFilter(_.name.contains(n)).first
+
 
   def createGroupSet(a:Approval[User], clientGS:GroupSet) = {
     for {
@@ -98,6 +104,26 @@ object GroupModel {
       approved <- a ask Permissions.ViewGroupSet(gs.itself)
       g <- GroupDAO.bySet(gs.id)
     } yield g
+  }
+
+  /**
+    * Retrieves the registrations who are registered to a group
+    */
+  def registrationsInGroup(g:Ref[Group]) = {
+    for {
+      gId <- g.refId
+      r <- RegistrationDAO.group.byTarget(gId)
+    } yield r
+  }
+
+  /**
+    * Retrieves the users who are registered to a group
+    */
+  def usersInGroup(g:Ref[Group]) = {
+    for {
+      r <- registrationsInGroup(g).collect
+      u <- UserDAO.manyById(r.map(_.user.id))
+    } yield u
   }
 
 
@@ -192,9 +218,15 @@ object GroupModel {
 
     // Ensure there is a user for every line in the CSV
     val rUsers = for {
-      line <- bodyLines.toRefMany
+      untrimmed <- bodyLines.toRefMany
+      line = untrimmed.map(_.trim)
 
-      identities = Seq(Identity(I_STUDENT_NUMBER, studentNum(line), studentNum(line))) ++ (for {
+      x = {
+        println(s"Student num ${studentNum(line)} name ${name(line)} groupName ${groupName(line)} p ${parentGroupName(line)} s ${socialId(line)}")
+        true
+      }
+
+      identities =  Seq(Identity(I_STUDENT_NUMBER, studentNum(line), studentNum(line))) ++ (for {
         service <- socialService
         id <- socialId(line)
       } yield Identity(service=service, username=Some(id), value=Some(id)))
@@ -204,7 +236,7 @@ object GroupModel {
           id = "invalid".asId,
           name = name(line)
         ),
-        identities = identities
+        identities = identities.toSeq
       )
 
       reg <- RegistrationDAO.course.register(u.id, set.course, Set(CourseRole.student), EmptyKind)
@@ -318,7 +350,7 @@ object GroupModel {
     // Add any missing identities
     val updates = for {
       u <- ensured
-      missing = identities diff u.identities
+      missing = identities.filterNot({ i => u.identities.exists({ ui => ui.username == i.username && ui.service == i.service && ui.value == i.value }) })
       i <- missing.toRefMany.fold[Ref[User]](u.itself) { case (ref, i) => UserDAO.pushIdentity(ref, i) }
     } yield i
 

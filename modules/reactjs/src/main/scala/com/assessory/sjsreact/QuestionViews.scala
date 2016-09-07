@@ -82,6 +82,16 @@ object QuestionViews {
   }).build
 
 
+  def editShortTextA2(q:Question, a:ShortTextAnswer, f: Answer => Callback) = {
+    <.div(
+      <.div(
+        <.textarea(^.className := "form-control", ^.value := (a.answer.getOrElse(""):String),
+          ^.onChange ==> { (evt:ReactEventI) => f(a.copy(answer = Some(evt.target.value))) }
+        )
+      )
+    )
+  }
+
 
 
   def editBooleanA2(q:Question, a:BooleanAnswer, f: Answer => Callback) = {
@@ -108,7 +118,7 @@ object QuestionViews {
     <.div(
       for (pair <- qa.answers.zipWithIndex) yield pair match {
         case (a: ShortTextAnswer, i) =>
-          <.div(^.className := "form-group", <.label("Haven't implemented Short Answers yet!"))
+          <.div(^.className := "form-group", <.label(qt.questionMap.apply(a.question).prompt), editShortTextA2(qt.questionMap(a.question), a, subbing(i, _)))
         case (a: BooleanAnswer, i) =>
           <.div(^.className := "form-group", <.label(qt.questionMap.apply(a.question).prompt), editBooleanA2(qt.questionMap(a.question), a, subbing(i, _)))
       }

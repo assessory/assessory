@@ -147,6 +147,10 @@ object TaskViews {
       <.div(
         VideoViews.youTubePlayer(ytId)
       )
+    case VideoTaskOutput(None) =>
+      <.div(
+        "This critique is not ready to view yet -- student has created a critique but not yet posted a video ID"
+      )
     case _ => <.div(
       <.div("Unrenderable content")
     )

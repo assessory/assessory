@@ -95,7 +95,10 @@ class CourseController extends Controller {
   def autolinks(courseId:String) = UserAction.async { implicit request =>
     val lines = for {
       u <- CourseModel.usersInCourse(request.approval, courseId.asId)
-      optStudentIdent <- u.getIdentity(I_STUDENT_NUMBER).toRef
+      c <- courseId.asId[Course].lazily
+
+      // TODO: Which Identity do we want?
+      optStudentIdent <- u.identities.headOption.toRef
       studentIdent <- optStudentIdent.value.toRef
       url = routes.UserController.autologin(u.id.id, u.secret).absoluteURL()
     } yield s"${studentIdent},$url\n"

@@ -12,6 +12,9 @@ import scala.concurrent.Future
 
 object CourseDAO extends DAO(clazz = classOf[Course], collName="course", converter = CourseB.read) {
 
+
+  def byShortName(sn:String) = findMany("shortName" $eq sn)
+
   /**
    * Saves the user's details
    */

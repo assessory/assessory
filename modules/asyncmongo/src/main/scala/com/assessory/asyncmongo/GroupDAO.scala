@@ -44,15 +44,17 @@ object GroupDAO extends DAO(classOf[Group], "assessoryGroup", GroupB.read) {
     } yield g
   }
 
-  def byCourseAndUser(c:Ref[Course], u:Ref[User]) = {
-    for {
-      cid <- c.refId
-      uid <- u.refId
-      g <- findMany(("course" $eq cid) and ("members" $eq uid))
-    } yield g
-  }
-
   def bySet(gsId:Id[GroupSet,String]) = findMany("set" $eq gsId)
+
+  def bySetAndUser(gsId:Id[GroupSet,String], u:Id[User,String]) = {
+    for {
+      s <- bySet(gsId).collect
+      r <- RegistrationDAO.group.byUserAndTargets(u, s.map(_.id))
+      g <- r.target.lazily
+    } yield {
+      g
+    }
+  }
 
   def byNames(gsId:Id[GroupSet, String], names:Set[String]) = {
     findMany(bsonDoc("set" -> gsId, "name" -> $in(BsonArray(names.toSeq.map(BsonString(_))))))

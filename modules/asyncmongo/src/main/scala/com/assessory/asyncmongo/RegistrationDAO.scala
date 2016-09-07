@@ -24,6 +24,8 @@ class RegistrationDAO[T, R, P <: HasKind](collName:String, r:RegistrationB[T, R,
 
   def byTargets(targets:Seq[Id[T, String]]) = findMany(Document("target" -> $in(targets)))
 
+  def byUserAndTargets(u:Id[User,String], targets:Seq[Id[T, String]]) = findMany(("user" $eq u) and Document("target" -> $in(targets)))
+
   def byUser(user:Id[User, String]) = findMany("user" $eq user)
 
   def saveSafe(c:Registration[T,R,P]) = {

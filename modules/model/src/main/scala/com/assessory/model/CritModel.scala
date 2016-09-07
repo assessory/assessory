@@ -266,26 +266,115 @@ object CritModel {
     }
   }
 
+  /**
+    * Filters a RefMany with a possibly asynchronous filter
+    * TODO: Move this onto RefMany
+    */
+  def filtering[T](r:RefMany[T], p:(T => Ref[Boolean])):RefMany[T] = {
+    for {
+      item <- r
+      test <- p(item) if test
+    } yield item
+  }
+
+  def isBy(to:TaskOutput, t:Target):Ref[Boolean] = {
+    t match {
+      case TargetGroup(gId) => gId.lazily.flatMap(isBy(to, _))
+      case TargetUser(uId) => uId.lazily.flatMap(isBy(to, _))
+    }
+  }
+
+  /**
+    * Returns true if this task output should be considered as "by the group" (or one of their users, etc)
+    */
+  def isBy(to:TaskOutput, g:Group):Ref[Boolean] = targetIncludes(to.by, g)
+
+  /**
+    * Returns true if this task output should be considered as "by the user" (or their group, etc)
+    */
+  def isBy(to:TaskOutput, u:User):Ref[Boolean] = targetIncludes(to.by, u)
+
+  /**
+    * Returns true if this Target relates to this Group
+    */
+  def targetIncludes(by:Target, g:Group):Ref[Boolean] = by match {
+    case TargetUser(uId) => for {
+      rs <- GroupModel.registrationsInGroup(g.itself).collect
+    } yield rs.exists(_.user == uId)
+    case TargetGroup(gId) => (gId == g.id).itself
+  }
+
+  /**
+    * Returns true if this Target relates to this User
+    */
+  def targetIncludes(by:Target, u:User):Ref[Boolean] = by match {
+    case TargetUser(uId) => (uId == u.id).itself
+    case TargetGroup(gId) => for {
+      rs <- GroupModel.registrationsInGroup(gId.lazily).collect
+    } yield rs.exists(_.user == u.id)
+    case TargetCourseReg(cId) => for {
+      cr <- cId.lazily
+    } yield cr.user == u.id
+  }
+
+  /**
+    * Checks that Group g's parent group (if there is one) contains the target
+    */
+  def parentOk(t:Target, g:Group):Ref[Boolean] = g.parent match {
+    case Some(pId) => for {
+      gParent <- pId.lazily
+      parentMatch <- t match {
+        case TargetUser(uId) => for {
+          u <- uId.lazily
+          gs <- gParent.set.lazily
+          g <- GroupModel.myGroupInSet(u, gs)
+        } yield g.id == gParent.id
+        case TargetGroup(gId) => for {
+          g <- gId.lazily
+          tParentId <- g.parent.toRef
+        } yield tParentId == gParent.id
+      }
+    } yield parentMatch
+    case _ => true.itself
+  }
 
 
   /**
     * Allocate me n things to critique, that I didn't write, choosing the ones that have been critiqued the fewest
     * times
     */
-  def allocateMe(by:Target, task:Task, t:TargetType, num:Int) = {
+  def allocateMe(by:Target, task:Task, t:TargetType, num:Int):Ref[Seq[Target]] = {
     t match {
       case TTOutputs(id) =>
         for {
           crits <- TaskOutputDAO.byTask(task.itself).collect
-          toCrit <- TaskOutputDAO.byTask(id.lazily).collect
+          outputs = TaskOutputDAO.byTask(id.lazily)
+          toCrit <- filtering[TaskOutput](outputs, { x => isBy(x, by).map(!_) }).collect
         } yield {
           val critCounts = crits.collect(
             { case TaskOutput(_, _, _, _, Critique(TargetTaskOutput(toId), _), _, _, _) => toId}
           ).groupBy(identity).mapValues(_.size)
 
-          val selected = Random.shuffle(toCrit).sortBy({ c => critCounts.getOrElse(c.id, 0) }).filterNot(_.by == by).take(num)
+          val selected = Random.shuffle(toCrit).sortBy({ c => critCounts.getOrElse(c.id, 0) }).take(num)
           selected.map({ to => TargetTaskOutput(to.id) })
         }
+      case TTGroups(gsId) => for {
+        gs <- gsId.lazily
+        crits <- TaskOutputDAO.byTask(task.itself).collect
+
+        // check they are from the same tutorial (if things are divided into tutorials)
+        groups = filtering[Group](GroupDAO.bySet(gsId), { g => parentOk(by, g) })
+
+        // don't allocate a group to be critiqued by itself or one of its users
+        toCrit <- filtering[Group](groups, { g => targetIncludes(by, g).map(!_) }).collect
+      } yield {
+        val critCounts = crits.collect(
+          { case TaskOutput(_, _, _, _, Critique(TargetGroup(gId), _), _, _, _) => gId}
+        ).groupBy(identity).mapValues(_.size)
+
+        val selected = Random.shuffle(toCrit).sortBy({ c => critCounts.getOrElse(c.id, 0) }).take(num)
+        selected.map({ to => TargetGroup(to.id) })
+      }
     }
   }
 
@@ -335,9 +424,13 @@ object CritModel {
 
       myTargs <- tt match {
         case TTOutputs(ttTask) => for {
-          // FIXME: Needs to support groups
-          myOutput <- TaskOutputDAO.byTaskAndBy(ttTask, TargetUser(u.id))
+          myOutput <- TaskOutputModel.myOutputs(Approval(u.itself), ttTask.lazily)
         } yield TargetTaskOutput(myOutput.id)
+        case TTGroups(gsId) => for {
+          gs <- gsId.lazily
+          g <- GroupModel.myGroupInSet(u, gs)
+          manied <- Seq(g).toRefMany
+        } yield TargetGroup(manied.id)
       }
     } yield {
       myTargs
@@ -349,6 +442,11 @@ object CritModel {
       for {
         u <- approval.who
         to <- fillUp(TargetUser(u.id), task, TTOutputs(id), num)
+      } yield to
+    case Task(_, _, _, CritiqueTask(AllocateStrategy(TTGroups(id), num), critTask)) =>
+      for {
+        u <- approval.who
+        to <- fillUp(TargetUser(u.id), task, TTGroups(id), num)
       } yield to
     case Task(_, _, _, CritiqueTask(TargetMyStrategy(critTaskId, _, _), critTask)) =>
       for {

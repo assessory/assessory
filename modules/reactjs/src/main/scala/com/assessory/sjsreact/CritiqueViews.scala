@@ -223,6 +223,7 @@ object CritiqueViews {
     def renderTarget(tob:TaskOutputBody):ReactElement = tob match {
       // TODO: Implement render targets for other kinds of target
       case Critique(TargetTaskOutput(toId), _) => TaskViews.preview(toId)
+      case Critique(TargetGroup(gId), _) => GroupViews.groupNameId(gId)
       case _ => <.div(^.cls := "alert alert-error", "Unrenderable target")
     }
 

@@ -64,6 +64,8 @@ object CourseModel {
     } yield wp
   }
 
+  def byShortName(sn:String) = CourseDAO.byShortName(sn)
+
   /**
    * Retrieves a course
    */

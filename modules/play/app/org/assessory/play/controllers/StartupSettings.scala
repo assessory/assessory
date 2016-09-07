@@ -12,7 +12,7 @@ class StartupSettings @Inject() (environment:Environment) {
 
   println("Applied settings")
 
-  DB.dbName = "assessory_2016_1"
+  DB.dbName = "assessory_2016_2"
 
   // Set the execution context (ie the thread pool) that RefFuture work should happen on
   RefFuture.executionContext = play.api.libs.concurrent.Execution.Implicits.defaultContext
