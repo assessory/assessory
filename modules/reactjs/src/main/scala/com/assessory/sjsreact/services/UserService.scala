@@ -1,11 +1,11 @@
 package com.assessory.sjsreact.services
 
-import com.assessory.api.client.EmailAndPassword
+import com.assessory.api.client.{WithPerms, EmailAndPassword}
 import com.assessory.clientpickle.Pickles._
 import com.assessory.sjsreact.{MainRouter, Latched, WebApp}
 import com.wbillingsley.handy.Ref._
 import com.wbillingsley.handy._
-import com.wbillingsley.handy.appbase.{Course, User}
+import com.wbillingsley.handy.appbase.{Group, Course, User}
 import japgolly.scalajs.react.extra.router.Redirect
 import org.scalajs.dom.ext.{AjaxException, Ajax}
 

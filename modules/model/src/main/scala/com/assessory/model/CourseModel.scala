@@ -99,4 +99,16 @@ object CourseModel {
     } yield user
   }
 
+  /**
+    * Enrols a user into a course with a particular role. Note this has no security check and is not an external API.
+    *
+    */
+  def forceEnrol(u:Ref[User], c:Ref[Course], r:Set[CourseRole]):Ref[Course.Reg] = {
+    for {
+      uId <- u.refId
+      cId <- c.refId
+      reg <- RegistrationDAO.course.register(uId, cId, r, EmptyKind)
+    } yield reg
+  }
+
 }

@@ -7,7 +7,7 @@ import com.assessory.api._
 import com.assessory.api.client.WithPerms
 import com.assessory.api.critique.{Critique, CritiqueTask}
 import com.assessory.api.question.{BooleanAnswer, ShortTextAnswer, QuestionnaireTaskOutput}
-import com.assessory.api.video.VideoTaskOutput
+import com.assessory.api.video.{YouTube, VideoTaskOutput}
 import com.assessory.asyncmongo._
 import com.assessory.api.wiring.Lookups._
 import com.wbillingsley.handy.Ref._
@@ -106,11 +106,19 @@ object TaskOutputModel {
   }
 
   def targetAsCsvString(a:Approval[User], t:Target):Ref[Seq[String]] = {
+
+    def idNameFromUser(u:User):Option[String] = {
+      u.identities.find(_.service == I_STUDENT_NUMBER).flatMap(_.value)
+        .orElse(u.identities.headOption.flatMap(_.username))
+        .orElse(u.identities.headOption.flatMap(_.value))
+        .orElse(Some(""))
+    }
+
     t match {
       case TargetUser(id) =>
         for {
           u <- a.cache.lookUp(id)
-          id <- u.identities.find(_.service == I_STUDENT_NUMBER).flatMap(_.value)
+          id <- idNameFromUser(u)
         } yield Seq(id, u.name.getOrElse(""))
       case TargetGroup(id) =>
         for {
@@ -143,21 +151,31 @@ object TaskOutputModel {
       task <- rTask
       approved <- a ask Permissions.EditTask(task.itself)
       output <- TaskOutputDAO.byTask(task.itself)
-    } yield output
+    } yield {
+      println("FOUND OUTPUT " + output.id.id)
+      output
+    }
 
 
     // We don't write a header because we don't know how many columns the "for" or "by" lines should take up.
 
-    def line(tob:TaskOutputBody):Ref[Seq[String]] = tob match {
-      case QuestionnaireTaskOutput(answers) => (answers map {
-        case ShortTextAnswer(q, ans) => ans.getOrElse("")
-        case BooleanAnswer(q, ans) => ans.map(_.toString).getOrElse("")
-      }).itself
-      case c: Critique => for {
-        ofor <- targetAsCsvString(a, c.target)
-        cols <- line(c.task)
-      } yield ofor ++ cols
-      case _ => RefFailed(UserError(s"I don't know how to make a CSV for ${tob.kind}"))
+    def line(tob:TaskOutputBody):Ref[Seq[String]] = {
+
+      println("CALLED FOR " + tob)
+
+      tob match {
+        case QuestionnaireTaskOutput(answers) => (answers map {
+          case ShortTextAnswer(q, ans) => ans.getOrElse("")
+          case BooleanAnswer(q, ans) => ans.map(_.toString).getOrElse("")
+        }).itself
+        case c: Critique => for {
+          ofor <- targetAsCsvString(a, c.target)
+          cols <- line(c.task)
+        } yield ofor ++ cols
+        case VideoTaskOutput(Some(YouTube(id))) => Seq(id).itself
+        case _ => Seq("").itself
+        //case _ => RefFailed(UserError(s"I don't know how to make a CSV for ${tob.kind}"))
+      }
     }
 
 

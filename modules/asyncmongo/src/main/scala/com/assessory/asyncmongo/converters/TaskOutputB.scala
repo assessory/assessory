@@ -2,7 +2,7 @@ package com.assessory.asyncmongo.converters
 
 import com.assessory.api.critique._
 import com.assessory.api.question.QuestionnaireTaskOutput
-import com.assessory.api.video.{VideoResource, YouTube, VideoTaskOutput}
+import com.assessory.api.video._
 import com.wbillingsley.handy.Id
 import com.wbillingsley.handy.appbase.{User, Group, Course}
 import com.assessory.api._
@@ -55,21 +55,27 @@ object TaskOutputBodyB {
         Document("kind" -> "Video",
           "video" -> v.video.map({ v => VideoResourceB.write(v) })
         )
+      case m:MessageTaskOutput => MessageTaskOutputBodyB.write(m)
+      case c:CompositeTaskOutput => CompositeTaskOutputBodyB.write(c)
+      case s:SmallFileTaskOutput => SmallFileTaskOutputBodyB.write(s)
     }
   }
 
-  def read(doc: Document): Try[TaskOutputBody] = Try {
+  def read(doc: Document): Try[TaskOutputBody] = {
     doc[BsonString]("kind").getValue match {
-      case "Critique" => Critique(
+      case "Critique" => Try { Critique(
         target = TargetB.read(Document(doc[BsonDocument]("target"))).get,
         task = read(Document(doc[BsonDocument]("task"))).get
-      )
-      case "Questionnaire" => QuestionnaireTaskOutput(
+      ) }
+      case "Questionnaire" => Try { QuestionnaireTaskOutput(
         answers = doc[BsonArray]("answers").getValues.asScala.map({ case x => AnswerB.read(Document(x.asDocument())).get })
-      )
-      case "Video" => VideoTaskOutput(
+      ) }
+      case "Video" => Try { VideoTaskOutput(
         video = doc.get[BsonDocument]("video").map({ d => VideoResourceB.read(Document(d)).get })
-      )
+      ) }
+      case "Composite" => CompositeTaskOutputBodyB.read(doc)
+      case "Message" => MessageTaskOutputBodyB.read(doc)
+      case "SmallFile" => SmallFileTaskOutputBodyB.read(doc)
     }
   }
 }
@@ -77,11 +83,51 @@ object TaskOutputBodyB {
 object VideoResourceB {
   def write(i:VideoResource) = i match {
     case YouTube(ytId) => Document("kind" -> "YouTube", "youtubeId" -> ytId)
+    case Kaltura(kId) => Document("kind" -> "Kaltura", "kalturaId" -> kId)
   }
 
   def read(doc:Document): Try[VideoResource] = Try {
     doc[BsonString]("kind").getValue match {
       case "YouTube" => YouTube(doc[BsonString]("youtubeId"))
+      case "Kaltura" => Kaltura(doc[BsonString]("kalturaId"))
     }
+  }
+}
+
+object CompositeTaskOutputBodyB {
+  def write(c: CompositeTaskOutput):Document = {
+    Document("kind" -> "Composite", "outputs" -> c.outputs.map(TaskOutputBodyB.write))
+  }
+
+  def read(doc:Document): Try[CompositeTaskOutput] = Try {
+    CompositeTaskOutput(
+      outputs = doc[BsonArray]("outputs").getValues.asScala.map({ d => TaskOutputBodyB.read(Document(d.asDocument())).get })
+    )
+  }
+}
+
+
+object MessageTaskOutputBodyB {
+  def write(c: MessageTaskOutput):Document = {
+    Document("kind" -> "Message", "text" -> c.text)
+  }
+
+  def read(doc:Document): Try[MessageTaskOutput] = Try {
+    MessageTaskOutput(
+      text = doc[BsonString]("text")
+    )
+  }
+}
+
+
+object SmallFileTaskOutputBodyB {
+  def write(c: SmallFileTaskOutput):Document = {
+    Document("kind" -> "SmallFile", "fileId" -> IdB.write(c.file))
+  }
+
+  def read(doc:Document): Try[SmallFileTaskOutput] = Try {
+    SmallFileTaskOutput(
+      file = doc.get[BsonObjectId]("fileId")
+    )
   }
 }

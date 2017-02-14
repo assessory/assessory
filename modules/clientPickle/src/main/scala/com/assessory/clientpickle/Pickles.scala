@@ -2,7 +2,7 @@ package com.assessory.clientpickle
 
 import com.assessory.api.critique._
 import com.assessory.api._
-import com.assessory.api.video.{VideoResource, VideoTaskOutput, VideoTask}
+import com.assessory.api.video._
 import question._
 import com.wbillingsley.handy.appbase.{Used, IdentityLookup, CourseRole, Course}
 import com.wbillingsley.handy.{Ids, Id}
@@ -29,22 +29,30 @@ object Pickles {
   val questionWriter:upickle.default.Writer[Question] = upickle.default.Writer {
     case st:ShortTextQuestion => upickle.default.writeJs(KindedQuestion("Short Text", st))
     case q:BooleanQuestion => upickle.default.writeJs(KindedQuestion("Boolean", q))
+    case q:VideoQuestion => upickle.default.writeJs(KindedQuestion("Video", q))
+    case q:FileQuestion => upickle.default.writeJs(KindedQuestion("File", q))
   }
   val questionReader:upickle.default.Reader[Question] = upickle.default.Reader {
     case o:Js.Obj => o("kind") match {
       case Js.Str("Short Text") => upickle.default.readJs[KindedQuestion[ShortTextQuestion]](o).q
       case Js.Str("Boolean") => upickle.default.readJs[KindedQuestion[BooleanQuestion]](o).q
+      case Js.Str("Video") => upickle.default.readJs[KindedQuestion[VideoQuestion]](o).q
+      case Js.Str("SmallFile") => upickle.default.readJs[KindedQuestion[FileQuestion]](o).q
     }
   }
 
-  val answerWriter:upickle.default.Writer[Answer] = upickle.default.Writer {
+  implicit val answerWriter:upickle.default.Writer[Answer] = upickle.default.Writer {
     case st:ShortTextAnswer => upickle.default.writeJs(KindedAnswer("Short Text", st))
     case q:BooleanAnswer => upickle.default.writeJs(KindedAnswer("Boolean", q))
+    case q:VideoAnswer => upickle.default.writeJs(KindedAnswer("Video", q))
+    case q:FileAnswer => upickle.default.writeJs(KindedAnswer("File", q))
   }
   val answerReader:upickle.default.Reader[Answer]  = upickle.default.Reader {
     case o:Js.Obj => o("kind") match {
       case Js.Str("Short Text") => upickle.default.readJs[KindedAnswer[ShortTextAnswer]](o).ans
       case Js.Str("Boolean") => upickle.default.readJs[KindedAnswer[BooleanAnswer]](o).ans
+      case Js.Str("Video") => upickle.default.readJs[KindedAnswer[VideoAnswer]](o).ans
+      case Js.Str("SmallFile") => upickle.default.readJs[KindedAnswer[FileAnswer]](o).ans
     }
   }
 
@@ -57,6 +65,9 @@ object Pickles {
     case q:QuestionnaireTask => upickle.default.writeJs(KindedTaskBody(q.kind, q))
     case v:VideoTask => upickle.default.writeJs(KindedTaskBody("Video", v))
     case EmptyTaskBody => upickle.default.writeJs(KindedTaskBody("Empty", EmptyTaskBody))
+    case m:MessageTask => upickle.default.writeJs(KindedTaskBody("Message", m))
+    case f:SmallFileTask => upickle.default.writeJs(KindedTaskBody("SmallFile", f))
+    case c:CompositeTask => upickle.default.writeJs(KindedTaskBody("Composite", c))
   }
   implicit val taskBodyReader:upickle.default.Reader[TaskBody] = upickle.default.Reader[TaskBody] {
     case o:Js.Obj =>
@@ -68,6 +79,9 @@ object Pickles {
         case Js.Str("Questionnaire") => upickle.default.readJs[KindedTaskBody[QuestionnaireTask]](o).taskBody
         case Js.Str("Video") => upickle.default.readJs[KindedTaskBody[VideoTask]](o).taskBody
         case Js.Str("Empty") => EmptyTaskBody
+        case Js.Str("SmallFile") => upickle.default.readJs[KindedTaskBody[SmallFileTask]](o).taskBody
+        case Js.Str("Message") => upickle.default.readJs[KindedTaskBody[MessageTask]](o).taskBody
+        case Js.Str("Composite") => upickle.default.readJs[KindedTaskBody[CompositeTask]](o).taskBody
       }
   }
 

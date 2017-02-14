@@ -47,6 +47,8 @@ case class TaskDetails (
 
   published: Due = NoDue,
 
+  restrictions: Seq[TaskRule] = Seq.empty,
+
   open: Due = NoDue,
 
   due: Due = NoDue,
@@ -54,6 +56,9 @@ case class TaskDetails (
   closed: Due = NoDue
 
 )
+
+sealed trait TaskRule
+case class MustHaveFinished(task: Id[Task, String]) extends TaskRule
 
 
 

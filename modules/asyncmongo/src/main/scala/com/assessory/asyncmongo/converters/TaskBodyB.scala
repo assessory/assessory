@@ -2,7 +2,7 @@ package com.assessory.asyncmongo.converters
 
 
 import com.assessory.api.question.QuestionnaireTask
-import com.assessory.api.video.VideoTask
+import com.assessory.api.video.{SmallFileTask, MessageTask, CompositeTask, VideoTask}
 import com.wbillingsley.handy.Id
 import com.wbillingsley.handy.appbase.{GroupSet}
 import com.assessory.api._
@@ -19,6 +19,9 @@ object TaskBodyB {
     case c:CritiqueTask => CritiqueTaskB.write(c)
     case q:QuestionnaireTask => QuestionnaireTaskB.write(q)
     case v:VideoTask => VideoTaskB.write(v)
+    case m:MessageTask => MessageTaskB.write(m)
+    case c:CompositeTask => CompositeTaskB.write(c)
+    case s:SmallFileTask => SmallFileTaskB.write(s)
     case EmptyTaskBody => Document("kind" -> "empty")
   }
 
@@ -28,6 +31,9 @@ object TaskBodyB {
       case "Questionnaire" => QuestionnaireTaskB.read(doc)
       case "Video" => VideoTaskB.read(doc)
       case "empty" => Success(EmptyTaskBody)
+      case "Composite" => SmallFileTaskB.read(doc)
+      case "Message" => MessageTaskB.read(doc)
+      case "SmallFile" => SmallFileTaskB.read(doc)
       case k => Failure(new IllegalStateException("Couldn't parse task body with kind " + k))
     }
   }
@@ -72,6 +78,44 @@ object CritiqueTaskB  {
     CritiqueTask(
       strategy = CritTargetStrategyB.read(Document(doc[BsonDocument]("strategy"))).get,
       task = TaskBodyB.read(Document(doc[BsonDocument]("task"))).get
+    )
+  }
+}
+
+object SmallFileTaskB {
+  def write(c: SmallFileTask) = Document(
+    "kind" -> "SmallFile"
+  )
+
+  def read(doc: Document): Try[SmallFileTask] = Try {
+    SmallFileTask(
+    )
+  }
+
+}
+
+object MessageTaskB {
+  def write(c: MessageTask) = Document(
+    "kind" -> "Message",
+    "text" -> c.text
+  )
+
+  def read(doc: Document): Try[MessageTask] = Try {
+    MessageTask(
+      text = doc[BsonString]("text").getValue
+    )
+  }
+}
+
+object CompositeTaskB {
+  def write(c: CompositeTask) = Document(
+    "kind" -> "Composite",
+    "tasks" -> c.tasks.map(TaskBodyB.write)
+  )
+
+  def read(doc: Document): Try[CompositeTask] = Try {
+    CompositeTask(
+      tasks = doc[BsonArray]("tasks").getValues.asScala.map({ case x => TaskBodyB.read(Document(x.asDocument())).get }).toSeq
     )
   }
 }

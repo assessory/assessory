@@ -5,6 +5,7 @@ import com.wbillingsley.handy.Id
 import com.wbillingsley.handy.appbase.{GroupSet, Group, Course}
 import com.assessory.api._
 import org.mongodb.scala.bson._
+import scala.collection.JavaConverters._
 
 import scala.util.{Failure, Try}
 
@@ -34,6 +35,7 @@ object TaskDetailsB {
     "name" -> i.name,
     "description" -> i.description,
     "groupSet" -> IdB.write(i.groupSet),
+    "restrictions" -> i.restrictions.map(TaskRuleB.write),
     "individual" -> i.individual,
     "published" -> DueB.write(i.published),
     "open" -> DueB.write(i.open),
@@ -48,6 +50,7 @@ object TaskDetailsB {
       description = doc.get[BsonString]("description"),
       groupSet = doc.get[BsonObjectId]("groupSet"),
       individual = doc[BsonBoolean]("individual"),
+      restrictions = doc.get[BsonArray]("restrictions").map(_.getValues.asScala.map({ case x => TaskRuleB.read(Document(x.asDocument())).get }).toSeq).getOrElse(Seq.empty),
       published = DueB.read(Document(doc[BsonDocument]("published"))).get,
       open = DueB.read(Document(doc[BsonDocument]("open"))).get,
       due = DueB.read(Document(doc[BsonDocument]("due"))).get,
@@ -57,4 +60,17 @@ object TaskDetailsB {
   }
 }
 
+object TaskRuleB {
+
+  def write(r:TaskRule) = r match {
+    case MustHaveFinished(t) => Document("kind" -> "MustHaveFinished", "task" -> IdB.write(t))
+  }
+
+  def read(doc:Document):Try[TaskRule] = {
+    doc[BsonString]("kind").getValue match {
+      case "MustHaveFinished" => Try { MustHaveFinished(task = doc[BsonObjectId]("task")) }
+    }
+  }
+
+}
 

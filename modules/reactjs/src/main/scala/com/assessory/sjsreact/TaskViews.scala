@@ -1,6 +1,7 @@
 package com.assessory.sjsreact
 
 import com.assessory.api._
+import com.assessory.api.question.{ShortTextAnswer, QuestionnaireTaskOutput}
 import com.assessory.api.video.{YouTube, VideoTaskOutput, VideoTask}
 import com.assessory.sjsreact.video.VideoViews
 import due._
@@ -41,7 +42,6 @@ object TaskViews {
         wp.item.body match {
           case CritiqueTask(a:AllocateStrategy, _) =>
             <.div(
-              <.a(^.href:=s"/api/critique/${wp.item.id.id}/allocations.csv", " allocations.csv "),
               <.a(^.href:=s"/api/task/${wp.item.id.id}/outputs.csv", " outputs.csv ")
             )
           case _ =>
@@ -132,6 +132,7 @@ object TaskViews {
       task.body match {
         case c:CritiqueTask => CritiqueViews.frontTwo(task)
         case v:VideoTask => VideoViews.front(task)
+        case _ => <.div("Oops, we haven't created the view for this task type yet")
       }
     )
     .build
@@ -151,11 +152,24 @@ object TaskViews {
       <.div(
         "This critique is not ready to view yet -- student has created a critique but not yet posted a video ID"
       )
+    case QuestionnaireTaskOutput(answers) =>
+      // FIXME: This is a bit of a hack, just previewing text answers
+      <.div(
+        answers.collect({ case ShortTextAnswer(q, a) => <.div(
+          <.textarea(^.className := "form-control", ^.rows := 7, ^.value := (a.getOrElse(""):String), ^.disabled:=true)
+        )}):_*
+      )
     case _ => <.div(
       <.div("Unrenderable content")
     )
   }
 
+  def preview(taskOutput:TaskOutput, anonymous:Boolean):ReactElement = {
+    if (anonymous) preview(taskOutput.body) else <.div(
+      <.label("by: ", TargetViews.name(taskOutput.by)),
+      preview(taskOutput.body)
+    )
+  }
 
   def preview(toId:Id[TaskOutput,String]):ReactElement = {
     CommonComponent.latchR(TaskOutputService.latch(toId)) { wp => preview(wp.item.body )}

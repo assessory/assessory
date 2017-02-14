@@ -166,8 +166,10 @@ object CritModel {
 
 
   private def blankAnswer(q:Question) = q match {
-    case ShortTextQuestion(id, _, _) => ShortTextAnswer(id, None)
-    case BooleanQuestion(id, _) => BooleanAnswer(id, None)
+    case s:ShortTextQuestion => ShortTextAnswer(s.id, None)
+    case b:BooleanQuestion => BooleanAnswer(b.id, None)
+    case v:VideoQuestion => VideoAnswer(v.id, None)
+    case f:FileQuestion => FileAnswer(f.id, None)
   }
 
   /**

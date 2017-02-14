@@ -45,7 +45,7 @@ lazy val mongo = (project in file("modules/asyncmongo"))
   .settings(commonSettings:_*)
   .settings(
     libraryDependencies ++= Seq(
-      "org.mongodb.scala" %% "mongo-scala-driver" % "1.1.0",
+      "org.mongodb.scala" %% "mongo-scala-driver" % "1.2.1",
       "com.wbillingsley" %% "handy-user" % "0.8.0-SNAPSHOT",
       "com.wbillingsley" %% "handy-play" % "0.8.0-SNAPSHOT"
     )

@@ -1,7 +1,8 @@
 package com.assessory.sjsreact.services
 
 import com.assessory.api.critique.CritAllocation
-import com.assessory.api.{Target, TaskOutput, Task}
+import com.assessory.api.video._
+import com.assessory.api._
 import com.assessory.api.client.WithPerms
 import com.assessory.clientpickle.Pickles._
 import com.assessory.sjsreact.{WebApp, Latched}
@@ -69,5 +70,12 @@ object TaskOutputService {
   def latch(id:Id[TaskOutput,String]):Latched[WithPerms[TaskOutput]] = Latched.lazily(cache.getOrElseUpdate(id.id, loadId(id)))
 
   def future(id:Id[TaskOutput,String]) = cache.getOrElseUpdate(id.id, loadId(id))
+
+  def emptyBodyFor(tb:TaskBody):TaskOutputBody = tb match {
+    case v:VideoTask => VideoTaskOutput(None)
+    case m:MessageTask => MessageTaskOutput(m.text)
+    case f:SmallFileTask => SmallFileTaskOutput(None)
+    case c:CompositeTask => CompositeTaskOutput(c.tasks.map(emptyBodyFor))
+  }
 
 }

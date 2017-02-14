@@ -1,11 +1,14 @@
 package com.assessory.api.question
 
+import com.assessory.api.video.{SmallFile, VideoResource}
 import com.assessory.api.{TaskOutputBody, TaskOutput, TaskBody}
 import com.wbillingsley.handy.{Id, HasStringId}
 
 sealed trait Question extends HasStringId[Question] {
 
   def prompt:String
+
+  def hideInCrit:Boolean
 
 }
 
@@ -24,15 +27,20 @@ case class ShortTextQuestion(
 
   prompt: String,
 
-  maxLength: Option[Int] = None
+  maxLength: Option[Int] = None,
+
+  hideInCrit: Boolean = false
 
 ) extends Question
+
+
 
 
 case class ShortTextAnswer(
   question: Id[Question, String],
 
   var answer: Option[String]
+
 ) extends Answer
 
 
@@ -41,7 +49,9 @@ case class BooleanQuestion(
 
   id:Id[Question,String],
 
-  prompt: String
+  prompt: String,
+
+  hideInCrit: Boolean = true
 
 ) extends Question
 
@@ -52,6 +62,37 @@ case class BooleanAnswer(
   var answer: Option[Boolean]
 ) extends Answer
 
+case class VideoQuestion(
+
+  id:Id[Question,String],
+
+  prompt: String,
+
+  hideInCrit: Boolean = false
+
+) extends Question
+
+case class VideoAnswer(
+  question: Id[Question, String],
+
+  var answer: Option[VideoResource] = None
+) extends Answer
+
+case class FileQuestion(
+
+  id:Id[Question,String],
+
+  prompt: String,
+
+  hideInCrit: Boolean = false
+
+) extends Question
+
+case class FileAnswer(
+  question: Id[Question, String],
+
+  var answer: Option[Id[SmallFile, String]] = None
+) extends Answer
 
 case class QuestionnaireTask(
   questionnaire: Seq[Question]
