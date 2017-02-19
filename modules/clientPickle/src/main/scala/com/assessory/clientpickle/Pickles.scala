@@ -30,7 +30,7 @@ object Pickles {
     case st:ShortTextQuestion => upickle.default.writeJs(KindedQuestion("Short Text", st))
     case q:BooleanQuestion => upickle.default.writeJs(KindedQuestion("Boolean", q))
     case q:VideoQuestion => upickle.default.writeJs(KindedQuestion("Video", q))
-    case q:FileQuestion => upickle.default.writeJs(KindedQuestion("File", q))
+    case q:FileQuestion => upickle.default.writeJs(KindedQuestion("SmallFile", q))
   }
   val questionReader:upickle.default.Reader[Question] = upickle.default.Reader {
     case o:Js.Obj => o("kind") match {
@@ -45,9 +45,9 @@ object Pickles {
     case st:ShortTextAnswer => upickle.default.writeJs(KindedAnswer("Short Text", st))
     case q:BooleanAnswer => upickle.default.writeJs(KindedAnswer("Boolean", q))
     case q:VideoAnswer => upickle.default.writeJs(KindedAnswer("Video", q))
-    case q:FileAnswer => upickle.default.writeJs(KindedAnswer("File", q))
+    case q:FileAnswer => upickle.default.writeJs(KindedAnswer("SmallFile", q))
   }
-  val answerReader:upickle.default.Reader[Answer]  = upickle.default.Reader {
+  implicit val answerReader:upickle.default.Reader[Answer]  = upickle.default.Reader {
     case o:Js.Obj => o("kind") match {
       case Js.Str("Short Text") => upickle.default.readJs[KindedAnswer[ShortTextAnswer]](o).ans
       case Js.Str("Boolean") => upickle.default.readJs[KindedAnswer[BooleanAnswer]](o).ans
@@ -121,6 +121,7 @@ object Pickles {
       used = upickle.default.readJs[Option[Used[Course.Reg]]](o("used"))
     )
   }
+
   implicit val coursePreenrolRowWriter = upickle.default.Writer[Course.PreenrolRow] { case row =>
     Js.Obj(
       "target" -> upickle.default.writeJs(row.target),

@@ -99,6 +99,14 @@ object CourseModel {
     } yield user
   }
 
+  def myRegistrationInCourse(u:Ref[User], c:Ref[Course]):Ref[Course.Reg] = {
+    for {
+      uId <- u.refId
+      cId <- c.refId
+      r <- RegistrationDAO.course.byUserAndTarget(uId, cId)
+    } yield r
+  }
+
   /**
     * Enrols a user into a course with a particular role. Note this has no security check and is not an external API.
     *

@@ -66,6 +66,11 @@ GET     /api/critique/:id/myAllocations            org.assessory.play.controller
 GET     /api/critique/:id/allocations.csv          org.assessory.play.controllers.CritController.allocationsAsCSV(id)
 POST    /api/critique/:taskId/findOrCreateCrit     org.assessory.play.controllers.CritController.findOrCreateCrit(taskId)
 
+# SmallFiles
+POST    /api/smallfiles/:courseId/upload                    org.assessory.play.controllers.SmallFileController.uploadFile(courseId)
+GET     /api/smallfiles/:smallFileId/download     org.assessory.play.controllers.SmallFileController.downloadFile(smallFileId)
+GET     /api/smallfiles/:smallFileId/details      org.assessory.play.controllers.SmallFileController.getDetails(smallFileId)
+
 POST    /api/critique/:id/taskOutputsFor            org.assessory.play.controllers.CritController.taskOutputsFor(id)
 
 # Auth

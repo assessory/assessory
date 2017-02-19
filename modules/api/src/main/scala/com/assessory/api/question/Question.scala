@@ -10,6 +10,8 @@ sealed trait Question extends HasStringId[Question] {
 
   def hideInCrit:Boolean
 
+  def blankAnswer:Answer
+
 }
 
 sealed trait Answer {
@@ -31,7 +33,9 @@ case class ShortTextQuestion(
 
   hideInCrit: Boolean = false
 
-) extends Question
+) extends Question {
+  def blankAnswer = ShortTextAnswer(question=id, answer=None)
+}
 
 
 
@@ -53,7 +57,9 @@ case class BooleanQuestion(
 
   hideInCrit: Boolean = true
 
-) extends Question
+) extends Question {
+  def blankAnswer = BooleanAnswer(question=id, answer=None)
+}
 
 
 case class BooleanAnswer(
@@ -70,7 +76,9 @@ case class VideoQuestion(
 
   hideInCrit: Boolean = false
 
-) extends Question
+) extends Question {
+  def blankAnswer = VideoAnswer(question=id, answer=None)
+}
 
 case class VideoAnswer(
   question: Id[Question, String],
@@ -86,7 +94,9 @@ case class FileQuestion(
 
   hideInCrit: Boolean = false
 
-) extends Question
+) extends Question {
+  def blankAnswer = FileAnswer(question=id, answer=None)
+}
 
 case class FileAnswer(
   question: Id[Question, String],

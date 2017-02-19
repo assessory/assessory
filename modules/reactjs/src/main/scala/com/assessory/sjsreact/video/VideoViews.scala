@@ -1,8 +1,9 @@
 package com.assessory.sjsreact.video
 
+import com.assessory.api.question.{Answer, BooleanAnswer, Question}
 import com.assessory.api.{TargetUser, TaskOutput, Task}
 import com.assessory.api.client.EmailAndPassword
-import com.assessory.api.video.{YouTube, VideoTaskOutput, VideoTask}
+import com.assessory.api.video._
 import com.assessory.sjsreact
 import com.assessory.sjsreact.{CommonComponent, Front, Latched}
 import com.assessory.sjsreact.services.{UserService, TaskOutputService}
@@ -18,6 +19,22 @@ import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 object VideoViews {
+
+  def video(url:String):Option[VideoResource] = {
+    isYouTube(url).orElse({
+      if (url.trim.isEmpty) None else Some(UnrecognisedVideoUrl(url))
+    })
+  }
+
+  /*
+   * If this is a YouTube URL, returns Some(url), else None
+   */
+  def isYouTube(url:String):Option[YouTube] = {
+    val withWWW = "(https\\:\\/\\/www.youtube.com\\/watch\\?v=)([^#\\&\\?]*).*".r
+    val youTudotBe = ".*(youtu.be\\/)([^#\\&\\?]*).*".r
+    withWWW.findFirstMatchIn(url).map(_.group(2))
+      .orElse(youTudotBe.findFirstMatchIn(url).map(_.group(2))).map({ case _ => YouTube(url) })
+  }
 
   def extractYouTubeId(string:String) = {
     val withWWW = "(https\\:\\/\\/www.youtube.com\\/watch\\?v=)([^#\\&\\?]*).*".r
@@ -115,7 +132,6 @@ object VideoViews {
       }
     }
   }
-
 
   val front = ReactComponentB[Task]("critiqueTaskView")
     .initialState_P(task => Latched.lazily{

@@ -1,12 +1,13 @@
 package com.assessory.sjsreact.services
 
 import com.assessory.api.critique.CritAllocation
+import com.assessory.api.question._
 import com.assessory.api.video._
 import com.assessory.api._
 import com.assessory.api.client.WithPerms
 import com.assessory.clientpickle.Pickles._
 import com.assessory.sjsreact.{WebApp, Latched}
-import com.wbillingsley.handy.Id
+import com.wbillingsley.handy.{RefFailed, Id}
 import com.wbillingsley.handy.Id._
 import com.wbillingsley.handy.appbase.Course
 import org.scalajs.dom.ext.Ajax
@@ -76,6 +77,8 @@ object TaskOutputService {
     case m:MessageTask => MessageTaskOutput(m.text)
     case f:SmallFileTask => SmallFileTaskOutput(None)
     case c:CompositeTask => CompositeTaskOutput(c.tasks.map(emptyBodyFor))
+    case q:QuestionnaireTask => QuestionnaireTaskOutput(q.questionnaire.map(_.blankAnswer))
+    case _ => throw new MatchError("Could not create empty task body for " + tb)
   }
 
 }

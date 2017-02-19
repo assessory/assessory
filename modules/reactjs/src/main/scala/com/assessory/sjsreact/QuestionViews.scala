@@ -1,7 +1,13 @@
 package com.assessory.sjsreact
 
 import com.assessory.api.question._
+import com.assessory.api.video.{SmallFile, UnrecognisedVideoUrl, YouTube, VideoTaskOutput}
 import com.assessory.api.{TargetTaskOutput, Task, Target}
+import com.assessory.sjsreact.files.FileViews
+import com.assessory.sjsreact.files.FileViews.SmallFileUploadProps
+import com.assessory.sjsreact.video.VideoViews
+import com.wbillingsley.handy.Id
+import com.wbillingsley.handy.appbase.Course
 import japgolly.scalajs.react.{Callback, ReactEventI, ReactComponentB}
 import japgolly.scalajs.react.vdom.prefix_<^._
 
@@ -92,8 +98,6 @@ object QuestionViews {
     )
   }
 
-
-
   def editBooleanA2(q:Question, a:BooleanAnswer, f: Answer => Callback) = {
     <.div(
         <.label(^.className := "radio-inline", <.input(^.`type` := "radio",
@@ -108,7 +112,64 @@ object QuestionViews {
   }
 
 
-  def editQuestionnaireAs(qt:QuestionnaireTask, qa:QuestionnaireTaskOutput, f: QuestionnaireTaskOutput => Callback) = {
+  def editVideoAnswer(q:Question, a:VideoAnswer, f: Answer => Callback) = {
+
+    def updateVideo(url:String):Callback = {
+      f(a.copy(answer=VideoViews.video(url)))
+    }
+
+    <.div(
+      <.div(
+        a.answer match {
+          case Some(YouTube(ytId)) =>
+            VideoViews.youTubePlayer(VideoViews.extractYouTubeId(ytId))
+          case Some(UnrecognisedVideoUrl(url)) =>
+            <.div("unrecognised video provider")
+          case _ => <.div("No video submitted yet")
+
+        }
+      ),
+      a.answer match {
+        case Some(YouTube(ytId)) =>
+          <.div(
+            <.label("Video share URL"),
+            <.input(^.`type` := "text", ^.value := ytId,
+              ^.onChange ==> { (evt:ReactEventI) => updateVideo(evt.target.value) }
+            )
+          )
+        case Some(UnrecognisedVideoUrl(url)) =>
+          <.div(
+            <.label("Video share URL"),
+            <.input(^.`type` := "text", ^.value := url,
+              ^.onChange ==> { (evt:ReactEventI) => updateVideo(evt.target.value) }
+            )
+          )
+        case _ =>
+          <.div(
+            <.label("Video share URL"),
+            <.input(^.`type` := "text",
+              ^.onChange ==> { (evt:ReactEventI) => updateVideo(evt.target.value) }
+            )
+          )
+        case _ => <.div("Hang on, this reckons you're answering this as something other than a video?")
+      }
+    )
+  }
+
+
+  def editFileAnswer(c:Id[Course, String], q:Question, a:FileAnswer, f: Answer => Callback) = {
+    <.div(
+      FileViews.smallFileUploadWidget(SmallFileUploadProps(
+        c,
+        a.answer,
+        (oId:Option[Id[SmallFile, String]]) => f(a.copy(answer = oId)).runNow() // TODO: and save!
+      ))
+    )
+  }
+
+
+
+  def editQuestionnaireAs(task:Task, qt:QuestionnaireTask, qa:QuestionnaireTaskOutput, f: QuestionnaireTaskOutput => Callback) = {
 
     def subbing[T](i: Int, a: Answer) = {
       val patched = qa.answers.patch(i, Seq(a), 1)
@@ -121,6 +182,12 @@ object QuestionViews {
           <.div(^.className := "form-group", <.label(qt.questionMap.apply(a.question).prompt), editShortTextA2(qt.questionMap(a.question), a, subbing(i, _)))
         case (a: BooleanAnswer, i) =>
           <.div(^.className := "form-group", <.label(qt.questionMap.apply(a.question).prompt), editBooleanA2(qt.questionMap(a.question), a, subbing(i, _)))
+        case (a: VideoAnswer, i) =>
+          <.div(^.className := "form-group", <.label(qt.questionMap.apply(a.question).prompt), editVideoAnswer(qt.questionMap(a.question), a, subbing(i, _)))
+        case (a: FileAnswer, i) =>
+          <.div(^.className := "form-group", <.label(qt.questionMap.apply(a.question).prompt), editFileAnswer(task.course, qt.questionMap(a.question), a, subbing(i, _)))
+
+        case _ => <.div("No view yet for " + pair._1)
       }
     )
 

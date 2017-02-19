@@ -84,12 +84,14 @@ object VideoResourceB {
   def write(i:VideoResource) = i match {
     case YouTube(ytId) => Document("kind" -> "YouTube", "youtubeId" -> ytId)
     case Kaltura(kId) => Document("kind" -> "Kaltura", "kalturaId" -> kId)
+    case UnrecognisedVideoUrl(url) => Document("kind" -> "URL", "url" -> url)
   }
 
   def read(doc:Document): Try[VideoResource] = Try {
     doc[BsonString]("kind").getValue match {
       case "YouTube" => YouTube(doc[BsonString]("youtubeId"))
       case "Kaltura" => Kaltura(doc[BsonString]("kalturaId"))
+      case "URL" => UnrecognisedVideoUrl(doc[BsonString]("url"))
     }
   }
 }

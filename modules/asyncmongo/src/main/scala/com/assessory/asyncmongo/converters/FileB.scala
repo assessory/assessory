@@ -25,7 +25,7 @@ object SmallFileB {
     SmallFile(
       id = IdB.read(doc[BsonObjectId]("_id")),
       details = SmallFileDetailsB.read(Document(doc[BsonDocument]("details"))).get,
-      data = doc[BsonBinary]("data").getData
+      data = doc.get[BsonBinary]("data").map(_.getData).getOrElse(Array.empty)
     )
   }
 }

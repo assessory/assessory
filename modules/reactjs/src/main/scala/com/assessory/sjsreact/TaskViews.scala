@@ -1,8 +1,9 @@
 package com.assessory.sjsreact
 
 import com.assessory.api._
-import com.assessory.api.question.{ShortTextAnswer, QuestionnaireTaskOutput}
+import com.assessory.api.question.{QuestionnaireTask, ShortTextAnswer, QuestionnaireTaskOutput}
 import com.assessory.api.video.{YouTube, VideoTaskOutput, VideoTask}
+import com.assessory.sjsreact.taskOutput.QuestionnaireTaskViews
 import com.assessory.sjsreact.video.VideoViews
 import due._
 import com.assessory.api.client.WithPerms
@@ -132,6 +133,7 @@ object TaskViews {
       task.body match {
         case c:CritiqueTask => CritiqueViews.frontTwo(task)
         case v:VideoTask => VideoViews.front(task)
+        case q:QuestionnaireTask => QuestionnaireTaskViews.front(task)
         case _ => <.div("Oops, we haven't created the view for this task type yet")
       }
     )

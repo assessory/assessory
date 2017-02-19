@@ -19,7 +19,8 @@ object SmallFileDAO extends DAO(classOf[SmallFile], "smallFile", SmallFileB.read
 
   def getDetails(i:Id[SmallFile, String]):Ref[SmallFileDetails] = {
     coll.find("_id" $eq IdB.write(i)).projection(Document("details" -> 1)).head.flatMap({ case d =>
-      Future.fromTry(SmallFileDetailsB.read(d))
+      println("reading a doc"  + SmallFileB.read(d))
+      Future.fromTry(SmallFileB.read(d).map(_.details))
     }).toRef
   }
 

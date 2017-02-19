@@ -15,6 +15,7 @@ case class VideoTask(
 sealed trait VideoResource
 case class YouTube(ytId:String) extends VideoResource
 case class Kaltura(kId:String) extends VideoResource
+case class UnrecognisedVideoUrl(url:String) extends VideoResource
 
 case class VideoTaskOutput(video:Option[VideoResource]) extends TaskOutputBody {
   def kind = "Video"

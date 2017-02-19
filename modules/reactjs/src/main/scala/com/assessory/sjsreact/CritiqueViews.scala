@@ -314,7 +314,7 @@ object CritiqueViews {
             )
           case (CritiqueTask(_, qt:QuestionnaireTask), Critique(_, qa:QuestionnaireTaskOutput)) =>
             <.div(
-              QuestionViews.editQuestionnaireAs(qt, qa, body)
+              QuestionViews.editQuestionnaireAs(state.task, qt, qa, body)
             )
           case _ => <.div("Hang on, this reckons you're answering this as something other than a video?")
         },
