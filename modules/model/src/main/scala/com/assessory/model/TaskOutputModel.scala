@@ -105,6 +105,15 @@ object TaskOutputModel {
     } yield wp
   }
 
+  def finalise(a:Approval[User], rTO:Ref[TaskOutput]):Ref[WithPerms[TaskOutput]] = {
+    for {
+      approved <- a ask Permissions.EditOutput(rTO)
+      to <- rTO
+      finalised <- TaskOutputDAO.finalise(to)
+      wp <- withPerms(a, finalised)
+    } yield wp
+  }
+
   def targetAsCsvString(a:Approval[User], t:Target):Ref[Seq[String]] = {
 
     def idNameFromUser(u:User):Option[String] = {

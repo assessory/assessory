@@ -220,7 +220,11 @@ object CritiqueViews {
       !vto.orig.contains(vto.to) && vto.s.isCompleted
     }
 
-    def renderTarget(tob:TaskOutputBody):ReactElement = tob match {
+    def finalisable(vto:CritBackendState) = {
+      vto.to.finalised.isEmpty
+    }
+
+    def renderTarget(task:Task, tob:TaskOutputBody):ReactNode = tob match {
       // TODO: Implement render targets for other kinds of target
       case Critique(TargetTaskOutput(toId), _) => TaskViews.preview(toId)
       case Critique(TargetGroup(gId), _) => GroupViews.groupNameId(gId)
@@ -231,7 +235,7 @@ object CritiqueViews {
       case Critique(_, VideoTaskOutput(v)) => <.div("video")
     }
 
-    def save = $.modState({ latched =>
+    def save:Callback = $.modState({ latched =>
       if (latched.isCompleted) {
         latched.request.value match {
           case Some(Success(vto)) => Latched.lazily(
@@ -251,6 +255,21 @@ object CritiqueViews {
       } else latched
     })
 
+    def finalise():Callback = $.modState({ latched =>
+      if (latched.isCompleted) {
+        latched.request.value match {
+          case Some(Success(vto)) => Latched.lazily(
+            (
+              for {
+                wp <- TaskOutputService.finalise(vto.to)
+              } yield CritBackendState(vto.task, Some(wp.item), wp.item, Latched.immediate("Finalised"))
+              ) recover {
+              case e:Exception => CritBackendState(vto.task, vto.orig, vto.to, Latched.immediate("Failed to save: " + e.getMessage))
+            }
+          )
+        }
+      } else latched
+    })
 
     def stateFromProps(p:(Task,Id[TaskOutput, String])) = $.modState { s => s.request.value match {
       case Some(Success(CritBackendState(_, _, TaskOutput(id, _, _, _, _, _, _, _), _))) if id == p._2 => s
@@ -291,8 +310,12 @@ object CritiqueViews {
 
     def render(lState:Latched[CritBackendState]) = CommonComponent.latchR(lState) { state =>
       <.div(
-        <.h3("What you are critiquing:"),
-        renderTarget(state.to.body),
+        <.div(^.cls := "panel panel-default",
+          <.div(^.cls := "panel-heading", "What you are critiquing:"),
+          <.div(^.cls := "panel-body",
+            renderTarget(state.task, state.to.body)
+          )
+        ),
 
         <.h3("Your critique"),
         state.orig.map(_.body) match {
@@ -314,14 +337,17 @@ object CritiqueViews {
             )
           case (CritiqueTask(_, qt:QuestionnaireTask), Critique(_, qa:QuestionnaireTaskOutput)) =>
             <.div(
-              QuestionViews.editQuestionnaireAs(state.task, qt, qa, body)
+              QuestionViews.editQuestionnaireAs(state.task, qt, qa, body, () => save)
             )
           case _ => <.div("Hang on, this reckons you're answering this as something other than a video?")
         },
 
         <.div(^.className := "form-group",
-          <.button(^.className:="btn btn-primary", ^.disabled := !savable(state), ^.onClick --> save, "Save"),
-          CommonComponent.latchedString(state.s)
+          <.button(^.className:="btn btn-primary", ^.disabled := !savable(state), ^.onClick --> save, "Save"), " ",
+          <.button(^.className:="btn btn-default", ^.disabled := !finalisable(state), ^.onClick --> finalise(), "Finalise"),
+          <.div(^.cls := "text-info",
+            CommonComponent.latchedString(state.s)
+          )
         )
       )
     }

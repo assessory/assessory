@@ -8,15 +8,42 @@ import com.wbillingsley.handy.Ref._
 import com.wbillingsley.handy.Id._
 import com.wbillingsley.handy._
 import com.assessory.asyncmongo._
-import com.wbillingsley.handy.appbase.{GroupSet, User, Course}
+import com.wbillingsley.handy.appbase.{UserError, GroupSet, User, Course}
 
 object TaskModel {
+
+
+  def checkRestriction(a:Approval[User], rule:TaskRule):Ref[Approved] = rule match {
+    case MustHaveFinished(taskId) => for {
+      otherTask <- taskId.lazily
+      otherTaskName = otherTask.details.name.getOrElse("a previous task")
+      to <- TaskOutputModel.myOutputs(a, otherTask.itself).withFilter(_.finalised.nonEmpty).first orIfNone Refused(s"You need to finalise $otherTaskName")
+    } yield Approved("Condition met")
+  }
+
+  def checkRestrictions(a:Approval[User], t:Task):Ref[Approved] = {
+    t.details.restrictions.foldLeft[Ref[Approved]](Approved("So far so good").itself) { case (rA, rule) =>
+      for {
+        approved <- rA
+        checkNext <- checkRestriction(a, rule)
+      } yield checkNext
+    }
+  }
+
+  val CompleteTask = Perm.onId[User, Task, String] { case (prior, task) =>
+    for (
+      t <- task;
+      a <- prior ask Permissions.ViewTask(t.itself);
+      due <- Permissions.isOpen(prior, t).withFilter({b:Boolean => b}) orIfNone UserError("This task is closed");
+      restrictions <- checkRestrictions(prior, t)
+    ) yield a
+  }
 
 
   def withPerms(a:Approval[User], t:Task) = {
     for {
       edit <- a.askBoolean(Permissions.EditTask(t.itself))
-      complete <- a.askBoolean(Permissions.CompleteTask(t.itself))
+      complete <- a.askBoolean(CompleteTask(t.itself))
       view <- a.askBoolean(Permissions.ViewTask(t.itself))
     } yield {
       WithPerms(

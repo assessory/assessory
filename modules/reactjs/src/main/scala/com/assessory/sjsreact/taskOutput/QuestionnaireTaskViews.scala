@@ -51,6 +51,11 @@ object QuestionnaireTaskViews {
       !vto.orig.contains(vto.to) && vto.s.isCompleted
     }
 
+    def finalisable(vto:QTOState) = {
+      vto.to.finalised.isEmpty
+    }
+
+
     def update(body: TaskOutputBody):Callback = { $.modState({ latched =>
       if (latched.isCompleted) {
         latched.request.value match {
@@ -62,7 +67,7 @@ object QuestionnaireTaskViews {
       } else latched
     })}
 
-    def save = $.modState({ latched =>
+    def save(finalise:Boolean = false) = $.modState({ latched =>
       if (latched.isCompleted) {
         latched.request.value match {
           case Some(Success(vto)) => Latched.lazily(
@@ -82,19 +87,38 @@ object QuestionnaireTaskViews {
       } else latched
     })
 
+    def finalise() = $.modState({ latched =>
+      if (latched.isCompleted) {
+        latched.request.value match {
+          case Some(Success(vto)) => Latched.lazily(
+            (
+              for {
+                wp <- TaskOutputService.finalise(vto.to)
+              } yield QTOState(vto.task, Some(wp.item), wp.item, Latched.immediate("Finalised"))
+            ) recover {
+              case e:Exception => QTOState(vto.task, vto.orig, vto.to, Latched.immediate("Failed to finalise: " + e.getMessage))
+            }
+          )
+        }
+      } else latched
+    })
+
     def render(state:Latched[QTOState]) = {
       CommonComponent.latchR(state) { vto =>
         <.div(
           (vto.task.body, vto.to.body) match {
-            case (q:QuestionnaireTask, qto:QuestionnaireTaskOutput) => QuestionViews.editQuestionnaireAs(vto.task, q, qto, update)
+            case (q:QuestionnaireTask, qto:QuestionnaireTaskOutput) => QuestionViews.editQuestionnaireAs(vto.task, q, qto, update, () => save(false))
             case _ => <.div(
               "Not quite sure how to render that now"
 
             )
           },
           <.div(^.className := "form-group",
-            <.button(^.className:="btn btn-primary", ^.disabled := !savable(vto), ^.onClick --> save, "Save"),
-            CommonComponent.latchedString(vto.s)
+            <.button(^.className:="btn btn-primary", ^.disabled := !savable(vto), ^.onClick --> save(false), "Save"), " ",
+            <.button(^.className:="btn btn-default", ^.disabled := !finalisable(vto), ^.onClick --> finalise(), "Finalise"),
+            <.div(^.cls := "text-info",
+              CommonComponent.latchedString(vto.s)
+            )
           )
         )
 

@@ -54,6 +54,12 @@ object TaskOutputService {
     fto
   }
 
+  def finalise(to:TaskOutput) = {
+    val fto = Ajax.post(s"/api/taskoutput/${to.id.id}/finalise", upickle.default.write(to), headers=AJAX_HEADERS).responseText.map(upickle.default.read[WithPerms[TaskOutput]])
+    cache.put(to.id.id, fto)
+    fto
+  }
+
   def createNew(to:TaskOutput) = {
     val fto = Ajax.post(s"/api/task/${to.task.id}/newOutput", upickle.default.write(to), headers=AJAX_HEADERS).responseText.map(upickle.default.read[WithPerms[TaskOutput]])
     cache.put(to.id.id, fto)

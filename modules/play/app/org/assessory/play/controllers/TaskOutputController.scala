@@ -99,6 +99,10 @@ class TaskOutputController extends Controller {
     wp
   }
 
+  def finalise(id:String) = UserAction.async { implicit request =>
+    TaskOutputModel.finalise(request.approval, id.asId[TaskOutput].lazily)
+  }
+
   /** Fetches allocations as a CSV. */
   def outputsAsCSV(taskId:String) = UserAction.async { implicit request =>
     val lines = TaskOutputModel.asCsv(

@@ -57,6 +57,7 @@ POST    /api/task/:id/body                  org.assessory.play.controllers.TaskC
 # Task Output
 GET     /api/taskoutput/:toId               org.assessory.play.controllers.TaskOutputController.get(toId)
 POST    /api/taskoutput/:toId               org.assessory.play.controllers.TaskOutputController.updateBody(toId)
+POST    /api/taskoutput/:toId/finalise      org.assessory.play.controllers.TaskOutputController.finalise(toId)
 POST    /api/task/:taskId/newOutput         org.assessory.play.controllers.TaskOutputController.create(taskId)
 GET     /api/task/:taskId/myOutputs         org.assessory.play.controllers.TaskOutputController.myOutputs(taskId)
 GET     /api/task/:id/outputs.csv           org.assessory.play.controllers.TaskOutputController.outputsAsCSV(id)

@@ -1,14 +1,15 @@
 package com.assessory.sjsreact
 
 import com.assessory.api.question._
-import com.assessory.api.video.{SmallFile, UnrecognisedVideoUrl, YouTube, VideoTaskOutput}
+import com.assessory.api.video._
 import com.assessory.api.{TargetTaskOutput, Task, Target}
 import com.assessory.sjsreact.files.FileViews
 import com.assessory.sjsreact.files.FileViews.SmallFileUploadProps
+import com.assessory.sjsreact.services.FileService
 import com.assessory.sjsreact.video.VideoViews
 import com.wbillingsley.handy.Id
 import com.wbillingsley.handy.appbase.Course
-import japgolly.scalajs.react.{Callback, ReactEventI, ReactComponentB}
+import japgolly.scalajs.react.{ReactNode, Callback, ReactEventI, ReactComponentB}
 import japgolly.scalajs.react.vdom.prefix_<^._
 
 object QuestionViews {
@@ -83,6 +84,9 @@ object QuestionViews {
       for (pair <- seq) yield pair match {
         case (q:ShortTextQuestion, a:ShortTextAnswer) => <.div(^.className:="form-group", <.label(q.prompt), viewShortTextA((q,a)))
         case (q:BooleanQuestion, a:BooleanAnswer) => <.div(^.className:="form-group", <.label(q.prompt), viewBooleanA((q,a)))
+        case (q:VideoQuestion, a:VideoAnswer) => <.div(viewVideoAnswer(q, a))
+        case (q:FileQuestion, a:FileAnswer) => <.div(viewFileAnswer(q, a))
+        case x => <.div("could not render", x.toString)
       }
     )
   }).build
@@ -112,6 +116,14 @@ object QuestionViews {
   }
 
 
+  def viewVideoAnswer(q:VideoQuestion, a:VideoAnswer):ReactNode = {
+    a.answer match {
+      case Some(vr) =>
+        VideoViews.player(vr)
+      case _ => <.div("No video submitted yet")
+    }
+  }
+
   def editVideoAnswer(q:Question, a:VideoAnswer, f: Answer => Callback) = {
 
     def updateVideo(url:String):Callback = {
@@ -121,32 +133,36 @@ object QuestionViews {
     <.div(
       <.div(
         a.answer match {
-          case Some(YouTube(ytId)) =>
-            VideoViews.youTubePlayer(VideoViews.extractYouTubeId(ytId))
-          case Some(UnrecognisedVideoUrl(url)) =>
-            <.div("unrecognised video provider")
+          case Some(vr) =>
+            VideoViews.player(vr)
           case _ => <.div("No video submitted yet")
-
         }
       ),
       a.answer match {
         case Some(YouTube(ytId)) =>
           <.div(
-            <.label("Video share URL"),
+            <.label("Video URL "),
+            <.input(^.`type` := "text", ^.value := ytId,
+              ^.onChange ==> { (evt:ReactEventI) => updateVideo(evt.target.value) }
+            )
+          )
+        case Some(Kaltura(ytId)) =>
+          <.div(
+            <.label("Video URL "),
             <.input(^.`type` := "text", ^.value := ytId,
               ^.onChange ==> { (evt:ReactEventI) => updateVideo(evt.target.value) }
             )
           )
         case Some(UnrecognisedVideoUrl(url)) =>
           <.div(
-            <.label("Video share URL"),
+            <.label("Video URL "),
             <.input(^.`type` := "text", ^.value := url,
               ^.onChange ==> { (evt:ReactEventI) => updateVideo(evt.target.value) }
             )
           )
         case _ =>
           <.div(
-            <.label("Video share URL"),
+            <.label("Video URL"),
             <.input(^.`type` := "text",
               ^.onChange ==> { (evt:ReactEventI) => updateVideo(evt.target.value) }
             )
@@ -156,20 +172,29 @@ object QuestionViews {
     )
   }
 
+  def viewFileAnswer(q:FileQuestion, a:FileAnswer):ReactNode = {
+    a.answer match {
+      case Some(f) => FileViews.fileLink(f)
+      case None => <.div("No file uploaded")
+    }
+  }
 
-  def editFileAnswer(c:Id[Course, String], q:Question, a:FileAnswer, f: Answer => Callback) = {
+  def editFileAnswer(c:Id[Course, String], q:Question, a:FileAnswer, f: Answer => Callback, autosave: () => Callback) = {
     <.div(
       FileViews.smallFileUploadWidget(SmallFileUploadProps(
         c,
         a.answer,
-        (oId:Option[Id[SmallFile, String]]) => f(a.copy(answer = oId)).runNow() // TODO: and save!
+        (oId:Option[Id[SmallFile, String]]) => {
+          f(a.copy(answer = oId)).runNow()
+          autosave().runNow()
+        }
       ))
     )
   }
 
 
 
-  def editQuestionnaireAs(task:Task, qt:QuestionnaireTask, qa:QuestionnaireTaskOutput, f: QuestionnaireTaskOutput => Callback) = {
+  def editQuestionnaireAs(task:Task, qt:QuestionnaireTask, qa:QuestionnaireTaskOutput, f: QuestionnaireTaskOutput => Callback, autosave: () => Callback) = {
 
     def subbing[T](i: Int, a: Answer) = {
       val patched = qa.answers.patch(i, Seq(a), 1)
@@ -185,7 +210,7 @@ object QuestionViews {
         case (a: VideoAnswer, i) =>
           <.div(^.className := "form-group", <.label(qt.questionMap.apply(a.question).prompt), editVideoAnswer(qt.questionMap(a.question), a, subbing(i, _)))
         case (a: FileAnswer, i) =>
-          <.div(^.className := "form-group", <.label(qt.questionMap.apply(a.question).prompt), editFileAnswer(task.course, qt.questionMap(a.question), a, subbing(i, _)))
+          <.div(^.className := "form-group", <.label(qt.questionMap.apply(a.question).prompt), editFileAnswer(task.course, qt.questionMap(a.question), a, subbing(i, _), autosave))
 
         case _ => <.div("No view yet for " + pair._1)
       }

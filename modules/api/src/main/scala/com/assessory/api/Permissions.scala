@@ -64,15 +64,6 @@ object Permissions {
     ) yield a
   }
 
-  val CompleteTask = Perm.onId[User, Task, String] { case (prior, task) =>
-    for (
-      t <- task;
-      a <- prior ask ViewTask(t.itself);
-      due <- isOpen(prior, t).withFilter({b:Boolean => b}) orIfNone UserError("This task is closed")
-    ) yield a
-  }
-
-
   val EditTask = Perm.onId[User, Task, String] { case (prior, task) =>
     for (
         t <- task;

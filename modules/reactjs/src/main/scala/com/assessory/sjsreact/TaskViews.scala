@@ -12,7 +12,7 @@ import com.assessory.sjsreact.services.{TaskOutputService, CourseService, TaskSe
 import com.wbillingsley.handy.Id
 import com.wbillingsley.handy.Ids._
 import com.wbillingsley.handy.appbase.{Group, Course}
-import japgolly.scalajs.react.{ReactElement, ReactComponentB}
+import japgolly.scalajs.react.{ReactNode, ReactElement, ReactComponentB}
 import japgolly.scalajs.react.vdom.prefix_<^._
 
 import scala.scalajs.js.Date
@@ -144,37 +144,46 @@ object TaskViews {
     * Shows a preview of a task output
     * FIXME: Currently only matches videos
     */
-  def preview(body:TaskOutputBody):ReactElement = body match {
-    case Critique(_, task) => preview(task)
-    case VideoTaskOutput(Some(YouTube(ytId))) =>
-      <.div(
-        VideoViews.youTubePlayer(ytId)
-      )
-    case VideoTaskOutput(None) =>
-      <.div(
+  def preview(taskBody:TaskBody, toBody:TaskOutputBody):ReactElement = (taskBody, toBody) match {
+    case (ct:CritiqueTask, c:Critique) => preview(ct.task, c.task)
+    case (vt:VideoTask, vto:VideoTaskOutput) => vto.video match {
+      case Some(YouTube(ytId)) =>
+        <.div(
+          VideoViews.youTubePlayer(ytId)
+        )
+      case None => <.div(
         "This critique is not ready to view yet -- student has created a critique but not yet posted a video ID"
       )
-    case QuestionnaireTaskOutput(answers) =>
-      // FIXME: This is a bit of a hack, just previewing text answers
-      <.div(
-        answers.collect({ case ShortTextAnswer(q, a) => <.div(
-          <.textarea(^.className := "form-control", ^.rows := 7, ^.value := (a.getOrElse(""):String), ^.disabled:=true)
-        )}):_*
+      case x => <.div(
+        "Unrenderable preview: ", x.toString
       )
+    }
+    case (qt:QuestionnaireTask, qto:QuestionnaireTaskOutput) =>
+      val pairs = qto.answers.map({ a =>
+        val q = qt.questionMap(a.question)
+        (q, a)
+      }).filter(!_._1.hideInCrit)
+
+      QuestionViews.viewQuestionnaireAnswers(pairs)
     case _ => <.div(
       <.div("Unrenderable content")
     )
   }
 
-  def preview(taskOutput:TaskOutput, anonymous:Boolean):ReactElement = {
-    if (anonymous) preview(taskOutput.body) else <.div(
+  def preview(task:Task, taskOutput:TaskOutput, anonymous:Boolean):ReactElement = {
+    if (anonymous) preview(task.body, taskOutput.body) else <.div(
       <.label("by: ", TargetViews.name(taskOutput.by)),
-      preview(taskOutput.body)
+      preview(task.body, taskOutput.body)
     )
   }
 
-  def preview(toId:Id[TaskOutput,String]):ReactElement = {
-    CommonComponent.latchR(TaskOutputService.latch(toId)) { wp => preview(wp.item.body )}
+  def preview(toId:Id[TaskOutput,String]):ReactNode = {
+    CommonComponent.futureNode {
+      for {
+        wpTO <- TaskOutputService.future(toId)
+        wpT <- TaskService.latch(wpTO.item.task).request
+      } yield preview(wpT.item.body, wpTO.item.body)
+    }
   }
 }
 

@@ -13,6 +13,25 @@ import scala.util.{Failure, Success}
 
 object FileViews {
 
+  def sizeString(bytes:Long) = {
+    if (bytes > 1000000000) f"${bytes/1000000000.0}%3.0f" + "GB"
+    else if (bytes > 1000000) f"${bytes/1000000.0}%3.0f" + "MB"
+    else if (bytes > 1000) f"${bytes/1000.0}%3.0f" + "kB"
+    else s"${bytes} bytes"
+  }
+
+
+  def fileLink(id:Id[SmallFile, String]):ReactNode = CommonComponent.latchR(FileService.getDetails(id)) { details:SmallFileDetails =>
+    <.span(
+      <.a(
+        ^.href := FileService.downloadUrl(details.id),
+        details.name,
+        ^.target := "__blank"
+      ),
+      details.size.map(s => s" (${sizeString(s)})")
+    )
+  }
+
 
   sealed trait UploadStatus
   case object Idle extends UploadStatus
@@ -27,7 +46,7 @@ object FileViews {
                                  )
 
   case class SmallFileUploadState(
-                                   props:SmallFileUploadProps,
+                                   initialProps:SmallFileUploadProps,
                                    uploadStatus:UploadStatus,
                                    s:Latched[String]
                                  )
@@ -35,12 +54,8 @@ object FileViews {
 
   class SmallFileUploadBackend($: BackendScope[SmallFileUploadProps, SmallFileUploadState]) {
 
-    def sizeString(bytes:Long) = {
-      if (bytes > 1000000000) f"${bytes/1000000000.0}%3.0f" + "GB"
-      else if (bytes > 1000000) f"${bytes/1000000.0}%3.0f" + "MB"
-      else if (bytes > 1000) f"${bytes/1000.0}%3.0f" + "kB"
-      else s"${bytes} bytes"
-    }
+    val maxFileSize = 10 * 1024 * 1024
+
 
     def updateProgress(sent:Long, ofTotal:Long):Unit = {
       $.modState { state =>
@@ -54,7 +69,12 @@ object FileViews {
     def chooseFile(file:Option[org.scalajs.dom.raw.File]):Callback = {
       $.modState({ state =>
         file match {
-          case Some(f) => state.copy(uploadStatus=ReadyToUpload(f))
+          case Some(f) =>
+            if (f.size > maxFileSize) {
+              state.copy(uploadStatus=CannotUpload(f, s"File is too large -- ${sizeString(f.size)} is bigger than max of ${sizeString(maxFileSize)}"))
+            } else{
+              state.copy(uploadStatus=ReadyToUpload(f))
+            }
           case None => state.copy(uploadStatus=Idle)
         }
       })
@@ -76,10 +96,10 @@ object FileViews {
         state.uploadStatus match {
           case ReadyToUpload(f) => {
             val s = state.copy(uploadStatus = Uploading(f, 0, f.size))
-            FileService.uploadFile(state.props.course, f, { (s, t) => updateProgress(s, t) }).onComplete({
+            FileService.uploadFile(state.initialProps.course, f, { (s, t) => updateProgress(s, t) }).onComplete({
               case Success(details) => {
                 complete(details)
-                state.props.action(Some(details.id))
+                state.initialProps.action(Some(details.id))
               }
               case Failure(x) => {
                 uploadFailed(x)
@@ -108,11 +128,12 @@ object FileViews {
 
 
 
-    def render(state:SmallFileUploadState) = {
+    def render(state:SmallFileUploadState, props:SmallFileUploadProps) = {
+
       <.div(
         <.div(
           "File: ",
-          state.props.initial match {
+          props.initial match {
             case None => <.span("nothing uploaded")
             case Some(id) => CommonComponent.latchR(FileService.getDetails(id)) { details:SmallFileDetails =>
               <.span(

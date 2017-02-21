@@ -345,12 +345,12 @@ object CritModel {
     * Allocate me n things to critique, that I didn't write, choosing the ones that have been critiqued the fewest
     * times
     */
-  def allocateMe(by:Target, task:Task, t:TargetType, num:Int):Ref[Seq[Target]] = {
+  def allocateMe(by:Target, task:Task, t:TargetType, num:Int, alreadyDone:Seq[Target]):Ref[Seq[Target]] = {
     t match {
       case TTOutputs(id) =>
         for {
           crits <- TaskOutputDAO.byTask(task.itself).collect
-          outputs = TaskOutputDAO.byTask(id.lazily)
+          outputs = TaskOutputDAO.byTask(id.lazily).withFilter({ case to => to.finalised.nonEmpty && !alreadyDone.contains(TargetTaskOutput(to.id)) })
           toCrit <- filtering[TaskOutput](outputs, { x => isBy(x, by).map(!_) }).collect
         } yield {
           val critCounts = crits.collect(
@@ -364,8 +364,10 @@ object CritModel {
         gs <- gsId.lazily
         crits <- TaskOutputDAO.byTask(task.itself).collect
 
+        groupsRemaining = GroupDAO.bySet(gsId).withFilter({ case t => !alreadyDone.contains(TargetGroup(t.id)) })
+
         // check they are from the same tutorial (if things are divided into tutorials)
-        groups = filtering[Group](GroupDAO.bySet(gsId), { g => parentOk(by, g) })
+        groups = filtering[Group](groupsRemaining, { g => parentOk(by, g) })
 
         // don't allocate a group to be critiqued by itself or one of its users
         toCrit <- filtering[Group](groups, { g => targetIncludes(by, g).map(!_) }).collect
@@ -384,8 +386,10 @@ object CritModel {
     for {
       existing <- TaskOutputDAO.byTaskAndBy(task.id, by).collect
 
+      existingTargets = existing.map(_.body).collect { case ct:Critique => ct.target }
+
       extraTargs <- {
-        if (num - existing.size > 0) allocateMe(by, task, t, num - existing.size) else Seq.empty[Target].itself
+        if (num - existing.size > 0) allocateMe(by, task, t, num - existing.size, existingTargets) else Seq.empty[Target].itself
       }
 
       extraTOs <- (
@@ -456,7 +460,7 @@ object CritModel {
         critTask <- critTaskId.lazily
 
         myTarget <- targetMySource(critTask, u)
-        critiqueMy <- TaskOutputDAO.byTaskAndAttn(critTaskId, myTarget)
+        critiqueMy <- TaskOutputDAO.byTaskAndAttn(critTaskId, myTarget).withFilter(_.finalised.nonEmpty)
         to <- findOrCreateCrit(approval, task.itself, TargetTaskOutput(critiqueMy.id))
       } yield {
         to.item
