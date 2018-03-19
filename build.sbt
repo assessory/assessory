@@ -94,6 +94,21 @@ lazy val play = (project in file("modules/play"))
   .settings(commonSettings:_*)
   .aggregate(sjsProjects.map(sbt.Project.projectToRef):_*)
   .settings(
+    // RPM settings
+    maintainer in Linux := "William Billingsley <wbillingsley@cantab.net>",
+
+    packageSummary in Linux := "Assessory",
+
+    packageDescription := "Social assessment",
+
+    rpmRelease := "1",
+
+    rpmVendor := "assessory.org",
+
+    rpmUrl := Some("https://github.com/assessory/atemporary.git"),
+
+    rpmLicense := Some("MIT Licence"),
+
     libraryDependencies ++= Seq(
       // JavaScript
       ws,
