@@ -242,13 +242,13 @@ object GroupModel {
       reg <- RegistrationDAO.course.register(u.id, set.course, Set(CourseRole.student), EmptyKind)
     } yield u
 
-    // Get a student number from a user
-    def sNum(u:User) = for {
-      i <- u.identities.find(_.service == I_STUDENT_NUMBER)
-      v <- i.value
-    } yield v
+    val rPairs:RefMany[(String, User)] = (for {
+      user <- rUsers
+      identity <- user.identities.toRefMany if identity.service == I_STUDENT_NUMBER
+      value <- identity.value.toRef
+    } yield value -> user)
 
-    val rStudentMap = for (users <- rUsers.collect) yield users.map(u => sNum(u) -> u).toMap
+    val rStudentMap = rPairs.collect.map(_.toMap)
 
     set.parent match {
       case Some(parentGsId) =>
@@ -276,7 +276,8 @@ object GroupModel {
 
           groupMap <- ensureGroups(set, groupNames, Some(parentMap(p).id))
           l <- childLines.toRefMany
-          u = studentMap(studentNum(l))
+          sNum <- studentNum(l).toRef
+          u <- studentMap.get(sNum).toRef
           gn <- groupName(l).toRef
           g = groupMap(gn)
           reg <- RegistrationDAO.group.register(u.id, parentMap(p).id,roles, EmptyKind)
@@ -295,7 +296,8 @@ object GroupModel {
         groupMap <- ensureGroups(set, groupNames, None)
         l <- bodyLines.toRefMany
         gn <- groupName(l).toRef
-        u = studentMap(studentNum(l))
+        sNum <- studentNum(l).toRef
+        u <- studentMap.get(sNum).toRef
         g = groupMap(gn)
         reg <- RegistrationDAO.group.register(u.id, g.id,roles, EmptyKind)
       } yield reg

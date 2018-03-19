@@ -12,7 +12,7 @@ import com.assessory.sjsreact.services.{TaskOutputService, CourseService, TaskSe
 import com.wbillingsley.handy.Id
 import com.wbillingsley.handy.Ids._
 import com.wbillingsley.handy.appbase.{Group, Course}
-import japgolly.scalajs.react.{ReactNode, ReactElement, ReactComponentB}
+import japgolly.scalajs.react.{Callback, ReactNode, ReactElement, ReactComponentB}
 import japgolly.scalajs.react.vdom.prefix_<^._
 
 import scala.scalajs.js.Date
@@ -40,16 +40,9 @@ object TaskViews {
   val taskAdmin = ReactComponentB[WithPerms[Task]]("TaskInfo")
     .render_P { wp =>
       if (wp.perms("edit")) {
-        wp.item.body match {
-          case CritiqueTask(a:AllocateStrategy, _) =>
-            <.div(
-              <.a(^.href:=s"/api/task/${wp.item.id.id}/outputs.csv", " outputs.csv ")
-            )
-          case _ =>
-            <.div(
-              <.a(^.href:=s"/api/task/${wp.item.id.id}/outputs.csv", "outputs.csv")
-            )
-        }
+        <.div(
+          <.a(^.href:= MainRouter.TaskOutputsP.path(wp.item.id), "View submissions")
+        )
       } else <.div()
     }
     .build
@@ -68,11 +61,17 @@ object TaskViews {
         ),
         taskAdmin(wp),
         <.p(task.details.description.getOrElse(""):String),
-        if (wp.perms("edit")) <.div() else <.div(
-          <.div(^.className:="text-info", "opens: ", due(task.details.open)),
-          <.div(^.className:="text-danger", "closes: ", due(task.details.closed)),
-          <.p()
-        )
+        if (wp.perms("edit")) {
+          <.div(
+
+          )
+        } else {
+          <.div(
+            <.div(^.className := "text-info", "opens: ", due(task.details.open)),
+            <.div(^.className := "text-danger", "closes: ", due(task.details.closed)),
+            <.p()
+          )
+        }
       )
     })
     .build
@@ -144,8 +143,24 @@ object TaskViews {
     * Shows a preview of a task output
     * FIXME: Currently only matches videos
     */
-  def preview(taskBody:TaskBody, toBody:TaskOutputBody):ReactElement = (taskBody, toBody) match {
-    case (ct:CritiqueTask, c:Critique) => preview(ct.task, c.task)
+  def preview(taskBody:TaskBody, toBody:TaskOutputBody, incContext:Boolean=false):ReactElement = (taskBody, toBody) match {
+    case (ct:CritiqueTask, c:Critique) => {
+      if (incContext) {
+        <.div(
+          <.div(^.cls := "panel panel-default",
+            <.div(^.cls := "panel-heading", "This is a critique of:"),
+            <.div(^.cls := "panel-body",
+              CritiqueViews.renderCritTarget(c.target)
+            )
+          ),
+          preview(ct.task, c.task)
+        )
+      } else {
+        <.div(
+          preview(ct.task, c.task)
+        )
+      }
+    }
     case (vt:VideoTask, vto:VideoTaskOutput) => vto.video match {
       case Some(YouTube(ytId)) =>
         <.div(
@@ -185,5 +200,104 @@ object TaskViews {
       } yield preview(wpT.item.body, wpTO.item.body)
     }
   }
+
+
+  /*
+   * All outputs, for marking
+   */
+
+  case class Selection[T,C](private var _selected: Option[T], seq:Seq[T], context:C) {
+    def selected_=(o:Option[T]) = {
+      this._selected = o
+      WebApp.rerender()
+    }
+
+    def selected = _selected
+  }
+
+/*
+  val allocationsSwitch = ReactComponentB[Selection[TaskOutput,Task]]("outputSwitch")
+    .render_P { sel =>
+      <.ul(^.className := "nav nav-pills", ^.role := "group",
+        for ((output, idx) <- sel.seq.sortBy(_.by.toString).zipWithIndex) yield {
+          <.li(^.className := (if (sel.selected == Some(output)) "active" else ""), ^.role := "presentation",
+            <.a(^.onClick --> Callback { sel.selected = Some(output) },
+              output.by match {
+                case TargetGroup(g) => GroupViews.groupNameId(g)
+                case TargetUser(u) => idx
+              }
+            )
+          )
+        }
+      )
+    }
+    .build
+    */
+
+  def allocationsSwitch[A,B](sel:Selection[A,B])(f: (A, Int) => ReactNode = { (el:A, idx:Int) => <.span(idx).render }):ReactNode = {
+    <.ul(^.className := "nav nav-pills nav-stacked", ^.role := "group",
+      for ((targ, idx) <- sel.seq.zipWithIndex) yield {
+        <.li(^.className := (if (sel.selected == Some(targ)) "active" else ""), ^.role := "presentation",
+          <.a(^.onClick --> Callback { sel.selected = Some(targ) },
+            f(targ, idx)
+          )
+        )
+      }
+    )
+  }
+
+  val allOutputs = ReactComponentB[Task]("all outputs")
+    .initialState_P(task => Latched.lazily{
+      for {
+        outputs <- TaskOutputService.allOutputs(task.id)
+      } yield new Selection(None, outputs, task)
+    })
+    .render_S({ state =>
+      CommonComponent.latchR(state) { sel =>
+        <.div(^.cls := "row",
+          <.div(^.cls := "col-sm-2",
+            allocationsSwitch(sel)({ case (output, idx) =>
+              output.body match {
+                case ct:Critique => <.span(
+                  <.span(
+                    TargetViews.name(output.by),
+                    " critiques ",
+                    TargetViews.name(ct.target)
+                  )
+                )
+                case _ => <.span(TargetViews.name(output.by))
+              }
+            })
+          ),
+          <.div(^.cls := "col-sm-10",
+            sel.selected match {
+              case Some(target) => preview(sel.context.body, target.body, true)
+              case _ => <.div()
+            }
+          )
+        )
+
+      }
+    })
+    .build
+
+  val aoView = CommonComponent.latchedRender[WithPerms[Task]]("TaskView") { wp =>
+    <.div(
+      Front.siteHeader(""),
+
+      <.div(^.className := "container",
+        CourseViews.courseInfoL(CourseService.latch(wp.item.course)),
+        taskInfo(wp),
+        allOutputs(wp.item)
+      )
+    )
+  }
+
+  val allOutputsFront = ReactComponentB[Id[Task,String]]("TaskFront")
+    .initialState_P(id => TaskService.latch(id))
+    .render_S({ s => aoView(s) })
+    .build
+
+
 }
 

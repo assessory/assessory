@@ -70,6 +70,13 @@ class TaskOutputController extends Controller {
     )
   }
 
+  def allOutputs(taskId:String) = UserAction.async { implicit request =>
+    TaskOutputModel.allOutputs(
+      a = request.approval,
+      rTask = LazyId(taskId).of[Task]
+    )
+  }
+
   def create(taskId:String) = UserAction.async { implicit request =>
     def wp = for {
       text <- request.body.asText.toRef

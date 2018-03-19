@@ -11,8 +11,12 @@ import japgolly.scalajs.react.vdom.prefix_<^._
 object UserViews {
 
   def userNameRef(r:Ref[User]) = CommonComponent.refNode({
-    for { u <- r } yield <.span(u.name.getOrElse("Untitled user"):String)
+    for { u <- r } yield <.span(name(u))
   })
+
+  def name(u:User) = {
+    u.name.orElse(u.pwlogin.email.orElse(u.identities.find(_.username.nonEmpty).flatMap(_.username))).getOrElse("Can't find a name")
+  }
 
   val nameById = ReactComponentB[Id[User,String]]("User name by ID").render_P(id => <.span(userNameRef(UserService.lu.one(id)))).build
 

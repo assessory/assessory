@@ -70,4 +70,8 @@ object UserModel {
     ids.lookUp
   }
 
+  def displayName(u:User):String = {
+    u.name.orElse(u.pwlogin.email.orElse(u.identities.find(_.username.nonEmpty).flatMap(_.username))).getOrElse("Unnamed user")
+  }
+
 }

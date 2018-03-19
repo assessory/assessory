@@ -52,6 +52,14 @@ object MainRouter {
     def path(c:Id[Task,String]) = base + pathRel(c)
   }
 
+  case class TaskOutputsP(id:String)      extends MyPages
+  object TaskOutputsP {
+    implicit def toId(c:TaskOutputsP):Id[Task,String] = Id(c.id)
+    def pathRel(c:Id[Task,String]) = s"task/${c.id}/allOutputs"
+    def path(c:Id[Task,String]) = base + pathRel(c)
+  }
+
+
   case class GroupP(id:String)      extends MyPages
   object GroupP {
     implicit def toId(c:GroupP):Id[Group,String] = Id(c.id)
@@ -67,12 +75,13 @@ object MainRouter {
 
     (
       emptyRule
-      | staticRoute(root, Home) ~> render(Front.front())
-      | staticRoute(LogIn.relpath, LogIn) ~> render(LogInViews.logIn())
-      | staticRoute(SignUp.relpath, SignUp) ~> render(LogInViews.signUp())
-      | staticRoute(CreateCourseP.relPath, CreateCourseP) ~> render(course.CreateCourse.form())
-      | dynamicRouteCT[CourseP]("course" / key.caseClass[CourseP]) ~> dynRender(CourseViews.courseFront(_))
-      | dynamicRouteCT("task" / key.caseClass[TaskP]) ~> dynRender(TaskViews.taskFront(_))
+        | staticRoute(root, Home) ~> render(Front.front())
+        | staticRoute(LogIn.relpath, LogIn) ~> render(LogInViews.logIn())
+        | staticRoute(SignUp.relpath, SignUp) ~> render(LogInViews.signUp())
+        | staticRoute(CreateCourseP.relPath, CreateCourseP) ~> render(course.CreateCourse.form())
+        | dynamicRouteCT[CourseP]("course" / key.caseClass[CourseP]) ~> dynRender(CourseViews.courseFront(_))
+        | dynamicRouteCT("task" / key.caseClass[TaskP]) ~> dynRender(TaskViews.taskFront(_))
+        | dynamicRouteCT("task" / key.caseClass[TaskOutputsP] / "allOutputs") ~> dynRender(TaskViews.allOutputsFront(_))
 
     ).notFound(redirectToPage(Home)(Redirect.Replace))
   }

@@ -212,7 +212,23 @@ object CritiqueViews {
   }
 
 
+  /**
+    * Renders a critique tartget
+    */
+  def renderCritTarget(t:Target):ReactNode = t match {
+    // TODO: Implement render targets for other kinds of target
+    case TargetTaskOutput(toId) => TaskViews.preview(toId)
+    case TargetGroup(gId) => GroupViews.groupNameId(gId)
+    case _ => <.div(^.cls := "alert alert-error", "Unrenderable target")
+  }
+
   case class CritBackendState(task:Task, orig:Option[TaskOutput], to:TaskOutput, s:Latched[String])
+
+  sealed trait Finalisable
+  object IsFinalisable extends Finalisable
+  object UnsavedChanges extends Finalisable
+  object NeverSaved extends Finalisable
+  object AlreadyFinalised extends Finalisable
 
   class CritBackend($: BackendScope[_, Latched[CritBackendState]]) {
 
@@ -221,7 +237,13 @@ object CritiqueViews {
     }
 
     def finalisable(vto:CritBackendState) = {
-      vto.to.finalised.isEmpty
+      if (vto.to.finalised.nonEmpty)
+        AlreadyFinalised
+      else if (vto.to.id.id == "invalid")
+        NeverSaved
+      else if (savable(vto))
+        UnsavedChanges
+      else IsFinalisable
     }
 
     def renderTarget(task:Task, tob:TaskOutputBody):ReactNode = tob match {
@@ -344,7 +366,12 @@ object CritiqueViews {
 
         <.div(^.className := "form-group",
           <.button(^.className:="btn btn-primary", ^.disabled := !savable(state), ^.onClick --> save, "Save"), " ",
-          <.button(^.className:="btn btn-default", ^.disabled := !finalisable(state), ^.onClick --> finalise(), "Finalise"),
+          finalisable(state) match {
+            case IsFinalisable => <.button(^.className:="btn btn-default", ^.onClick --> finalise(), "Finalise")
+            case UnsavedChanges => <.button(^.className:="btn btn-default", ^.disabled := true, "(You have unsaved changes)")
+            case NeverSaved => <.button(^.className:="btn btn-default", ^.disabled := true, "(Needs saving first)")
+            case AlreadyFinalised => <.button(^.className:="btn btn-default", ^.disabled := true, "(Already finalised)")
+          },
           <.div(^.cls := "text-info",
             CommonComponent.latchedString(state.s)
           )

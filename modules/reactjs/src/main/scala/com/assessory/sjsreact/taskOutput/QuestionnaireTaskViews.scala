@@ -45,6 +45,12 @@ object QuestionnaireTaskViews {
 
   case class QTOState(task:Task, orig:Option[TaskOutput], to:TaskOutput, s:Latched[String])
 
+  sealed trait Finalisable
+  object IsFinalisable extends Finalisable
+  object NeverSaved extends Finalisable
+  object UnsavedChanges extends Finalisable
+  object AlreadyFinalised extends Finalisable
+
   class QuestionnaireTaskOutputBackend($: BackendScope[_, Latched[QTOState]]) {
 
     def savable(vto:QTOState) = {
@@ -52,7 +58,13 @@ object QuestionnaireTaskViews {
     }
 
     def finalisable(vto:QTOState) = {
-      vto.to.finalised.isEmpty
+      if (vto.to.finalised.nonEmpty)
+        AlreadyFinalised
+      else if (vto.to.id.id == "invalid")
+        NeverSaved
+      else if (savable(vto))
+        UnsavedChanges
+      else IsFinalisable
     }
 
 
@@ -115,7 +127,12 @@ object QuestionnaireTaskViews {
           },
           <.div(^.className := "form-group",
             <.button(^.className:="btn btn-primary", ^.disabled := !savable(vto), ^.onClick --> save(false), "Save"), " ",
-            <.button(^.className:="btn btn-default", ^.disabled := !finalisable(vto), ^.onClick --> finalise(), "Finalise"),
+            finalisable(vto) match {
+              case IsFinalisable => <.button(^.className:="btn btn-default", ^.onClick --> finalise(), "Finalise")
+              case UnsavedChanges => <.button(^.className:="btn btn-default", ^.disabled := true, "(You have unsaved changes)")
+              case NeverSaved => <.button(^.className:="btn btn-default", ^.disabled := true, "(Needs saving first)")
+              case AlreadyFinalised => <.button(^.className:="btn btn-default", ^.disabled := true, "(Already finalised)")
+            },
             <.div(^.cls := "text-info",
               CommonComponent.latchedString(vto.s)
             )

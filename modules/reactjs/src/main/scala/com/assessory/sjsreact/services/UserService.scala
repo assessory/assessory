@@ -16,7 +16,7 @@ import scala.util.Success
 
 object UserService {
 
-  val cache = mutable.Map.empty[String, Ref[User]]
+  val cache = mutable.Map.empty[String, Latched[User]]
 
   val self = Latched.lazily(
     Ajax.post("/api/self", headers=AJAX_HEADERS).responseText.map(upickle.default.read[User]).optional404
@@ -56,12 +56,12 @@ object UserService {
     }
   }
 
-  def loadId[KK <: String](id:Id[User,KK]) = new RefFutureOption(
-    Ajax.get(s"/api/user/${id.id}", headers=AJAX_HEADERS).responseText.map(upickle.default.read[User]).optional404
+  def loadId[KK <: String](id:Id[User,KK]) = Latched.eagerly(
+    Ajax.get(s"/api/user/${id.id}", headers=AJAX_HEADERS).responseText.map(upickle.default.read[User])
   )
 
   val lu = new LookUp[User, String] {
-    override def one[KK <: String](r: Id[User, KK]): Ref[User] = cache.getOrElseUpdate(r.id, loadId(r))
+    override def one[KK <: String](r: Id[User, KK]): Ref[User] = cache.getOrElseUpdate(r.id, loadId(r)).request
 
     override def many[KK <: String](r: Ids[User, KK]): RefMany[User] = ???
   }

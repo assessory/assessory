@@ -34,6 +34,7 @@ GET     /api/course/:id/autolinks.csv       org.assessory.play.controllers.Cours
 
 # Users
 POST    /api/user/findMany                  org.assessory.play.controllers.UserController.findMany
+GET     /api/user/:id                       org.assessory.play.controllers.UserController.findOne(id)
 
 # Groups
 POST    /api/course/:courseId/group/my      org.assessory.play.controllers.GroupController.myGroupsInCourse(courseId)
@@ -60,6 +61,7 @@ POST    /api/taskoutput/:toId               org.assessory.play.controllers.TaskO
 POST    /api/taskoutput/:toId/finalise      org.assessory.play.controllers.TaskOutputController.finalise(toId)
 POST    /api/task/:taskId/newOutput         org.assessory.play.controllers.TaskOutputController.create(taskId)
 GET     /api/task/:taskId/myOutputs         org.assessory.play.controllers.TaskOutputController.myOutputs(taskId)
+POST    /api/task/:taskId/allOutputs        org.assessory.play.controllers.TaskOutputController.allOutputs(taskId)
 GET     /api/task/:id/outputs.csv           org.assessory.play.controllers.TaskOutputController.outputsAsCSV(id)
 
 # Critiques

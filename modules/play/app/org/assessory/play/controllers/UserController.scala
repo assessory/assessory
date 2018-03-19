@@ -112,4 +112,13 @@ class UserController extends Controller {
     )
   }
 
+  /**
+    * Retrieves and returns many users
+    */
+  def findOne(id:String) = UserAction.async { implicit request =>
+    userToResult(
+      id.asId[User].lazily
+    )
+  }
+
 }
