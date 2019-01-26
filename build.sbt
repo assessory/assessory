@@ -3,6 +3,9 @@
 import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 
 lazy val commonSettings = Seq(
+  // Gets snapshots from first resolver. TODO: Remove
+  updateOptions := updateOptions.value.withLatestSnapshots(false),
+
   scalaVersion := "2.12.8",
   organization := "com.impressory",
   version := "0.3-SNAPSHOT",
@@ -14,8 +17,8 @@ lazy val commonSettings = Seq(
   ),
   libraryDependencies ++= Seq(
     //Handy
-    "org.scalactic" %% "scalactic" % "2.2.6",
-    "org.scalatest" %% "scalatest" % "2.2.6" % "test"
+    "org.scalactic" %% "scalactic" % "3.0.5",
+    "org.scalatest" %% "scalatest" % "3.0.5" % "test"
   )
 
 )
@@ -33,8 +36,8 @@ lazy val api = (crossProject(JSPlatform, JVMPlatform) in file("modules/api"))
   .settings(commonSettings:_*)
   .settings(
     libraryDependencies ++= Seq(
-      "com.wbillingsley" %%% "handy" % "0.8.0-SNAPSHOT",
-      "com.wbillingsley" %%% "handy-appbase" % "0.8.0-SNAPSHOT"
+      "com.wbillingsley" %%% "handy" % "0.9.0-SNAPSHOT",
+      "com.wbillingsley" %%% "handy-appbase" % "0.9.0-SNAPSHOT"
     )
   )
 
@@ -48,8 +51,7 @@ lazy val mongo = (project in file("modules/asyncmongo"))
   .settings(
     libraryDependencies ++= Seq(
       "org.mongodb.scala" %% "mongo-scala-driver" % "1.2.1",
-      "com.wbillingsley" %% "handy-user" % "0.8.0-SNAPSHOT",
-      "com.wbillingsley" %% "handy-play" % "0.8.0-SNAPSHOT"
+      "com.wbillingsley" %% "handy-user" % "0.9.0-SNAPSHOT"
     )
   )
 
@@ -60,7 +62,7 @@ lazy val model = (project in file("modules/model"))
   .settings(
     libraryDependencies ++= Seq(
       "net.sf.opencsv" % "opencsv" % "2.0",
-      "org.specs2" %% "specs2" % "2.3.12" % "test"
+      "org.specs2" %% "specs2-core" % "4.3.4" % "test"
     )
   )
 
@@ -69,8 +71,8 @@ lazy val clientPickle = (crossProject(JSPlatform, JVMPlatform) in file("modules/
   .settings(
     libraryDependencies ++= Seq(
       // Pickling
-      "com.lihaoyi" %%% "upickle" % "0.3.9",
-      "com.github.benhutchison" %%% "prickle" % "1.1.10"
+      "com.lihaoyi" %%% "upickle" % "0.7.1",
+      "com.github.benhutchison" %%% "prickle" % "1.1.13"
     )
   )
   .dependsOn(api)
@@ -113,16 +115,19 @@ lazy val play = (project in file("modules/play"))
     libraryDependencies ++= Seq(
       // JavaScript
       ws,
-      "org.webjars" %% "webjars-play" % "2.4.0-2",
+      "org.webjars" %% "webjars-play" % "2.6.3",
       "org.webjars" % "bootstrap" % "3.1.1-2",
       "org.webjars" % "font-awesome" % "4.5.0",
       "org.webjars" % "marked" % "0.3.2-1"
     ),
 
     scalaJSProjects := sjsProjects,
+    pipelineStages in Assets := Seq(scalaJSPipeline),
     pipelineStages := Seq(scalaJSProd, gzip),
+    // triggers scalaJSPipeline when using compile or continuous compilation
+    compile in Compile := ((compile in Compile) dependsOn scalaJSPipeline).value,
     libraryDependencies ++= Seq(
-      "com.vmunier" %% "play-scalajs-scripts" % "0.4.0"
+      "com.vmunier" %% "scalajs-scripts" % "1.1.2"
     )
   )
   .enablePlugins(PlayScala)
@@ -133,6 +138,6 @@ lazy val cheatScript = project.in(file("modules/cheatScript"))
   .dependsOn(apiJVM, mongo, model)
   .settings(
     libraryDependencies ++= Seq(
-      "org.specs2" %% "specs2" % "2.3.12" % "test"
+      "org.specs2" %% "specs2-core" % "4.3.4" % "test"
     )
   )
