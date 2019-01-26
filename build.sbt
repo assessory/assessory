@@ -32,12 +32,13 @@ scalaVersion := "2.12.8"
 
 version := "1.0.0-SNAPSHOT"
 
-lazy val api = (crossProject(JSPlatform, JVMPlatform) in file("modules/api"))
+lazy val api = (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure) in file("modules/api"))
   .settings(commonSettings:_*)
   .settings(
     libraryDependencies ++= Seq(
       "com.wbillingsley" %%% "handy" % "0.9.0-SNAPSHOT",
-      "com.wbillingsley" %%% "handy-appbase" % "0.9.0-SNAPSHOT"
+      "com.wbillingsley" %%% "handy-appbase" % "0.9.0-SNAPSHOT",
+      "org.specs2" %% "specs2-core" % "4.3.4" % "test"
     )
   )
 

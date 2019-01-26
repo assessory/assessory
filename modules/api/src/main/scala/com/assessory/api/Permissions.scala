@@ -12,21 +12,21 @@ import wiring.Lookups._
 
 object Permissions {
 
-
+  def requireLoggedIn(who:RefOpt[User]):Ref[User] = (who orElse RefOptFailed(Refused("You are not logged in"))).require
 
   /**
    * Create a course
    */
   val CreateCourse = Perm.unique[User] { case (prior) =>
-      for (u <- prior.who) yield Approved("Anyone may create a course")
+    for (u <- requireLoggedIn(prior.who)) yield Approved("Anyone may create a course")
   }
 
   val ViewCourse = Perm.onId[User, Course, String] { case (prior, course) =>
-    hasAnyRole(course, prior.who, CourseRole.roles, prior.cache)
+    hasAnyRole(course, requireLoggedIn(prior.who), CourseRole.roles, prior.cache)
   }
 
   val EditCourse = Perm.onId[User, Course, String] { case (prior, rCourse) =>
-    hasRole(rCourse, prior.who, CourseRole.staff, prior.cache)
+    hasRole(rCourse, requireLoggedIn(prior.who), CourseRole.staff, prior.cache)
   }
 
   val ViewGroupSet = Perm.onId[User, GroupSet, String] { case (prior, rGroupSet) =>
@@ -71,7 +71,7 @@ object Permissions {
     ) yield a
   }
 
-  def isOwn(prior:Approval[User], who:User, t:Target) = {
+  def isOwn(prior:Approval[User], who:User, t:Target):Ref[Approved] = {
     t match {
       case TargetUser(uid) => {
         if (uid != who.id) {
@@ -80,31 +80,40 @@ object Permissions {
           Approved("Own work").itself
         }
       }
-      case TargetCourseReg(cregId) => (
-        for (creg <- prior.cache(cregId.lazily) if creg.user == who.id) yield Approved("Own work")
-      ) orIfNone Refused("You may only edit your own work")
+      case TargetCourseReg(cregId) => 
+        for { 
+          creg <- prior.cache(cregId.lazily) 
+          result <- if (creg.user == who.id) Approved("Own work").itself else RefFailed(Refused("You may only edit your own work"))
+        } yield result
       case TargetGroup(gid) => (
-        for (r <- Lookups.groupRegistrationProvider.byUserAndTarget(who.id, gid)) yield Approved("Registered in group")
-      ) orIfNone Refused("You may only edit your own work")
+        for {
+          r <- Lookups.groupRegistrationProvider.byUserAndTarget(who.id, gid) orElse RefOptFailed(Refused("You may only edit your own work"))
+         } yield Approved("Registered in group")
+      ).require
     }
   }
 
   val EditOutput = Perm.onId[User, TaskOutput, String] { case (prior, to) =>
     for {
-      who <- prior.cache(prior.who)
+      who <- prior.cache(requireLoggedIn(prior.who))
       o <- to
       task <- prior.cache(o.task.lazily)
-      ownWork <- isOwn(prior, who, o.by) orIfNone UserError("This is not your own work")
-      due <- isOpen(prior, task).withFilter({b:Boolean => b}) orIfNone UserError("This task is closed")
-    } yield Approved("You may edit this")
+      ownWork <- isOwn(prior, who, o.by) 
+      open <- isOpen(prior, task)
+      result <- if (open) Approved("You may edit this").itself else RefFailed(UserError("This task is closed"))
+    } yield result
   }
 
-  def isOpen(a:Approval[User], t:Task) = {
+  /**
+   * Checks if a task is open for a user. 
+   */
+  def isOpen(a:Approval[User], t:Task):Ref[Boolean] = {
+    val now = System.currentTimeMillis()
+
     for {
-      uId <- a.who.refId
+      uId <- requireLoggedIn(a.who).refId.require
       groupIds <- Lookups.groupRegistrationProvider.byUser(uId).map(_.target).collect
     } yield {
-      val now = System.currentTimeMillis()
       // TODO: should we have a margin?
       val margin = 300000L
 
@@ -119,7 +128,7 @@ object Permissions {
 
   val WriteCritique = Perm.onId[User, CritAllocation, String] { case (prior, gca) =>
       for {
-        who <- prior.cache(prior.who)
+        who <- prior.cache(requireLoggedIn(prior.who))
         g <- gca
         ownWork <- isOwn(prior, who, g.completeBy)
       } yield Approved("You may write critiques that are allocated to you")
@@ -138,7 +147,7 @@ object Permissions {
       for (
         roles <- getRoles(course, user) if roles.contains(role)
       ) yield Approved(s"You have role $role for this course")
-    ) orIfNone Refused(s"You do not have role $role for this course")
+    ).orElse(RefOptFailed(Refused(s"You do not have role $role for this course"))).require
   }
 
   def hasAnyRole(course:Ref[Course], user:Ref[User], roles:Set[CourseRole], cache:LookUpCache):Ref[Approved] = {
@@ -146,6 +155,6 @@ object Permissions {
       for (
         savedRoles <- getRoles(course, user) if roles.intersect(savedRoles).nonEmpty
       ) yield Approved(s"You have any of these roles $roles for this course")
-      ) orIfNone Refused(s"You do not have any of these roles $roles for this course")
+    ).orElse(RefOptFailed(Refused(s"You do not have any of these roles $roles for this course"))).require
   }
 }
