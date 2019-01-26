@@ -1,8 +1,11 @@
 
+// shadow sbt-scalajs' crossProject and CrossType from Scala.js 0.6.x
+import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
+
 lazy val commonSettings = Seq(
-  scalaVersion := "2.11.7",
+  scalaVersion := "2.12.8",
   organization := "com.impressory",
-  version := "0.2-SNAPSHOT",
+  version := "0.3-SNAPSHOT",
   scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),
   resolvers ++= Seq(
     "Typesafe Releases" at "http://repo.typesafe.com/typesafe/releases/",
@@ -22,11 +25,11 @@ name := "atemporary"
   
 organization := "com.impressory"
   
-scalaVersion := "2.11.7"
+scalaVersion := "2.12.8"
 
 version := "1.0.0-SNAPSHOT"
 
-lazy val api = (crossProject.crossType(CrossType.Pure) in file("modules/api"))
+lazy val api = (crossProject(JSPlatform, JVMPlatform) in file("modules/api"))
   .settings(commonSettings:_*)
   .settings(
     libraryDependencies ++= Seq(
@@ -34,7 +37,6 @@ lazy val api = (crossProject.crossType(CrossType.Pure) in file("modules/api"))
       "com.wbillingsley" %%% "handy-appbase" % "0.8.0-SNAPSHOT"
     )
   )
-  .jsConfigure(_ enablePlugins ScalaJSPlay)
 
 lazy val apiJS = api.js
 lazy val apiJVM = api.jvm
@@ -62,7 +64,7 @@ lazy val model = (project in file("modules/model"))
     )
   )
 
-lazy val clientPickle = (crossProject.crossType(CrossType.Pure) in file("modules/clientPickle"))
+lazy val clientPickle = (crossProject(JSPlatform, JVMPlatform) in file("modules/clientPickle"))
   .settings(commonSettings:_*)
   .settings(
     libraryDependencies ++= Seq(
@@ -71,7 +73,6 @@ lazy val clientPickle = (crossProject.crossType(CrossType.Pure) in file("modules
       "com.github.benhutchison" %%% "prickle" % "1.1.10"
     )
   )
-  .jsConfigure(_ enablePlugins ScalaJSPlay)
   .dependsOn(api)
 
 lazy val clientPickleJS = clientPickle.js
@@ -79,10 +80,10 @@ lazy val clientPickleJVM = clientPickle.jvm
 
 lazy val reactjs = project.in(file("modules/reactjs"))
   .settings(commonSettings:_*)
-  .enablePlugins(ScalaJSPlugin, ScalaJSPlay)
+  .enablePlugins(ScalaJSPlugin)
   .settings(
-    persistLauncher := true,
-    persistLauncher in Test := false
+    scalaJSUseMainModuleInitializer := true,
+    scalaJSUseMainModuleInitializer in Test := false
   )
   .dependsOn(apiJS, clientPickleJS)
 
