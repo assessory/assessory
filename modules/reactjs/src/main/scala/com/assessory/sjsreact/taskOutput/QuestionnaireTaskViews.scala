@@ -128,10 +128,10 @@ object QuestionnaireTaskViews {
           <.div(^.className := "form-group",
             <.button(^.className:="btn btn-primary", ^.disabled := !savable(vto), ^.onClick --> save(false), "Save"), " ",
             finalisable(vto) match {
-              case IsFinalisable => <.button(^.className:="btn btn-default", ^.onClick --> finalise(), "Finalise")
+              case IsFinalisable => <.button(^.className:="btn btn-default", ^.onClick --> finalise(), "Make available")
               case UnsavedChanges => <.button(^.className:="btn btn-default", ^.disabled := true, "(You have unsaved changes)")
               case NeverSaved => <.button(^.className:="btn btn-default", ^.disabled := true, "(Needs saving first)")
-              case AlreadyFinalised => <.button(^.className:="btn btn-default", ^.disabled := true, "(Already finalised)")
+              case AlreadyFinalised => <.button(^.className:="btn btn-default", ^.disabled := true, "(Already available)")
             },
             <.div(^.cls := "text-info",
               CommonComponent.latchedString(vto.s)

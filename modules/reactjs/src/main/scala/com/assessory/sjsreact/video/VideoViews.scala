@@ -40,12 +40,19 @@ object VideoViews {
 
   def isKaltura(url:String):Option[Kaltura] = {
     val withWWW="(https\\:\\/\\/kaf.une.edu.au\\/media\\/[^#\\&\\?\\/]*\\/)([^#\\&\\?]*).*".r
-    withWWW.findFirstMatchIn(url).map(_.group(2)).map({ case _ => Kaltura(url) })
+    val embed = ".*(playerId=kaltura_player\\&entry_id=)([^#\\&\\?]*).*".r
+
+    withWWW.findFirstMatchIn(url).map(_.group(2))
+      .orElse(embed.findFirstMatchIn(url).map(_.group(2)))
+      .map({ case _ => Kaltura(url) })
   }
 
   def extractKalturaId(url:String):String = {
     val withWWW="(https\\:\\/\\/kaf.une.edu.au\\/media\\/[^#\\&\\?\\/]*\\/)([^#\\&\\?]*).*".r
-    withWWW.findFirstMatchIn(url).map(_.group(2)).getOrElse(url)
+    val embed = ".*(playerId=kaltura_player\\&entry_id=)([^#\\&\\?]*).*".r
+    withWWW.findFirstMatchIn(url).map(_.group(2))
+      .orElse(embed.findFirstMatchIn(url).map(_.group(2)))
+      .getOrElse(url)
   }
 
 
