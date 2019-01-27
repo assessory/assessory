@@ -36,8 +36,8 @@ object CourseModel {
    */
   def create(a:Approval[User], clientCourse:Course):Ref[WithPerms[Course]] = {
     for {
-      u <- a.who orIfNone Refused("You must be logged in to create courses")
       approved <- a ask Permissions.CreateCourse
+      u <- a.who.require
 
       // The client cannot set IDs, so we need to generate an ID for the course and the user's registration to it
       cid = if (CourseDAO.validId(clientCourse.id.id)) clientCourse.id else CourseDAO.allocateId.asId[Course]
@@ -99,7 +99,7 @@ object CourseModel {
     } yield user
   }
 
-  def myRegistrationInCourse(u:Ref[User], c:Ref[Course]):Ref[Course.Reg] = {
+  def myRegistrationInCourse(u:Ref[User], c:Ref[Course]):RefOpt[Course.Reg] = {
     for {
       uId <- u.refId
       cId <- c.refId
@@ -113,8 +113,8 @@ object CourseModel {
     */
   def forceEnrol(u:Ref[User], c:Ref[Course], r:Set[CourseRole]):Ref[Course.Reg] = {
     for {
-      uId <- u.refId
-      cId <- c.refId
+      uId <- u.refId.require
+      cId <- c.refId.require
       reg <- RegistrationDAO.course.register(uId, cId, r, EmptyKind)
     } yield reg
   }

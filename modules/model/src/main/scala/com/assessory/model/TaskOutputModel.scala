@@ -48,10 +48,10 @@ object TaskOutputModel {
       TargetUser(u.id).itself
     } else {
       for {
-        gsId <- task.details.groupSet.toRef
+        gsId <- task.details.groupSet.toRef orFail new IllegalStateException(s"task ${task.id} is a group task with no groupset")
         gs <- gsId.lookUp
 
-        g <- GroupModel.myGroupInSet(u, gs) orIfNone RefFailed(new IllegalArgumentException("You are not in a group but this is a group task"))
+        g <- GroupModel.myGroupInSet(u, gs) orFail new IllegalArgumentException("You are not in a group but this is a group task")
       } yield TargetGroup(g.id)
     }
   }
@@ -129,18 +129,18 @@ object TaskOutputModel {
 
   def targetAsCsvString(a:Approval[User], t:Target):Ref[Seq[String]] = {
 
-    def idNameFromUser(u:User):Option[String] = {
+    def idNameFromUser(u:User):RefOpt[String] = {
       u.identities.find(_.service == I_STUDENT_NUMBER).flatMap(_.value)
         .orElse(u.identities.headOption.flatMap(_.username))
         .orElse(u.identities.headOption.flatMap(_.value))
-        .orElse(Some(""))
+        .toRef
     }
 
     t match {
       case TargetUser(id) =>
         for {
           u <- a.cache.lookUp(id)
-          id <- idNameFromUser(u)
+          id <- idNameFromUser(u) orFail new IllegalStateException(s"Failed to get ID name from user ${u.id.id}")
         } yield Seq(id, u.name.getOrElse(""))
       case TargetGroup(id) =>
         for {

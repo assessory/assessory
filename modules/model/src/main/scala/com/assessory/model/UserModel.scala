@@ -13,8 +13,8 @@ object UserModel {
    */
   def signUp(oEmail:Option[String], oPassword:Option[String], session:ActiveSession) = {
     for (
-      email <- Ref(oEmail) orIfNone UserError("Email must not be blank");
-      password <- Ref(oPassword) orIfNone UserError("Password must not be blank");
+      email <- oEmail.toRef orFail UserError("Email must not be blank");
+      password <- oPassword.toRef orFail UserError("Password must not be blank");
       user <- {
         val u = UserDAO.unsaved
         val set = u.copy(
@@ -36,8 +36,8 @@ object UserModel {
    */
   def logIn(oEmail:Option[String], oPassword:Option[String], session:ActiveSession) = {
     for {
-      email <- Ref(oEmail) orIfNone UserError("Email must not be blank")
-      password <- Ref(oPassword) orIfNone UserError("Password must not be blank")
+      email <- oEmail.toRef orFail UserError("Email must not be blank")
+      password <- oPassword.toRef orFail UserError("Password must not be blank")
       user <- UserDAO.byEmailAndPassword(email, password)
       updated <- UserDAO.pushSession(user.itself, session)
     } yield updated
@@ -48,7 +48,7 @@ object UserModel {
    */
   def secretLogIn(ru:Ref[User], secret:String, activeSession:ActiveSession) = {
     for {
-      oldUser <- optionally(UserDAO.deleteSession(ru, activeSession))
+      oldUser <- UserDAO.deleteSession(ru, activeSession).toRefOpt
       u <- ru if u.secret == secret
       pushed <- UserDAO.pushSession(u.itself, activeSession)
     } yield pushed

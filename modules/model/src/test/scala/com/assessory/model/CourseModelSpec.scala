@@ -6,10 +6,11 @@ import com.wbillingsley.handy.Ref._
 import com.wbillingsley.handy._
 import com.wbillingsley.handy.appbase.{ActiveSession, Course}
 import org.specs2.mutable.Specification
+import org.specs2.concurrent.ExecutionEnv
 import org.specs2.specification.{AfterEach, BeforeEach}
 
 
-class CourseModelSpec extends Specification with BeforeEach with AfterEach {
+class CourseModelSpec(implicit ee: ExecutionEnv) extends Specification with BeforeEach with AfterEach {
 
   def before = {
     //DB.executionContext = scala.concurrent.ExecutionContext.global
@@ -35,8 +36,8 @@ class CourseModelSpec extends Specification with BeforeEach with AfterEach {
 
       val myCoursesAfterSignup = for {
         u <- UserModel.signUp(Some("eg@example.com"), Some("password"), ActiveSession("1234", "127.0.0.1"))
-        courseWithPerms <- CourseModel.create(Approval(u.itself), Course(id=invalidId, addedBy=invalidId, title=Some("TestCourse")))
-        course <- CourseModel.myCourses(Approval(u.itself))
+        courseWithPerms <- CourseModel.create(Approval(RefSome(u)), Course(id=invalidId, addedBy=invalidId, title=Some("TestCourse")))
+        course <- CourseModel.myCourses(Approval(RefSome(u)))
       } yield course.item.title
 
       myCoursesAfterSignup.collect.toFuture must beEqualTo(Seq(Some("TestCourse"))).await

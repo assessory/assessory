@@ -17,7 +17,7 @@ object TaskModel {
     case MustHaveFinished(taskId) => for {
       otherTask <- taskId.lazily
       otherTaskName = otherTask.details.name.getOrElse("a previous task")
-      to <- TaskOutputModel.myOutputs(a, otherTask.itself).withFilter(_.finalised.nonEmpty).first orIfNone Refused(s"You need to finalise $otherTaskName")
+      to <- TaskOutputModel.myOutputs(a, otherTask.itself).withFilter(_.finalised.nonEmpty).first orFail Refused(s"You need to finalise $otherTaskName")
     } yield Approved("Condition met")
   }
 
@@ -34,7 +34,7 @@ object TaskModel {
     for (
       t <- task;
       a <- prior ask Permissions.ViewTask(t.itself);
-      due <- Permissions.isOpen(prior, t).withFilter({b:Boolean => b}) orIfNone UserError("This task is closed");
+      due <- Permissions.isOpen(prior, t).withFilter({b:Boolean => b}) orFail UserError("This task is closed");
       restrictions <- checkRestrictions(prior, t)
     ) yield a
   }

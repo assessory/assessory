@@ -99,7 +99,7 @@ object CritModel {
         case CritiqueTask(AllocateStrategy(TTGroups(set), num), task) => (set, num).itself
         case _ => RefFailed(UserError("I can only allocate group crit tasks"))
       }
-      groups <- GroupDAO.bySet(set).toRefOne
+      groups <- GroupDAO.bySet(set).collect
       alloc <- allocateGroups(groups.toSeq, num, t.id)
     } yield alloc
   }
@@ -144,23 +144,22 @@ object CritModel {
   def byFromTask(a:Approval[User], t:Task):Ref[Target] = {
 
     // Get the user's groups in the corresponding groupSet, if it's not an individual assignment
-    val groups = for {
+    val groups:RefMany[Group] = for {
       u <- a.who
-      gs <- a.cache(t.details.groupSet.lazily) if !t.details.individual
+      gs <- a.cache(t.details.groupSet.lazily orFail new IllegalStateException(s"Group had no groupset")) if !t.details.individual
       g <- GroupModel.myGroupsInCourse(a, t.course.lazily) if g.set == gs.id
     } yield g
 
     // Pick the first group
-    val targetGroup = for {
+    val targetGroup:RefOpt[TargetGroup] = for {
       u <- a.who
-      gs <- groups.collect
-      g <- gs.headOption
+      g <- groups.first
     } yield TargetGroup(g.id)
 
     // Return the group, or the user if there isn't one
     for {
-      u <- a.who
-      t <- targetGroup orIfNone TargetUser(u.id).itself
+      u <- a.who.require
+      t <- (targetGroup orElse RefSome(TargetUser(u.id))).require
     } yield t
   }
 
@@ -227,7 +226,7 @@ object CritModel {
           case _ => false
         }
       ).collect
-      to <- Ref(taskOutputs.headOption) orIfNone createCrit(completeBy, t, target)
+      to <- RefOpt(taskOutputs.headOption) orElse createCrit(completeBy, t, target)
       wp <- TaskOutputModel.withPerms(a, to)
     } yield wp
   }
@@ -236,8 +235,8 @@ object CritModel {
     for {
       u <- a.who
       ca <- rca
-      alloc <- ca.allocation.find(_.target == target).toRef orIfNone UserError("This allocation doesn't include that target")
-      crit <- alloc.critique.lazily orIfNone (for {
+      alloc <- ca.allocation.find(_.target == target).toRef orFail UserError("This allocation doesn't include that target")
+      crit <- alloc.critique.lazily orElse (for {
         wp <- findOrCreateCrit(a, a.cache.lookUp(ca.task), target)
         updatedAlloc <- CritAllocationDAO.setOutput(ca.id, target, wp.item.id)
       } yield wp.item)
@@ -326,15 +325,14 @@ object CritModel {
     case Some(pId) => for {
       gParent <- pId.lazily
       parentMatch <- t match {
-        case TargetUser(uId) => for {
+        case TargetUser(uId) => (for {
           u <- uId.lazily
-          gs <- gParent.set.lazily
-          g <- GroupModel.myGroupInSet(u, gs)
-        } yield g.id == gParent.id
+          gs <- gParent.set.lookUp 
+          g <- GroupModel.myGroupInSet(u, gs) if g.id == gParent.id
+        } yield true) orElse false.itself
         case TargetGroup(gId) => for {
           g <- gId.lazily
-          tParentId <- g.parent.toRef
-        } yield tParentId == gParent.id
+        } yield pId == gParent.id
       }
     } yield parentMatch
     case _ => true.itself
@@ -430,7 +428,7 @@ object CritModel {
 
       myTargs <- tt match {
         case TTOutputs(ttTask) => for {
-          myOutput <- TaskOutputModel.myOutputs(Approval(u.itself), ttTask.lazily)
+          myOutput <- TaskOutputModel.myOutputs(Approval(RefSome(u)), ttTask.lazily)
         } yield TargetTaskOutput(myOutput.id)
         case TTGroups(gsId) => for {
           gs <- gsId.lazily

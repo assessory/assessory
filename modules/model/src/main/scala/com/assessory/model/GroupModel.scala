@@ -59,7 +59,7 @@ object GroupModel {
     } yield wp
   }
 
-  def myGroupInSet(u:User, gs:GroupSet):Ref[Group] = {
+  def myGroupInSet(u:User, gs:GroupSet):RefOpt[Group] = {
     GroupDAO.bySetAndUser(gs.id, u.id).first
   }
 
@@ -198,7 +198,7 @@ object GroupModel {
     reader.close()
 
     if (rawLines.size == 0) {
-      return UserError("CSV contained no lines, not even a header")
+      return RefManyFailed(UserError("CSV contained no lines, not even a header"))
     }
 
     // Simple method to get an option from a CSV entry
@@ -260,7 +260,7 @@ object GroupModel {
 
         val groupedByParent = bodyLines.groupBy(parentGroupName)
         for {
-          parentGS <- parentGsId.lazily orIfNone UserError("Parent group set was not found")
+          parentGS <- parentGsId.lazily
           studentMap <- rStudentMap
 
           // Create the parent groups if needed
@@ -311,7 +311,7 @@ object GroupModel {
    */
   def importFromCsv(a:Approval[User], setId:Id[GroupSet,String], csv:String):RefMany[Group.Reg] = {
     for {
-      set <- setId.lazily orIfNone UserError("We do need a group set for this")
+      set <- setId.lazily 
       approved <- a.ask(Permissions.EditCourse(set.course.lazily))
 
       reg <- _importFromCsv(set, Set(GroupRole.member), csv)
@@ -343,20 +343,20 @@ object GroupModel {
     println("Ensure user " + identities)
 
     // Fetch or create the user
-    val found = (identities.toRefMany.fold[Ref[User]](RefNone) { case(ru, i) =>
-      ru orIfNone { println("none"); UserDAO.bySocialIdOrUsername(i.service, i.username, i.value) }
-    }).flatten
+    val found:RefOpt[User] = (identities.toRefMany.foldLeft[RefOpt[User]](RefNone) { case(ru, i) =>
+      ru orElse UserDAO.bySocialIdOrUsername(i.service, i.username, i.value)
+    }).flatMap(identity)
 
-    val ensured = found orIfNone { println("creating"); UserDAO.saveNew(template.copy(id=UserDAO.allocateId.asId, identities = identities)) }
+    val ensured = found orElse UserDAO.saveNew(template.copy(id=UserDAO.allocateId.asId, identities = identities))
 
     // Add any missing identities
     val updates = for {
       u <- ensured
       missing = identities.filterNot({ i => u.identities.exists({ ui => ui.username == i.username && ui.service == i.service && ui.value == i.value }) })
-      i <- missing.toRefMany.fold[Ref[User]](u.itself) { case (ref, i) => UserDAO.pushIdentity(ref, i) }
+      i <- missing.toRefMany.foldLeft[Ref[User]](u.itself) { case (ref, i) => UserDAO.pushIdentity(ref, i) }
     } yield i
 
-    updates.flatten
+    updates.flatMap(identity)
   }
 
 
@@ -429,7 +429,7 @@ object GroupModel {
               (parentName, groupLines) <- groupedByParent.toRefMany
               groupNames = groupLines.map(_(2).trim).toSet
               gm <- ensureGroups(gs, groupNames, parentMap.get(parentName).map(_.id))
-            } yield gm).fold[Map[String,Group]](Map.empty)(_ ++ _)
+            } yield gm).foldLeft[Map[String,Group]](Map.empty)(_ ++ _)
 
             unsaved = new Group.Preenrol(
               id = PreenrolmentDAO.course.allocateId.asId,
