@@ -46,14 +46,14 @@ object Permissions {
   val ViewGroup = Perm.onId[User, Group, String] { case (prior, rGroup) =>
     for {
       g <- rGroup
-      a <- prior ask ViewCourse(prior.cache(g.course.lookUp))
+      a <- prior ask ViewCourse(prior.cache(g.course.lookUp orFail new IllegalStateException(s"Group ${g.id} had no course")))
     } yield Approved("Course viewers can view groups")
   }
 
   val EditGroup = Perm.onId[User, Group, String] { case (prior, rGroup) =>
     for {
       g <- rGroup
-      a <- prior ask EditCourse(prior.cache(g.course.lookUp))
+      a <- prior ask EditCourse(prior.cache(g.course.lookUp orFail new IllegalStateException(s"Group ${g.id} had no course")))
     } yield Approved("Course editors can edit groups")
   }
 
