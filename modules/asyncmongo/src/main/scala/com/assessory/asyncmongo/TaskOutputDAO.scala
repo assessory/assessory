@@ -17,10 +17,10 @@ object TaskOutputDAO extends DAO(classOf[TaskOutput], "taskOutput", TaskOutputB.
     update=$set("body" -> TaskOutputBodyB.write(t.body))
   )
 
-  def finalise(t:TaskOutput) = updateAndFetch(
+  def finalise(t:TaskOutput):Ref[TaskOutput] = updateAndFetch(
     query="_id" $eq t.id,
     update=$set("finalised" -> System.currentTimeMillis())
-  )
+  ).require
 
   def byTask(t:Ref[Task]) = {
     for {
