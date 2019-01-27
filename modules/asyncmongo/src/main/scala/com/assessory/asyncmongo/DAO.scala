@@ -37,7 +37,7 @@ class DAO[DataT <: HasStringId[DataT]] (
 
   implicit object LookUp extends LookUp[DataT, String] {
 
-    def one[K <: String](r: Id[DataT, K]) = byId(r.id)
+    def one[K <: String](r: Id[DataT, K]) = byId(r.id).require
 
     def many[K <: String](r: Ids[DataT, K]) = manyById(r.ids)
 
@@ -80,7 +80,7 @@ class DAO[DataT <: HasStringId[DataT]] (
     obsToRefMany(coll.find(query).sort(sort))
   }
 
-  def findOne(query:Bson):Ref[DataT] = {
+  def findOne(query:Bson):RefOpt[DataT] = {
     for {
       opt <- coll.find(query).headOption().toRef
       doc <- opt.toRef
@@ -145,7 +145,7 @@ class DAO[DataT <: HasStringId[DataT]] (
     val reordered = for (
       map <- new RefFuture(futIdMap);
       id <- new RefTraversableOnce(ids);
-      item <- Ref(map.get(id))
+      item <- RefOpt(map.get(id))
     ) yield item
 
     reordered
@@ -163,7 +163,7 @@ class DAO[DataT <: HasStringId[DataT]] (
     coll.updateMany(query, update, UpdateOptions().upsert(upsert)).head()
   }
 
-  def updateAndFetch(query:Bson, update:Bson, upsert:Boolean = false):Ref[DataT] = {
+  def updateAndFetch(query:Bson, update:Bson, upsert:Boolean = false):RefOpt[DataT] = {
     for {
       ur <- new RefFuture(updateOneSafe(query, update, upsert))
       fetched <- findOne(query)

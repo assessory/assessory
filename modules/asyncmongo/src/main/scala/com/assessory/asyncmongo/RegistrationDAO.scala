@@ -14,7 +14,7 @@ class RegistrationDAO[T, R, P <: HasKind](collName:String, r:RegistrationB[T, R,
   extends DAO(clazz=classOf[Registration[T,R,P]], collName=collName, converter=r.read)
   with RegistrationProvider[T, R, P] {
 
-  override def byUserAndTarget(user: Id[User, String], target: Id[T, String]): Ref[Registration[T, R, P]] = {
+  override def byUserAndTarget(user: Id[User, String], target: Id[T, String]): RefOpt[Registration[T, R, P]] = {
     findOne(("user" $eq user) and ("target" $eq target))
   }
 
@@ -32,11 +32,11 @@ class RegistrationDAO[T, R, P <: HasKind](collName:String, r:RegistrationB[T, R,
     findAndReplace("_id" $eq c.id, r.write(c), upsert=true).toRef
   }
 
-  def register(user:Id[User, String], target:Id[T, String], roles:Set[R], provenance:P) = {
+  def register(user:Id[User, String], target:Id[T, String], roles:Set[R], provenance:P):Ref[Registration[T,R,P]] = {
     updateAndFetch(
       query = ("user" $eq user) and ("target" $eq target),
       update = addEachToSet("roles", roles.toSeq.map(r.rToFromBson.toBson):_*)
-    ) orIfNone saveSafe(
+    ).orElse(saveSafe(
       Registration[T,R,P](
         id = allocateId.asId,
         user = user,
@@ -44,7 +44,7 @@ class RegistrationDAO[T, R, P <: HasKind](collName:String, r:RegistrationB[T, R,
         roles = roles,
         provenance = provenance
       )
-    )
+    ).toRefOpt).require
   }
 
 }

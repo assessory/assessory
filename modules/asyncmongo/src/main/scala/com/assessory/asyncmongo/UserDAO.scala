@@ -5,7 +5,7 @@ import com.assessory.asyncmongo.converters.{ActiveSessionB, IdentityB, UserB}
 import com.wbillingsley.handy.Id._
 import com.wbillingsley.handy.Ref._
 import com.wbillingsley.handy.appbase.{ActiveSession, Identity, User, Course}
-import com.wbillingsley.handy.{LazyId, Ref, Refused}
+import com.wbillingsley.handy.{LazyId, Ref, RefOpt, Refused}
 import com.wbillingsley.handyplay.UserProvider
 
 object UserDAO extends DAO(classOf[User], "assessoryUser", UserB.read) with UserProvider[User] with com.wbillingsley.handy.user.UserDAO[User, Identity] {
@@ -38,48 +38,48 @@ object UserDAO extends DAO(classOf[User], "assessoryUser", UserB.read) with User
   /**
    * Adds an identity to this user
    */
-  def pushIdentity(ru:Ref[User], i:Identity) = {
+  def pushIdentity(ru:Ref[User], i:Identity):Ref[User] = {
     for {
-      uid <- ru.refId
+      uid <- ru.refId.require
       u <- updateAndFetch(
         query = "_id" $eq uid,
         update = $push("identities" -> IdentityB.write(i))
-      )
+      ).require
     } yield u
   }
 
   /** Adds a session to this user. Typically this happens at login. */
-  def pushSession(ru:Ref[User], as:ActiveSession) = {
+  def pushSession(ru:Ref[User], as:ActiveSession):Ref[User] = {
     for {
-      uid <- ru.refId
+      uid <- ru.refId.require
       u <- updateAndFetch(
         query = "_id" $eq uid,
         update = $push("activeSessions" -> ActiveSessionB.write(as))
-      )
+      ).require
     } yield u
   }
 
-  def deleteSession(ru:Ref[User], as:ActiveSession) = {
+  def deleteSession(ru:Ref[User], as:ActiveSession):Ref[User] = {
     for {
-      uid <- ru.refId
+      uid <- ru.refId.require
       u <- updateAndFetch(
         query = "_id" $eq uid,
         update = $pull("activeSessions" -> bsonDoc("key" -> as.key))
-      )
+      ).require
     } yield u
   }
 
-  def bySessionKey(sessionKey:String):Ref[User] = {
+  override def bySessionKey(sessionKey:String):RefOpt[User] = {
     findOne(query="activeSessions.key" $eq sessionKey)
   }
 
-  def byIdentity(service:String, id:String):Ref[User] = {
+  override def byIdentity(service:String, id:String):RefOpt[User] = {
     findOne(query=("identities.service" $eq service) and ("identities.value" $eq id))
   }
 
-  def byIdentity(i:Identity):Ref[User] = bySocialIdOrUsername(i.service, i.value, i.username)
+  override def byIdentity(i:Identity):RefOpt[User] = bySocialIdOrUsername(i.service, i.value, i.username)
 
-  def bySocialIdOrUsername(service:String, optId:Option[String], optUserName:Option[String] = None):Ref[User] = {
+  def bySocialIdOrUsername(service:String, optId:Option[String], optUserName:Option[String] = None):RefOpt[User] = {
 
     def byId(service:String, oid:Option[String]) = for {
       id <- oid.toRef
@@ -91,7 +91,7 @@ object UserDAO extends DAO(classOf[User], "assessoryUser", UserB.read) with User
       u <- findOne(query=("identities.service" $eq service) and ("identities.username" $eq n))
     } yield u
 
-    byId(service, optId) orIfNone byUsername(service, optUserName)
+    byId(service, optId) orElse byUsername(service, optUserName)
   }
 
   def byUsername(u:String) = findOne("pwlogin.username" $eq u)
@@ -118,11 +118,11 @@ object UserDAO extends DAO(classOf[User], "assessoryUser", UserB.read) with User
 
   def removeIdentity(user: Ref[User], identity: Identity): Ref[User] = {
     for {
-      uid <- user.refId
+      uid <- user.refId.require
       u <- updateAndFetch(
         query = "_id" $eq uid,
         update = $pull("identities" -> IdentityB.write(identity)) // TODO: deal with mismatch id/value
-      )
+      ).require
     } yield u
   }
 
