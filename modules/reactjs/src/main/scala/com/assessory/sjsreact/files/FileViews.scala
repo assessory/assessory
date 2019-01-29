@@ -2,8 +2,8 @@ package com.assessory.sjsreact.files
 
 import com.assessory.api.video.{SmallFileDetails, SmallFile}
 import com.assessory.sjsreact.services.FileService
-import com.assessory.sjsreact.{CommonComponent, Latched}
-import com.wbillingsley.handy.Id
+import com.assessory.sjsreact.{CommonComponent }
+import com.wbillingsley.handy.{Latch, Id}
 import com.wbillingsley.handy.appbase.Course
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.prefix_<^._
@@ -48,7 +48,7 @@ object FileViews {
   case class SmallFileUploadState(
                                    initialProps:SmallFileUploadProps,
                                    uploadStatus:UploadStatus,
-                                   s:Latched[String]
+                                   s:Latch[String]
                                  )
 
 
@@ -175,7 +175,7 @@ object FileViews {
 
   val smallFileUploadWidget = ReactComponentB[SmallFileUploadProps]("smallFileUploadWidget")
     .initialState_P(props => {
-      SmallFileUploadState(props, Idle, Latched.immediate(""))
+      SmallFileUploadState(props, Idle, Latch.immediate(""))
     })
     .renderBackend[SmallFileUploadBackend]
     .build

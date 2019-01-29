@@ -2,8 +2,10 @@ package com.assessory.sjsreact.services
 
 import com.assessory.api.client.WithPerms
 import com.assessory.api.video.{SmallFile, SmallFileDetails}
-import com.assessory.sjsreact.{WebApp, Latched}
-import com.wbillingsley.handy.Id
+import com.assessory.clientpickle.Pickles
+import Pickles._
+import com.assessory.sjsreact.WebApp
+import com.wbillingsley.handy.{Id, Latch}
 import com.wbillingsley.handy.appbase.{Course, Group}
 import org.scalajs.dom
 import org.scalajs.dom.ext.Ajax
@@ -18,9 +20,9 @@ import scala.scalajs.concurrent.JSExecutionContext.Implicits.runNow
   */
 object FileService {
 
-  val cache = mutable.Map.empty[String, Latched[SmallFileDetails]]
+  val cache = mutable.Map.empty[String, Latch[SmallFileDetails]]
 
-  val detailsCache = mutable.Map.empty[String, Latched[SmallFileDetails]]
+  val detailsCache = mutable.Map.empty[String, Latch[SmallFileDetails]]
 
   def uploadFile(courseId:Id[Course, String], file:org.scalajs.dom.raw.File, onUpdateProgress: (Long, Long) => Unit):Future[SmallFileDetails] = {
     val xhr = new dom.XMLHttpRequest
@@ -36,8 +38,8 @@ object FileService {
       println("DONE!!!!")
       if (xhr.readyState == dom.XMLHttpRequest.DONE) {
           if (xhr.status == 200) {
-            val details = upickle.default.read[SmallFileDetails](xhr.responseText)
-            detailsP.success(details)
+            val details = Pickles.read[SmallFileDetails](xhr.responseText)
+            detailsP.complete(details)
           } else {
             detailsP.failure(new RuntimeException(xhr.statusText))
           }
@@ -54,7 +56,7 @@ object FileService {
   }
 
   def loadDetailsFor(id:Id[SmallFile, String]):Future[SmallFileDetails] = {
-    Ajax.get(detailsUrl(id), headers=AJAX_HEADERS).responseText.map(upickle.default.read[SmallFileDetails])
+    Ajax.get(detailsUrl(id), headers=AJAX_HEADERS).responseText.flatMap(Pickles.readF[SmallFileDetails])
   }
 
   def detailsUrl(smallFile:Id[SmallFile, String]):String = {
@@ -65,6 +67,6 @@ object FileService {
     s"/api/smallfiles/${smallFile.id}/download"
   }
 
-  def getDetails(id:Id[SmallFile, String]) = cache.getOrElseUpdate(id.id, Latched.lazily(loadDetailsFor(id)))
+  def getDetails(id:Id[SmallFile, String]) = cache.getOrElseUpdate(id.id, Latch.lazily(loadDetailsFor(id)))
 
 }

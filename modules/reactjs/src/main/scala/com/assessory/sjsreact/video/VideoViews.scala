@@ -5,9 +5,9 @@ import com.assessory.api.{TargetUser, TaskOutput, Task}
 import com.assessory.api.client.EmailAndPassword
 import com.assessory.api.video._
 import com.assessory.sjsreact
-import com.assessory.sjsreact.{CommonComponent, Front, Latched}
+import com.assessory.sjsreact.{CommonComponent, Front }
 import com.assessory.sjsreact.services.{UserService, TaskOutputService}
-import com.wbillingsley.handy.Id
+import com.wbillingsley.handy.{Latch, Id}
 import com.wbillingsley.handy.appbase.UserError
 import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react._
@@ -92,7 +92,7 @@ object VideoViews {
     case UnrecognisedVideoUrl(url) => <.a(^.href := url, ^.target := "_blank", "Unrecognised video URL: ", url)
   }
 
-  def latchR[T](l:Latched[T])(render: T => ReactElement):ReactElement = {
+  def latchR[T](l:Latch[T])(render: T => ReactElement):ReactElement = {
     l.request.value match {
       case Some(Success(x)) => render(x)
       case Some(Failure(x)) => <.span(^.className := "error", x.getMessage)
@@ -100,9 +100,9 @@ object VideoViews {
     }
   }
 
-  case class VTOState(task:Task, orig:Option[TaskOutput], to:TaskOutput, s:Latched[String])
+  case class VTOState(task:Task, orig:Option[TaskOutput], to:TaskOutput, s:Latch[String])
 
-  class VideoTaskOutputBackend($: BackendScope[_, Latched[VTOState]]) {
+  class VideoTaskOutputBackend($: BackendScope[_, Latch[VTOState]]) {
 
     def savable(vto:VTOState) = {
       !vto.orig.contains(vto.to) && vto.s.isCompleted
@@ -111,7 +111,7 @@ object VideoViews {
     def video(e: ReactEventI):Callback = { $.modState({ latched =>
       if (latched.isCompleted) {
         latched.request.value match {
-          case Some(Success(vto)) => Latched.immediate(
+          case Some(Success(vto)) => Latch.immediate(
             vto.copy(to = vto.to.copy(body = VideoTaskOutput(Some(YouTube(e.target.value)))))
           )
           case _ => latched
@@ -122,7 +122,7 @@ object VideoViews {
     def save = $.modState({ latched =>
       if (latched.isCompleted) {
         latched.request.value match {
-          case Some(Success(vto)) => Latched.lazily(
+          case Some(Success(vto)) => Latch.lazily(
             (
               for {
                 wp <- if (vto.orig.isDefined) {
@@ -130,16 +130,16 @@ object VideoViews {
                 } else {
                   TaskOutputService.createNew(vto.to)
                 }
-              } yield VTOState(vto.task, Some(wp.item), wp.item, Latched.immediate("Saved"))
+              } yield VTOState(vto.task, Some(wp.item), wp.item, Latch.immediate("Saved"))
             ) recover {
-              case e:Exception => VTOState(vto.task, vto.orig, vto.to, Latched.immediate("Failed to save: " + e.getMessage))
+              case e:Exception => VTOState(vto.task, vto.orig, vto.to, Latch.immediate("Failed to save: " + e.getMessage))
             }
           )
         }
       } else latched
     })
 
-    def render(state:Latched[VTOState]) = {
+    def render(state:Latch[VTOState]) = {
       latchR(state) { vto =>
         <.div(
           <.div(
@@ -181,7 +181,7 @@ object VideoViews {
   }
 
   val front = ReactComponentB[Task]("critiqueTaskView")
-    .initialState_P(task => Latched.lazily{
+    .initialState_P(task => Latch.lazily{
       for {
         tos <- TaskOutputService.myOutputs(task.id)
       } yield {
@@ -193,7 +193,7 @@ object VideoViews {
           body = VideoTaskOutput(None)
         )
 
-        VTOState(task, orig, to, Latched.immediate(""))
+        VTOState(task, orig, to, Latch.immediate(""))
       }
     })
     .renderBackend[VideoTaskOutputBackend]

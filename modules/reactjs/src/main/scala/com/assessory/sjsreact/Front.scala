@@ -26,8 +26,8 @@ object Front {
     .buildU
 
 
-  val myCourses = CommonComponent.latchedRender[Option[Seq[WithPerms[Course]]]]("MyCourses") {
-    case Some(courses) =>
+  val myCourses = CommonComponent.latchedRender[Seq[WithPerms[Course]]]("MyCourses") {
+    case courses if courses.nonEmpty =>
       <.div(^.className := "container",
         <.h2("My Courses"),
         <.div(for { course <- courses } yield CourseViews.courseInfo(course))

@@ -1,35 +1,36 @@
 package com.assessory.sjsreact.services
 
 import com.assessory.api.client.WithPerms
-import com.assessory.clientpickle.Pickles._
-import com.assessory.sjsreact.Latched
+import com.assessory.clientpickle.Pickles
+import Pickles._
 import com.wbillingsley.handy._
 import Id._
-import com.wbillingsley.handy.appbase.{User, Course}
+import com.wbillingsley.handy.appbase.{Course, User}
 import org.scalajs.dom.ext.Ajax
 
 import scala.collection.mutable
+import scala.concurrent.Future
 import scala.scalajs.concurrent.JSExecutionContext.Implicits.runNow
 
 
 object CourseService {
 
-  val cache = mutable.Map.empty[String, Latched[WithPerms[Course]]]
+  val cache = mutable.Map.empty[String, Latch[WithPerms[Course]]]
 
-  val myCourses = Latched.lazily(
-    Ajax.post("/api/course/my", headers = Map("Accept" -> "application/json")).responseText.map(upickle.default.read[Seq[WithPerms[Course]]]).optional404
+  val myCourses:Latch[Seq[WithPerms[Course]]] = Latch.lazily(
+    Ajax.post("/api/course/my", headers = Map("Accept" -> "application/json")).responseText.flatMap(Pickles.readF[Seq[WithPerms[Course]]])
   )
-  UserService.self.listeners.add { case _ => myCourses.clear(); cache.clear() }
+  UserService.self.addListener { _ => myCourses.clear(); cache.clear() }
 
-  def createCourse(c:Course) = {
-    Ajax.post("/api/course/create", data = upickle.default.write(c), headers = Map("Accept" -> "application/json")).responseText.map(upickle.default.read[WithPerms[Course]])
+  def createCourse(c:Course):Future[WithPerms[Course]] = {
+    Ajax.post("/api/course/create", data = Pickles.write(c), headers = Map("Accept" -> "application/json")).responseText.flatMap(Pickles.readF[WithPerms[Course]])
   }
 
-  def loadId[KK <: String](id:Id[Course,KK]) = {
-    Ajax.get(s"/api/course/${id.id}", headers = Map("Accept" -> "application/json")).responseText.map(upickle.default.read[WithPerms[Course]])
+  def loadId[KK <: String](id:Id[Course,KK]):Future[WithPerms[Course]] = {
+    Ajax.get(s"/api/course/${id.id}", headers = Map("Accept" -> "application/json")).responseText.flatMap(Pickles.readF[WithPerms[Course]])
   }
 
-  def latch(s:String):Latched[WithPerms[Course]] = cache.getOrElseUpdate(s, Latched.lazily(loadId(s.asId[Course])))
+  def latch(s:String):Latch[WithPerms[Course]] = cache.getOrElseUpdate(s, Latch.lazily(loadId(s.asId[Course])))
 
-  def latch(id:Id[Course,String]):Latched[WithPerms[Course]] = cache.getOrElseUpdate(id.id, Latched.lazily(loadId(id)))
+  def latch(id:Id[Course,String]):Latch[WithPerms[Course]] = cache.getOrElseUpdate(id.id, Latch.lazily(loadId(id)))
 }

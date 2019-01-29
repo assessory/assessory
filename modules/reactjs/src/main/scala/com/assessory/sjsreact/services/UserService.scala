@@ -1,13 +1,13 @@
 package com.assessory.sjsreact.services
 
-import com.assessory.api.client.{WithPerms, EmailAndPassword}
-import com.assessory.clientpickle.Pickles._
-import com.assessory.sjsreact.{MainRouter, Latched, WebApp}
+import com.assessory.api.client.EmailAndPassword
+import com.assessory.clientpickle.Pickles
+import Pickles._
+import com.assessory.sjsreact.{MainRouter, WebApp}
 import com.wbillingsley.handy.Ref._
 import com.wbillingsley.handy._
-import com.wbillingsley.handy.appbase.{Group, Course, User}
-import japgolly.scalajs.react.extra.router.Redirect
-import org.scalajs.dom.ext.{AjaxException, Ajax}
+import com.wbillingsley.handy.appbase.User
+import org.scalajs.dom.ext.Ajax
 
 import scala.collection.mutable
 import scala.concurrent.Future
@@ -16,10 +16,10 @@ import scala.util.Success
 
 object UserService {
 
-  val cache = mutable.Map.empty[String, Latched[User]]
+  val cache = mutable.Map.empty[String, Latch[User]]
 
-  val self = Latched.lazily(
-    Ajax.post("/api/self", headers=AJAX_HEADERS).responseText.map(upickle.default.read[User]).optional404
+  val self:Latch[Option[User]] = Latch.lazily(
+    Ajax.post("/api/self", headers=AJAX_HEADERS).responseText.flatMap(Pickles.readF[User]).optional404
   )
 
   def approval:Ref[Approval[User]] = Approval(
@@ -39,7 +39,7 @@ object UserService {
   }
 
   def logIn(ep:EmailAndPassword):Future[User] = {
-    Ajax.post("/api/logIn", upickle.default.write(ep), headers=AJAX_HEADERS).responseText.map(upickle.default.read[User]).andThen {
+    Ajax.post("/api/logIn", Pickles.write(ep), headers=AJAX_HEADERS).responseText.flatMap(Pickles.readF[User]).andThen {
       case Success(u) =>
         self.fill(Some(u))
         MainRouter.goTo(MainRouter.Home)
@@ -48,7 +48,7 @@ object UserService {
   }
 
   def signUp(ep:EmailAndPassword):Future[User] = {
-    Ajax.post("/api/signUp", upickle.default.write(ep), headers=AJAX_HEADERS).responseText.map(upickle.default.read[User]).andThen{
+    Ajax.post("/api/signUp", Pickles.write(ep), headers=AJAX_HEADERS).responseText.flatMap(Pickles.readF[User]).andThen{
       case Success(u) =>
         self.fill(Some(u))
         MainRouter.goTo(MainRouter.Home)
@@ -56,12 +56,12 @@ object UserService {
     }
   }
 
-  def loadId[KK <: String](id:Id[User,KK]) = Latched.eagerly(
-    Ajax.get(s"/api/user/${id.id}", headers=AJAX_HEADERS).responseText.map(upickle.default.read[User])
+  def loadId[KK <: String](id:Id[User,KK]):Latch[User] = Latch.lazily(
+    Ajax.get(s"/api/user/${id.id}", headers=AJAX_HEADERS).responseText.flatMap(Pickles.readF[User])
   )
 
   val lu = new LookUp[User, String] {
-    override def one[KK <: String](r: Id[User, KK]): Ref[User] = cache.getOrElseUpdate(r.id, loadId(r)).request
+    override def one[KK <: String](r: Id[User, KK]): Ref[User] = cache.getOrElseUpdate(r.id, loadId(r)).request.toRef
 
     override def many[KK <: String](r: Ids[User, KK]): RefMany[User] = ???
   }

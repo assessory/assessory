@@ -1,9 +1,9 @@
 package com.assessory.sjsreact.services
 
 import com.assessory.api.client.WithPerms
-import com.assessory.clientpickle.Pickles._
-import com.assessory.sjsreact.Latched
-import com.wbillingsley.handy.{Ids, Id}
+import com.assessory.clientpickle.Pickles
+import Pickles._
+import com.wbillingsley.handy.{Ids, Id, Latch}
 import Id._
 import Ids._
 import com.wbillingsley.handy.appbase.{Group, Course}
@@ -16,36 +16,36 @@ import scala.util.{Success, Failure}
 
 object GroupService {
 
-  val cache = mutable.Map.empty[String, Latched[WithPerms[Group]]]
+  val cache = mutable.Map.empty[String, Latch[WithPerms[Group]]]
 
-  val myGroups = Latched.lazily(
-    Ajax.post(s"/api/group/my", headers=AJAX_HEADERS).responseText.map(upickle.default.read[Seq[WithPerms[Group]]])
+  val myGroups:Latch[Seq[WithPerms[Group]]] = Latch.lazily(
+    Ajax.post(s"/api/group/my", headers=AJAX_HEADERS).responseText.flatMap(Pickles.readF[Seq[WithPerms[Group]]])
   )
-  UserService.self.listeners.add { _ => myGroups.clear(); cache.clear() }
+  UserService.self.addListener { _ => myGroups.clear(); cache.clear() }
 
-  def myGroupsInCourse(courseId:Id[Course,String]) = Latched.lazily(
-    Ajax.post(s"/api/course/${courseId.id}/group/my", headers=AJAX_HEADERS).responseText.map(upickle.default.read[Seq[WithPerms[Group]]])
+  def myGroupsInCourse(courseId:Id[Course,String]):Latch[Seq[WithPerms[Group]]] = Latch.lazily(
+    Ajax.post(s"/api/course/${courseId.id}/group/my", headers=AJAX_HEADERS).responseText.flatMap(Pickles.readF[Seq[WithPerms[Group]]])
   )
 
-  def loadId[KK <: String](id:Id[Group,KK]) = {
-    Ajax.get(s"/api/group/${id.id}", headers=AJAX_HEADERS).responseText.map(upickle.default.read[WithPerms[Group]])
+  def loadId[KK <: String](id:Id[Group,KK]):Future[WithPerms[Group]] = {
+    Ajax.get(s"/api/group/${id.id}", headers=AJAX_HEADERS).responseText.flatMap(Pickles.readF[WithPerms[Group]])
   }
 
-  def latch(s:String):Latched[WithPerms[Group]] = latch(s.asId)
+  def latch(s:String):Latch[WithPerms[Group]] = latch(s.asId)
 
-  def latch(id:Id[Group,String]):Latched[WithPerms[Group]] = cache.getOrElseUpdate(id.id, Latched.lazily(loadId(id)))
+  def latch(id:Id[Group,String]):Latch[WithPerms[Group]] = cache.getOrElseUpdate(id.id, Latch.lazily(loadId(id)))
 
-  def preload[KK <: String](ids:Ids[Group,KK]) = {
+  def preload[KK <: String](ids:Ids[Group,KK]):Future[Seq[WithPerms[Group]]] = {
     val idStrings:Seq[String] = ids.ids
     val missing = idStrings.filterNot(id => cache.contains(id))
     val promiseMap = (for (id <- missing) yield {
       val p = Promise[WithPerms[Group]]()
-      cache.put(id, Latched.lazily(p.future))
+      cache.put(id, Latch.lazily(p.future))
       id -> p
     }).toMap
 
-    val loading = Ajax.post("/api/group/findMany", upickle.default.write(missing.asIds[Group]), headers=AJAX_HEADERS)
-      .responseText.map(upickle.default.read[Seq[WithPerms[Group]]])
+    val loading = Ajax.post("/api/group/findMany", Pickles.write(missing.asIds[Group]), headers=AJAX_HEADERS)
+      .responseText.flatMap(Pickles.readF[Seq[WithPerms[Group]]])
 
     loading.andThen {
       case Success(seq) => for (g <- seq) promiseMap(g.item.id.id).complete(Success(g))
@@ -60,7 +60,7 @@ object GroupService {
     }
   }
 
-  def latch(ids:Ids[Group,String]) = Latched.lazily(loadIds(ids))
+  def latch(ids:Ids[Group,String]):Latch[Seq[WithPerms[Group]]] = Latch.lazily(loadIds(ids))
 
 
 }

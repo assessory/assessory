@@ -2,7 +2,7 @@ package com.assessory.sjsreact
 
 import com.assessory.sjsreact.services.UserService
 import com.wbillingsley.handy.appbase.User
-import com.wbillingsley.handy.{Perm, Ref}
+import com.wbillingsley.handy.{Perm, Ref, Latch}
 import japgolly.scalajs.react.{ReactNode, ReactComponentC, ReactElement, ReactComponentB}
 import japgolly.scalajs.react.vdom.prefix_<^._
 
@@ -11,12 +11,12 @@ import scala.util.{Failure, Success}
 
 object CommonComponent {
 
-  case class ActionMessage[T](item: T, l:Latched[String])
+  case class ActionMessage[T](item: T, l:Latch[String])
 
   def latchedX[T](name:String)(block: ReactComponentB.P[T] => ReactComponentC.ReqProps[T, _, _, _ <: japgolly.scalajs.react.TopNode]) = {
     val inner = block(ReactComponentB[T](name))
 
-    ReactComponentB[Latched[T]]("Latched"+name)
+    ReactComponentB[Latch[T]]("Latch"+name)
       .render({ l =>
       l.props.request.value match {
         case Some(Success(x)) => inner(x)
@@ -32,7 +32,7 @@ object CommonComponent {
       .render({ cb => render(cb.props) })
       .build
 
-    ReactComponentB[Latched[T]]("Latched"+name)
+    ReactComponentB[Latch[T]]("Latch"+name)
       .render({ l =>
         l.props.request.value match {
           case Some(Success(x)) => inner(x)
@@ -46,7 +46,7 @@ object CommonComponent {
   /**
     * A simplified version of latchedRender that does not use a React Component.
     */
-  def latchR[T](l:Latched[T])(render: T => ReactElement):ReactElement = {
+  def latchR[T](l:Latch[T])(render: T => ReactElement):ReactElement = {
     l.request.value match {
       case Some(Success(x)) => render(x)
       case Some(Failure(x)) => <.span(^.className := "error", x.getMessage)
@@ -70,7 +70,7 @@ object CommonComponent {
       .build
   }
 
-  def latchedNode(l: Latched[ReactNode]):ReactNode = l.request.value match {
+  def latchedNode(l: Latch[ReactNode]):ReactNode = l.request.value match {
     case Some(Success(x)) => x
     case Some(Failure(x)) => <.span(^.className := "error", x.getMessage)
     case _ => <.i(^.className := "fa fa-spinner fa-spin")
@@ -90,6 +90,6 @@ object CommonComponent {
 
   val latchedString = latchedRender[String]("latchedString") { str:String => <.span(str) }
 
-  def futErrorResult[T](f:Future[T]) = latchedString(Latched.lazily(f.map(_ => "")))
+  def futErrorResult[T](f:Future[T]) = latchedString(Latch.lazily(f.map(_ => "")))
 
 }

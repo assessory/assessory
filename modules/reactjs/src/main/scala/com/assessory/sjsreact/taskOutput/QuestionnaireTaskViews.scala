@@ -4,10 +4,10 @@ import com.assessory.api.question.{QuestionnaireTask, QuestionnaireTaskOutput}
 import com.assessory.api.video.{YouTube, VideoTaskOutput}
 import com.assessory.api.{TaskOutputBody, TargetUser, TaskOutput, Task}
 import com.assessory.sjsreact
-import com.assessory.sjsreact.{QuestionViews, CommonComponent, Latched}
+import com.assessory.sjsreact.{QuestionViews, CommonComponent }
 import com.assessory.sjsreact.services.TaskOutputService
 import com.assessory.sjsreact.video.VideoViews.VTOState
-import com.wbillingsley.handy.Id
+import com.wbillingsley.handy.{Latch, Id}
 import japgolly.scalajs.react._
 
 import Id._
@@ -25,7 +25,7 @@ object QuestionnaireTaskViews {
     * Default
     */
   val front = ReactComponentB[Task]("taskOutputEdit")
-    .initialState_P(task => Latched.lazily{
+    .initialState_P(task => Latch.lazily{
       for {
         tos <- TaskOutputService.myOutputs(task.id)
       } yield {
@@ -37,13 +37,13 @@ object QuestionnaireTaskViews {
           body = TaskOutputService.emptyBodyFor(task.body)
         )
 
-        QTOState(task, orig, to, Latched.immediate(""))
+        QTOState(task, orig, to, Latch.immediate(""))
       }
     })
     .renderBackend[QuestionnaireTaskOutputBackend]
     .build
 
-  case class QTOState(task:Task, orig:Option[TaskOutput], to:TaskOutput, s:Latched[String])
+  case class QTOState(task:Task, orig:Option[TaskOutput], to:TaskOutput, s:Latch[String])
 
   sealed trait Finalisable
   object IsFinalisable extends Finalisable
@@ -51,7 +51,7 @@ object QuestionnaireTaskViews {
   object UnsavedChanges extends Finalisable
   object AlreadyFinalised extends Finalisable
 
-  class QuestionnaireTaskOutputBackend($: BackendScope[_, Latched[QTOState]]) {
+  class QuestionnaireTaskOutputBackend($: BackendScope[_, Latch[QTOState]]) {
 
     def savable(vto:QTOState) = {
       !vto.orig.contains(vto.to) && vto.s.isCompleted
@@ -71,7 +71,7 @@ object QuestionnaireTaskViews {
     def update(body: TaskOutputBody):Callback = { $.modState({ latched =>
       if (latched.isCompleted) {
         latched.request.value match {
-          case Some(Success(vto)) => Latched.immediate(
+          case Some(Success(vto)) => Latch.immediate(
             vto.copy(to = vto.to.copy(body = body))
           )
           case _ => latched
@@ -82,7 +82,7 @@ object QuestionnaireTaskViews {
     def save(finalise:Boolean = false) = $.modState({ latched =>
       if (latched.isCompleted) {
         latched.request.value match {
-          case Some(Success(vto)) => Latched.lazily(
+          case Some(Success(vto)) => Latch.lazily(
             (
               for {
                 wp <- if (vto.orig.isDefined) {
@@ -90,9 +90,9 @@ object QuestionnaireTaskViews {
                 } else {
                   TaskOutputService.createNew(vto.to)
                 }
-              } yield QTOState(vto.task, Some(wp.item), wp.item, Latched.immediate("Saved"))
+              } yield QTOState(vto.task, Some(wp.item), wp.item, Latch.immediate("Saved"))
               ) recover {
-              case e:Exception => QTOState(vto.task, vto.orig, vto.to, Latched.immediate("Failed to save: " + e.getMessage))
+              case e:Exception => QTOState(vto.task, vto.orig, vto.to, Latch.immediate("Failed to save: " + e.getMessage))
             }
           )
         }
@@ -102,20 +102,20 @@ object QuestionnaireTaskViews {
     def finalise() = $.modState({ latched =>
       if (latched.isCompleted) {
         latched.request.value match {
-          case Some(Success(vto)) => Latched.lazily(
+          case Some(Success(vto)) => Latch.lazily(
             (
               for {
                 wp <- TaskOutputService.finalise(vto.to)
-              } yield QTOState(vto.task, Some(wp.item), wp.item, Latched.immediate("Finalised"))
+              } yield QTOState(vto.task, Some(wp.item), wp.item, Latch.immediate("Finalised"))
             ) recover {
-              case e:Exception => QTOState(vto.task, vto.orig, vto.to, Latched.immediate("Failed to finalise: " + e.getMessage))
+              case e:Exception => QTOState(vto.task, vto.orig, vto.to, Latch.immediate("Failed to finalise: " + e.getMessage))
             }
           )
         }
       } else latched
     })
 
-    def render(state:Latched[QTOState]) = {
+    def render(state:Latch[QTOState]) = {
       CommonComponent.latchR(state) { vto =>
         <.div(
           (vto.task.body, vto.to.body) match {

@@ -9,7 +9,7 @@ import due._
 import com.assessory.api.client.WithPerms
 import com.assessory.api.critique.{AllocateStrategy, CritiqueTask, Critique}
 import com.assessory.sjsreact.services.{TaskOutputService, CourseService, TaskService, GroupService}
-import com.wbillingsley.handy.Id
+import com.wbillingsley.handy.{Id, Latch}
 import com.wbillingsley.handy.Ids._
 import com.wbillingsley.handy.appbase.{Group, Course}
 import japgolly.scalajs.react.{Callback, ReactNode, ReactElement, ReactComponentB}
@@ -25,7 +25,7 @@ object TaskViews {
   }
 
   val due = ReactComponentB[Due]("Due")
-    .initialState_P(due => Latched.lazily(
+    .initialState_P(due => Latch.lazily(
       for {
         groups <- GroupService.myGroups.request
       } yield {
@@ -247,7 +247,7 @@ object TaskViews {
   }
 
   val allOutputs = ReactComponentB[Task]("all outputs")
-    .initialState_P(task => Latched.lazily{
+    .initialState_P(task => Latch.lazily{
       for {
         outputs <- TaskOutputService.allOutputs(task.id)
       } yield new Selection(None, outputs, task)

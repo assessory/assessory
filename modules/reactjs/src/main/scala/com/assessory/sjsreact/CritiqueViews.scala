@@ -9,7 +9,7 @@ import com.assessory.sjsreact
 import com.assessory.sjsreact.services.{TaskService, TaskOutputService}
 import com.assessory.sjsreact.video.VideoViews
 import com.assessory.sjsreact.video.VideoViews.VTOState
-import com.wbillingsley.handy.Id
+import com.wbillingsley.handy.{Id, Latch}
 import com.wbillingsley.handy.appbase._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.prefix_<^._
@@ -28,7 +28,7 @@ object CritiqueViews {
     def selected = _selected
   }
 
-  case class Saveable[T,R](item: T, l:Latched[R])
+  case class Saveable[T,R](item: T, l:Latch[R])
 
 
   val allocationsSwitch = ReactComponentB[Selection[Target,Task]]("critAllocationSelection")
@@ -64,7 +64,7 @@ object CritiqueViews {
     .render_P { sel =>
       sel.selected match {
         case Some(TargetTaskOutput(to)) =>
-          reviewTO(Latched.eagerly {
+          reviewTO(Latch.lazily {
             for {
               taskOutput <- TaskOutputService.latch(to).request
               task <- TaskService.latch(taskOutput.item.task).request
@@ -78,7 +78,7 @@ object CritiqueViews {
 
 
   case class CompleteCritProps(task:Task, wpTo:WithPerms[TaskOutput])
-  case class CompleteCritState(task:Task, wpTo:WithPerms[TaskOutput], answers:Seq[Answer[_]], message:Latched[String])
+  case class CompleteCritState(task:Task, wpTo:WithPerms[TaskOutput], answers:Seq[Answer[_]], message:Latch[String])
 
   class CompleteCritBackend($: BackendScope[CompleteCritProps, CompleteCritState]) {
 
@@ -97,7 +97,7 @@ object CritiqueViews {
         case crit:Critique => {
           val toSave = state.wpTo.item.copy(body = crit.copy(answers = state.answers))
           val f = TaskOutputService.updateBody(toSave)
-          val newLatch = Latched.lazily(f.map(_ => ""))
+          val newLatch = Latch.lazily(f.map(_ => ""))
           CompleteCritState(state.task, state.wpTo, state.answers, newLatch)
         }
       } */
@@ -121,7 +121,7 @@ object CritiqueViews {
 
   val completeCrit = CommonComponent.latchedX[CompleteCritProps]("completeCrit") { comp =>
     comp.initialState_P { props => props.wpTo.item.body match {
-      case c:Critique => CompleteCritState(props.task, props.wpTo, Seq.empty, Latched.immediate(""))
+      case c:Critique => CompleteCritState(props.task, props.wpTo, Seq.empty, Latch.immediate(""))
     }}
     .renderBackend[CompleteCritBackend]
     .build
@@ -131,7 +131,7 @@ object CritiqueViews {
   val critFormTargF = CommonComponent.latchedRender[(Task, Id[TaskOutput, String])]("critFormTarg") {
     case (task, id) =>
       val fPair = TaskOutputService.future(id).map(CompleteCritProps(task, _))
-      completeCrit(Latched.lazily(fPair))
+      completeCrit(Latch.lazily(fPair))
   }
 
 
@@ -148,7 +148,7 @@ object CritiqueViews {
         outputId <- state.toId
       } yield (state.task, outputId)
 
-      critFormTargF(Latched.lazily(lpair))
+      critFormTargF(Latch.lazily(lpair))
     }
     .build
 
@@ -166,7 +166,7 @@ object CritiqueViews {
   }
 
   val front = ReactComponentB[Task]("critiqueTaskView")
-    .initialState_P(task => Latched.lazily{
+    .initialState_P(task => Latch.lazily{
       for (alloc <- TaskOutputService.myAllocations(task.id)) yield new Selection(None, alloc, task)
     })
     .render_S(c => frontInt(c))
@@ -222,7 +222,7 @@ object CritiqueViews {
     case _ => <.div(^.cls := "alert alert-error", "Unrenderable target")
   }
 
-  case class CritBackendState(task:Task, orig:Option[TaskOutput], to:TaskOutput, s:Latched[String])
+  case class CritBackendState(task:Task, orig:Option[TaskOutput], to:TaskOutput, s:Latch[String])
 
   sealed trait Finalisable
   object IsFinalisable extends Finalisable
@@ -230,7 +230,7 @@ object CritiqueViews {
   object NeverSaved extends Finalisable
   object AlreadyFinalised extends Finalisable
 
-  class CritBackend($: BackendScope[_, Latched[CritBackendState]]) {
+  class CritBackend($: BackendScope[_, Latch[CritBackendState]]) {
 
     def savable(vto:CritBackendState) = {
       !vto.orig.contains(vto.to) && vto.s.isCompleted
@@ -260,7 +260,7 @@ object CritiqueViews {
     def save:Callback = $.modState({ latched =>
       if (latched.isCompleted) {
         latched.request.value match {
-          case Some(Success(vto)) => Latched.lazily(
+          case Some(Success(vto)) => Latch.lazily(
             (
               for {
                 wp <- if (vto.orig.isDefined) {
@@ -268,9 +268,9 @@ object CritiqueViews {
                 } else {
                   TaskOutputService.createNew(vto.to)
                 }
-              } yield CritBackendState(vto.task, Some(wp.item), wp.item, Latched.immediate("Saved"))
+              } yield CritBackendState(vto.task, Some(wp.item), wp.item, Latch.immediate("Saved"))
               ) recover {
-              case e:Exception => CritBackendState(vto.task, vto.orig, vto.to, Latched.immediate("Failed to save: " + e.getMessage))
+              case e:Exception => CritBackendState(vto.task, vto.orig, vto.to, Latch.immediate("Failed to save: " + e.getMessage))
             }
           )
         }
@@ -280,13 +280,13 @@ object CritiqueViews {
     def finalise():Callback = $.modState({ latched =>
       if (latched.isCompleted) {
         latched.request.value match {
-          case Some(Success(vto)) => Latched.lazily(
+          case Some(Success(vto)) => Latch.lazily(
             (
               for {
                 wp <- TaskOutputService.finalise(vto.to)
-              } yield CritBackendState(vto.task, Some(wp.item), wp.item, Latched.immediate("Finalised"))
+              } yield CritBackendState(vto.task, Some(wp.item), wp.item, Latch.immediate("Finalised"))
               ) recover {
-              case e:Exception => CritBackendState(vto.task, vto.orig, vto.to, Latched.immediate("Failed to save: " + e.getMessage))
+              case e:Exception => CritBackendState(vto.task, vto.orig, vto.to, Latch.immediate("Failed to save: " + e.getMessage))
             }
           )
         }
@@ -295,10 +295,10 @@ object CritiqueViews {
 
     def stateFromProps(p:(Task,Id[TaskOutput, String])) = $.modState { s => s.request.value match {
       case Some(Success(CritBackendState(_, _, TaskOutput(id, _, _, _, _, _, _, _), _))) if id == p._2 => s
-      case _ => Latched.lazily(
+      case _ => Latch.lazily(
         for {
           to <- TaskOutputService.future(p._2)
-        } yield CritBackendState(p._1, Some(to.item), to.item, Latched.immediate(""))
+        } yield CritBackendState(p._1, Some(to.item), to.item, Latch.immediate(""))
       )
     }}
 
@@ -306,7 +306,7 @@ object CritiqueViews {
     def video(e: ReactEventI):Callback = { $.modState({ latched =>
       if (latched.isCompleted) {
         latched.request.value match {
-          case Some(Success(vto)) => Latched.immediate(
+          case Some(Success(vto)) => Latch.immediate(
             vto.copy(to = vto.to.copy(body = vto.to.body match {
               case Critique(targ, VideoTaskOutput(_)) => Critique(targ, VideoTaskOutput(Some(YouTube(e.target.value))))
             }))
@@ -319,7 +319,7 @@ object CritiqueViews {
     def body(qto:QuestionnaireTaskOutput):Callback = { $.modState({ latched =>
       if (latched.isCompleted) {
         latched.request.value match {
-          case Some(Success(vto)) => Latched.immediate(
+          case Some(Success(vto)) => Latch.immediate(
             vto.copy(to = vto.to.copy(body = vto.to.body match {
               case Critique(targ, _) => Critique(targ, qto)
             }))
@@ -330,7 +330,7 @@ object CritiqueViews {
     })}
 
 
-    def render(lState:Latched[CritBackendState]) = CommonComponent.latchR(lState) { state =>
+    def render(lState:Latch[CritBackendState]) = CommonComponent.latchR(lState) { state =>
       <.div(
         <.div(^.cls := "panel panel-default",
           <.div(^.cls := "panel-heading", "What you are critiquing:"),
@@ -382,10 +382,10 @@ object CritiqueViews {
   }
 
   val renderCrit = ReactComponentB[(Task, Id[TaskOutput, String])]("renderCritOutput")
-    .initialState_P({ p => Latched.lazily(
+    .initialState_P({ p => Latch.lazily(
       for {
         to <- TaskOutputService.future(p._2)
-      } yield CritBackendState(p._1, Some(to.item), to.item, Latched.immediate(""))
+      } yield CritBackendState(p._1, Some(to.item), to.item, Latch.immediate(""))
     )})
     .renderBackend[CritBackend]
     .componentWillReceiveProps({ x => x.$.backend.stateFromProps(x.nextProps) })
@@ -405,7 +405,7 @@ object CritiqueViews {
 
 
   val frontTwo = ReactComponentB[Task]("critiqueTaskView")
-    .initialState_P(task => Latched.lazily{
+    .initialState_P(task => Latch.lazily{
       for {
         alloc <- TaskOutputService.taskOutputsFor(task.id)
 

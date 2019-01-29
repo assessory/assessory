@@ -1,16 +1,17 @@
 package com.assessory.sjsreact
 
 import com.assessory.api.client.EmailAndPassword
-import com.assessory.sjsreact.services.{UserService, CourseService}
+import com.assessory.sjsreact.services.{CourseService, UserService}
+import com.wbillingsley.handy.Latch
 import com.wbillingsley.handy.appbase.UserError
-import japgolly.scalajs.react.{ReactEventI, BackendScope, ReactComponentB}
+import japgolly.scalajs.react.{BackendScope, ReactComponentB, ReactEventI}
 import japgolly.scalajs.react.vdom.prefix_<^._
 
 import scala.concurrent.Future
 
 object LogInViews {
 
-  class LogInBackend($: BackendScope[_, (EmailAndPassword, Latched[String])]) {
+  class LogInBackend($: BackendScope[_, (EmailAndPassword, Latch[String])]) {
 
     def email(e: ReactEventI) = $.modState { case (ep, ls) => (ep.copy(email = e.target.value), ls) }
 
@@ -18,10 +19,10 @@ object LogInViews {
 
     def logIn(e: ReactEventI) = $.modState { case (ep, ls) =>
       val v = UserService.logIn(ep).map(_ => "Logged in").recoverWith { case x => Future.failed(UserError("Log in failed")) }
-      (ep, Latched.lazily(v))
+      (ep, Latch.lazily(v))
     }
 
-    def render(s:(EmailAndPassword, Latched[String])) =
+    def render(s:(EmailAndPassword, Latch[String])) =
       <.div(
         Front.siteHeader("Hello"),
 
@@ -64,12 +65,12 @@ object LogInViews {
     .buildU
 
   val logIn = ReactComponentB[Unit]("Front")
-    .initialState { (EmailAndPassword("", ""), Latched.immediate("")) }
+    .initialState { (EmailAndPassword("", ""), Latch.immediate("")) }
     .renderBackend[LogInBackend]
     .buildU
 
 
-  class SignUpBackend($: BackendScope[_, (EmailAndPassword, Latched[String])]) {
+  class SignUpBackend($: BackendScope[_, (EmailAndPassword, Latch[String])]) {
 
     def email(e: ReactEventI) = $.modState { case (ep, ls) => (ep.copy(email = e.target.value), ls) }
 
@@ -77,10 +78,10 @@ object LogInViews {
 
     def logIn(e: ReactEventI) = $.modState { case (ep, ls) =>
       val v = UserService.signUp(ep).map(_ => "Logged in").recoverWith { case x => Future.failed(UserError("Sign up failed")) }
-      (ep, Latched.lazily(v))
+      (ep, Latch.lazily(v))
     }
 
-    def render(state:(EmailAndPassword, Latched[String])) =
+    def render(state:(EmailAndPassword, Latch[String])) =
       <.div(
         Front.siteHeader("Hello"),
 
@@ -112,7 +113,7 @@ object LogInViews {
 
 
   val signUp = ReactComponentB[Unit]("SignUp")
-    .initialState((EmailAndPassword("", ""), Latched.immediate("")))
+    .initialState((EmailAndPassword("", ""), Latch.immediate("")))
     .renderBackend[SignUpBackend]
     .buildU
 

@@ -1,9 +1,9 @@
 package com.assessory.sjsreact.summaries
 
 import com.assessory.api._
-import com.assessory.sjsreact.{TargetViews, GroupViews, WebApp, Latched}
+import com.assessory.sjsreact.{TargetViews, GroupViews, WebApp }
 import com.assessory.sjsreact.services.TaskOutputService
-import com.wbillingsley.handy.Id
+import com.wbillingsley.handy.{Latch, Id}
 import japgolly.scalajs.react.{Callback, ReactComponentB}
 import japgolly.scalajs.react.vdom.prefix_<^._
 
@@ -22,7 +22,7 @@ object AllTaskOutputs {
     def selected = _selected
   }
 
-  case class Saveable[T,R](item: T, l:Latched[R])
+  case class Saveable[T,R](item: T, l:Latch[R])
 
 
   val allocationsSwitch = ReactComponentB[Selection[Target,TaskOutput]]("outputSelection")
