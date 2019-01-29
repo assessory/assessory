@@ -8,13 +8,16 @@ import io.circe.parser.decode
 import scala.util.Try
 import com.assessory.api.critique._
 import com.assessory.api._
+import com.assessory.api.client.{EmailAndPassword, WithPerms}
 import com.assessory.api.due.{Due, DueDate, DuePerGroup, NoDue}
 import com.assessory.api.video._
 import question._
-import com.wbillingsley.handy.appbase.{Question => _, _}
-import com.wbillingsley.handy.{EmptyKind, Id, Ids}
+import com.wbillingsley.handy.appbase.{Question => _, Answer => _, _}
+import com.wbillingsley.handy.{EmptyKind, Id, Ids, Ref}
 import com.wbillingsley.handy.Id._
 import com.wbillingsley.handy.Ids._
+
+import scala.concurrent.Future
 
 object Pickles {
 
@@ -144,9 +147,61 @@ object Pickles {
   )
   implicit val taskDecoder: Decoder[Task] = deriveDecoder[Task]
 
+  implicit val targetEncoder: Encoder[Target] = deriveEncoder[Target]
+  implicit val targetDecoder: Decoder[Target] = deriveDecoder[Target]
+
+  implicit val critiqueEncoder: Encoder[Critique] = deriveEncoder[Critique]
+  implicit val critiqueDecoder: Decoder[Critique] = deriveDecoder[Critique]
+
+  implicit val videoResourceEncoder: Encoder[VideoResource] = deriveEncoder[VideoResource]
+  implicit val videoResourceDecoder: Decoder[VideoResource] = deriveDecoder[VideoResource]
+  implicit val answerEncoder: Encoder[Answer] = deriveEncoder[Answer]
+  implicit val answerDecoder: Decoder[Answer] = deriveDecoder[Answer]
+  implicit val questionnaireTaskOutputEncoder: Encoder[QuestionnaireTaskOutput] = deriveEncoder[QuestionnaireTaskOutput]
+  implicit val questionnaireTaskOutputDecoder: Decoder[QuestionnaireTaskOutput] = deriveDecoder[QuestionnaireTaskOutput]
+
+
+  implicit val taskOutputBodyEncoder: Encoder[TaskOutputBody] = (tb:TaskOutputBody) => tb match {
+    case qt:QuestionnaireTaskOutput => Json.obj("kind" -> Json.fromString("questionnaire"), "taskBody" -> qt.asJson)
+    case ct:Critique => Json.obj("kind" -> Json.fromString("critique"), "taskBody" -> ct.asJson)
+    case EmptyTaskOutputBody => Json.obj("kind" -> Json.fromString("empty"))
+  }
+  implicit val taskOutputBodyDecoder: Decoder[TaskOutputBody] = (c: HCursor) => {
+    c.downField("kind").as[String].flatMap {
+      case "questionnaire" => c.downField("taskBody").as[QuestionnaireTaskOutput]
+      case "critique" => c.downField("taskBody").as[Critique]
+      case "empty" => Right(EmptyTaskOutputBody)
+    }
+  }
+
+  implicit val taskOutputDecoder: Decoder[TaskOutput] = deriveDecoder[TaskOutput]
+  implicit val taskOutputEncoder: Encoder[TaskOutput] = deriveEncoder[TaskOutput]
+
+  implicit val emailAndPasswordEncoder: Encoder[EmailAndPassword] = deriveEncoder[EmailAndPassword]
+  implicit val emailAndPasswordDecoder: Decoder[EmailAndPassword] = deriveDecoder[EmailAndPassword]
+  implicit val passwordLoginEncoder: Encoder[PasswordLogin] = deriveEncoder[PasswordLogin]
+  implicit val PasswordLoginDecoder: Decoder[PasswordLogin] = deriveDecoder[PasswordLogin]
+  implicit val activeSessionEncoder: Encoder[ActiveSession] = deriveEncoder[ActiveSession]
+  implicit val activeSessionDecoder: Decoder[ActiveSession] = deriveDecoder[ActiveSession]
+  implicit val userEncoder: Encoder[User] = deriveEncoder[User]
+  implicit val userDecoder: Decoder[User] = deriveDecoder[User]
+
+  implicit def withPermsEncoder[T](implicit encoder: Encoder[T]): Encoder[WithPerms[T]] = deriveEncoder[WithPerms[T]]
+  implicit def withPermsDecoder[T](implicit decoder: Decoder[T]): Decoder[WithPerms[T]] = deriveDecoder[WithPerms[T]]
+
+
+  implicit val smallFileDetailsEncoder: Encoder[SmallFileDetails] = deriveEncoder[SmallFileDetails]
+  implicit val smallFileDetailsDecoder: Decoder[SmallFileDetails] = deriveDecoder[SmallFileDetails]
+
+
+
   def write[T](thing: T)(implicit encoder: Encoder[T]): String = thing.asJson.toString
 
   def read[T](text: String)(implicit decoder: Decoder[T]): Try[T] = decode(text)(decoder).toTry
+
+  def readF[T](text:String)(implicit decoder: Decoder[T]): Future[T] = Future.fromTry(read(text)(decoder))
+
+  def readR[T](text:String)(implicit decoder: Decoder[T]): Ref[T] = Ref(read(text)(decoder))
 
 
 }

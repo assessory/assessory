@@ -13,159 +13,159 @@ import upickle.Js
 
 object UPickles {
 /*
-  def idWriter[T] = upickle.default.Writer[Id[T, String]] { case id => Js.Str(id.id) }
-  def idReader[T] = upickle.default.Reader[Id[T, String]] { case Js.Str(s) => s.toString.asId[T] }
+  def idWriter[T] = Pickles.Writer[Id[T, String]] { case id => Js.Str(id.id) }
+  def idReader[T] = Pickles.Reader[Id[T, String]] { case Js.Str(s) => s.toString.asId[T] }
 
 
-  def idsWriter[T] = upickle.default.Writer[Ids[T, String]] { case id =>
+  def idsWriter[T] = Pickles.Writer[Ids[T, String]] { case id =>
     val jsIds = id.ids.map(Js.Str)
     Js.Arr(jsIds:_*)
   }
-  def idsReader[T] = upickle.default.Reader[Ids[T, String]] { case a:Js.Arr =>
+  def idsReader[T] = Pickles.Reader[Ids[T, String]] { case a:Js.Arr =>
     (for { v <- a.value } yield v.value.asInstanceOf[String]).asIds[T]
   }
 
-  implicit def kqWriter[T](kq:KindedQuestion[T])(implicit qwriter:upickle.default.Writer[T]) = upickle.default.Writer {
+  implicit def kqWriter[T](kq:KindedQuestion[T])(implicit qwriter:Pickles.Writer[T]) = Pickles.Writer {
     Js.Obj("kind" -> kq.kind, "q" -> kq.q)
   }
 
-  val questionWriter:upickle.default.Writer[Question] = upickle.default.Writer {
-    case st:ShortTextQuestion => upickle.default.writeJs(KindedQuestion("Short Text", st))
-    case q:BooleanQuestion => upickle.default.writeJs(KindedQuestion("Boolean", q))
-    case q:VideoQuestion => upickle.default.writeJs(KindedQuestion("Video", q))
-    case q:FileQuestion => upickle.default.writeJs(KindedQuestion("SmallFile", q))
+  val questionWriter:Pickles.Writer[Question] = Pickles.Writer {
+    case st:ShortTextQuestion => Pickles.writeJs(KindedQuestion("Short Text", st))
+    case q:BooleanQuestion => Pickles.writeJs(KindedQuestion("Boolean", q))
+    case q:VideoQuestion => Pickles.writeJs(KindedQuestion("Video", q))
+    case q:FileQuestion => Pickles.writeJs(KindedQuestion("SmallFile", q))
   }
-  val questionReader:upickle.default.Reader[Question] = upickle.default.Reader {
+  val questionReader:Pickles.Reader[Question] = Pickles.Reader {
     case o:Js.Obj => o("kind") match {
-      case Js.Str("Short Text") => upickle.default.readJs[KindedQuestion[ShortTextQuestion]](o).q
-      case Js.Str("Boolean") => upickle.default.readJs[KindedQuestion[BooleanQuestion]](o).q
-      case Js.Str("Video") => upickle.default.readJs[KindedQuestion[VideoQuestion]](o).q
-      case Js.Str("SmallFile") => upickle.default.readJs[KindedQuestion[FileQuestion]](o).q
+      case Js.Str("Short Text") => Pickles.readJs[KindedQuestion[ShortTextQuestion]](o).q
+      case Js.Str("Boolean") => Pickles.readJs[KindedQuestion[BooleanQuestion]](o).q
+      case Js.Str("Video") => Pickles.readJs[KindedQuestion[VideoQuestion]](o).q
+      case Js.Str("SmallFile") => Pickles.readJs[KindedQuestion[FileQuestion]](o).q
     }
   }
 
-  implicit val answerWriter:upickle.default.Writer[Answer] = upickle.default.Writer {
-    case st:ShortTextAnswer => upickle.default.writeJs(KindedAnswer("Short Text", st))
-    case q:BooleanAnswer => upickle.default.writeJs(KindedAnswer("Boolean", q))
-    case q:VideoAnswer => upickle.default.writeJs(KindedAnswer("Video", q))
-    case q:FileAnswer => upickle.default.writeJs(KindedAnswer("SmallFile", q))
+  implicit val answerWriter:Pickles.Writer[Answer] = Pickles.Writer {
+    case st:ShortTextAnswer => Pickles.writeJs(KindedAnswer("Short Text", st))
+    case q:BooleanAnswer => Pickles.writeJs(KindedAnswer("Boolean", q))
+    case q:VideoAnswer => Pickles.writeJs(KindedAnswer("Video", q))
+    case q:FileAnswer => Pickles.writeJs(KindedAnswer("SmallFile", q))
   }
-  implicit val answerReader:upickle.default.Reader[Answer]  = upickle.default.Reader {
+  implicit val answerReader:Pickles.Reader[Answer]  = Pickles.Reader {
     case o:Js.Obj => o("kind") match {
-      case Js.Str("Short Text") => upickle.default.readJs[KindedAnswer[ShortTextAnswer]](o).ans
-      case Js.Str("Boolean") => upickle.default.readJs[KindedAnswer[BooleanAnswer]](o).ans
-      case Js.Str("Video") => upickle.default.readJs[KindedAnswer[VideoAnswer]](o).ans
-      case Js.Str("SmallFile") => upickle.default.readJs[KindedAnswer[FileAnswer]](o).ans
+      case Js.Str("Short Text") => Pickles.readJs[KindedAnswer[ShortTextAnswer]](o).ans
+      case Js.Str("Boolean") => Pickles.readJs[KindedAnswer[BooleanAnswer]](o).ans
+      case Js.Str("Video") => Pickles.readJs[KindedAnswer[VideoAnswer]](o).ans
+      case Js.Str("SmallFile") => Pickles.readJs[KindedAnswer[FileAnswer]](o).ans
     }
   }
 
-  implicit val taskBodyWriter:upickle.default.Writer[TaskBody] = upickle.default.Writer[TaskBody] {
+  implicit val taskBodyWriter:Pickles.Writer[TaskBody] = Pickles.Writer[TaskBody] {
     case ct:CritiqueTask => Js.Obj(
       "kind" -> Js.Str(CritiqueTask.kind),
-      "strategy" -> upickle.default.writeJs(ct.strategy),
-      "task" -> upickle.default.writeJs(ct.task)(taskBodyWriter)
+      "strategy" -> Pickles.writeJs(ct.strategy),
+      "task" -> Pickles.writeJs(ct.task)(taskBodyWriter)
     )
-    case q:QuestionnaireTask => upickle.default.writeJs(KindedTaskBody(q.kind, q))
-    case v:VideoTask => upickle.default.writeJs(KindedTaskBody("Video", v))
-    case EmptyTaskBody => upickle.default.writeJs(KindedTaskBody("Empty", EmptyTaskBody))
-    case m:MessageTask => upickle.default.writeJs(KindedTaskBody("Message", m))
-    case f:SmallFileTask => upickle.default.writeJs(KindedTaskBody("SmallFile", f))
-    case c:CompositeTask => upickle.default.writeJs(KindedTaskBody("Composite", c))
+    case q:QuestionnaireTask => Pickles.writeJs(KindedTaskBody(q.kind, q))
+    case v:VideoTask => Pickles.writeJs(KindedTaskBody("Video", v))
+    case EmptyTaskBody => Pickles.writeJs(KindedTaskBody("Empty", EmptyTaskBody))
+    case m:MessageTask => Pickles.writeJs(KindedTaskBody("Message", m))
+    case f:SmallFileTask => Pickles.writeJs(KindedTaskBody("SmallFile", f))
+    case c:CompositeTask => Pickles.writeJs(KindedTaskBody("Composite", c))
   }
-  implicit val taskBodyReader:upickle.default.Reader[TaskBody] = upickle.default.Reader[TaskBody] {
+  implicit val taskBodyReader:Pickles.Reader[TaskBody] = Pickles.Reader[TaskBody] {
     case o:Js.Obj =>
       o("kind") match {
         case Js.Str(CritiqueTask.kind) => CritiqueTask(
-          strategy = upickle.default.readJs[CritTargetStrategy](o("strategy")),
-          task = upickle.default.readJs(o("task"))(taskBodyReader)
+          strategy = Pickles.readJs[CritTargetStrategy](o("strategy")),
+          task = Pickles.readJs(o("task"))(taskBodyReader)
         )
-        case Js.Str("Questionnaire") => upickle.default.readJs[KindedTaskBody[QuestionnaireTask]](o).taskBody
-        case Js.Str("Video") => upickle.default.readJs[KindedTaskBody[VideoTask]](o).taskBody
+        case Js.Str("Questionnaire") => Pickles.readJs[KindedTaskBody[QuestionnaireTask]](o).taskBody
+        case Js.Str("Video") => Pickles.readJs[KindedTaskBody[VideoTask]](o).taskBody
         case Js.Str("Empty") => EmptyTaskBody
-        case Js.Str("SmallFile") => upickle.default.readJs[KindedTaskBody[SmallFileTask]](o).taskBody
-        case Js.Str("Message") => upickle.default.readJs[KindedTaskBody[MessageTask]](o).taskBody
-        case Js.Str("Composite") => upickle.default.readJs[KindedTaskBody[CompositeTask]](o).taskBody
+        case Js.Str("SmallFile") => Pickles.readJs[KindedTaskBody[SmallFileTask]](o).taskBody
+        case Js.Str("Message") => Pickles.readJs[KindedTaskBody[MessageTask]](o).taskBody
+        case Js.Str("Composite") => Pickles.readJs[KindedTaskBody[CompositeTask]](o).taskBody
       }
   }
 
-  implicit val taskOutputBodyWriter:upickle.default.Writer[TaskOutputBody] = upickle.default.Writer {
+  implicit val taskOutputBodyWriter:Pickles.Writer[TaskOutputBody] = Pickles.Writer {
     case ct:Critique => Js.Obj(
       "kind" -> Js.Str(CritiqueTask.kind),
-      "target" -> upickle.default.writeJs(ct.target),
-      "task" -> upickle.default.writeJs(ct.task)(taskOutputBodyWriter)
+      "target" -> Pickles.writeJs(ct.target),
+      "task" -> Pickles.writeJs(ct.task)(taskOutputBodyWriter)
     )
-    case EmptyTaskOutputBody => upickle.default.writeJs(KindedTaskOutputBody(EmptyTaskOutputBody.kind, EmptyTaskOutputBody))
+    case EmptyTaskOutputBody => Pickles.writeJs(KindedTaskOutputBody(EmptyTaskOutputBody.kind, EmptyTaskOutputBody))
     case v:VideoTaskOutput => Js.Obj(
-      "kind" -> Js.Str("video"), "video" -> upickle.default.writeJs(v.video)
+      "kind" -> Js.Str("video"), "video" -> Pickles.writeJs(v.video)
     )
     case q:QuestionnaireTaskOutput => Js.Obj(
-      "kind" -> Js.Str("questionnaire"), "answers" -> upickle.default.writeJs(q.answers)
+      "kind" -> Js.Str("questionnaire"), "answers" -> Pickles.writeJs(q.answers)
     )
   }
 
-  implicit val taskOutputBodyReader:upickle.default.Reader[TaskOutputBody] = upickle.default.Reader {
+  implicit val taskOutputBodyReader:Pickles.Reader[TaskOutputBody] = Pickles.Reader {
     case o:Js.Obj =>
       o("kind") match {
         case Js.Str(CritiqueTask.kind) => Critique(
-          target = upickle.default.readJs[Target](o("target")),
-          task = upickle.default.readJs(o("task"))(taskOutputBodyReader)
+          target = Pickles.readJs[Target](o("target")),
+          task = Pickles.readJs(o("task"))(taskOutputBodyReader)
         )
-        case Js.Str("video") => VideoTaskOutput(video = upickle.default.readJs[Option[VideoResource]](o("video")))
-        case Js.Str("questionnaire") => QuestionnaireTaskOutput(answers = upickle.default.readJs[Seq[Answer]](o("answers")))
+        case Js.Str("video") => VideoTaskOutput(video = Pickles.readJs[Option[VideoResource]](o("video")))
+        case Js.Str("questionnaire") => QuestionnaireTaskOutput(answers = Pickles.readJs[Seq[Answer]](o("answers")))
         case Js.Str(EmptyTaskOutputBody.kind) => EmptyTaskOutputBody
       }
   }
 
-  implicit val coursePreenrolRowReader = upickle.default.Reader[Course.PreenrolRow] { case o:Js.Obj =>
+  implicit val coursePreenrolRowReader = Pickles.Reader[Course.PreenrolRow] { case o:Js.Obj =>
     new Course.PreenrolRow(
-      target = upickle.default.readJs[Id[Course,String]](o("target")),
-      roles = upickle.default.readJs[Set[CourseRole]](o("roles")),
-      identity = upickle.default.readJs[IdentityLookup](o("identity")),
-      used = upickle.default.readJs[Option[Used[Course.Reg]]](o("used"))
+      target = Pickles.readJs[Id[Course,String]](o("target")),
+      roles = Pickles.readJs[Set[CourseRole]](o("roles")),
+      identity = Pickles.readJs[IdentityLookup](o("identity")),
+      used = Pickles.readJs[Option[Used[Course.Reg]]](o("used"))
     )
   }
 
-  implicit val coursePreenrolRowWriter = upickle.default.Writer[Course.PreenrolRow] { case row =>
+  implicit val coursePreenrolRowWriter = Pickles.Writer[Course.PreenrolRow] { case row =>
     Js.Obj(
-      "target" -> upickle.default.writeJs(row.target),
-      "roles" -> upickle.default.writeJs(row.roles),
-      "identity" -> upickle.default.writeJs(row.identity),
-      "used" -> upickle.default.writeJs(row.used)
+      "target" -> Pickles.writeJs(row.target),
+      "roles" -> Pickles.writeJs(row.roles),
+      "identity" -> Pickles.writeJs(row.identity),
+      "used" -> Pickles.writeJs(row.used)
     )
   }
 
-  implicit val coursePreenrolReader = upickle.default.Reader[Course.Preenrol] { case o:Js.Obj =>
+  implicit val coursePreenrolReader = Pickles.Reader[Course.Preenrol] { case o:Js.Obj =>
     new Course.Preenrol(
-      id = upickle.default.readJs[Id[Course.Preenrol,String]](o("id")),
-      name = upickle.default.readJs[Option[String]](o("name")),
-      within = upickle.default.readJs[Option[Id[Course,String]]](o("within")),
-      rows = upickle.default.readJs[Seq[Course.PreenrolRow]](o("rows")),
-      created = upickle.default.readJs[Long](o("created")),
-      modified = upickle.default.readJs[Long](o("modified"))
+      id = Pickles.readJs[Id[Course.Preenrol,String]](o("id")),
+      name = Pickles.readJs[Option[String]](o("name")),
+      within = Pickles.readJs[Option[Id[Course,String]]](o("within")),
+      rows = Pickles.readJs[Seq[Course.PreenrolRow]](o("rows")),
+      created = Pickles.readJs[Long](o("created")),
+      modified = Pickles.readJs[Long](o("modified"))
     )
   }
-  implicit val coursePreenrolWriter = upickle.default.Writer[Course.Preenrol] { case p =>
+  implicit val coursePreenrolWriter = Pickles.Writer[Course.Preenrol] { case p =>
     Js.Obj(
-      "id" -> upickle.default.writeJs(p.id),
-      "name" -> upickle.default.writeJs(p.name),
-      "within" -> upickle.default.writeJs(p.within),
-      "rows" -> upickle.default.writeJs(p.rows),
-      "created" -> upickle.default.writeJs(p.created),
-      "modified" -> upickle.default.writeJs(p.modified)
+      "id" -> Pickles.writeJs(p.id),
+      "name" -> Pickles.writeJs(p.name),
+      "within" -> Pickles.writeJs(p.within),
+      "rows" -> Pickles.writeJs(p.rows),
+      "created" -> Pickles.writeJs(p.created),
+      "modified" -> Pickles.writeJs(p.modified)
     )
   }
 
 
-  implicit val allocatedCritReader = upickle.default.Reader[AllocatedCrit] { case o:Js.Obj =>
+  implicit val allocatedCritReader = Pickles.Reader[AllocatedCrit] { case o:Js.Obj =>
     new AllocatedCrit(
-      target = upickle.default.readJs[Target](o("target")),
-      critique = upickle.default.readJs[Option[Id[TaskOutput,String]]](o("critique"))
+      target = Pickles.readJs[Target](o("target")),
+      critique = Pickles.readJs[Option[Id[TaskOutput,String]]](o("critique"))
     )
   }
-  implicit val allocatedCritWriter = upickle.default.Writer[AllocatedCrit] { case row =>
+  implicit val allocatedCritWriter = Pickles.Writer[AllocatedCrit] { case row =>
     Js.Obj(
-      "target" -> upickle.default.writeJs(row.target),
-      "critique" -> upickle.default.writeJs(row.critique)
+      "target" -> Pickles.writeJs(row.target),
+      "critique" -> Pickles.writeJs(row.critique)
     )
   }
 
