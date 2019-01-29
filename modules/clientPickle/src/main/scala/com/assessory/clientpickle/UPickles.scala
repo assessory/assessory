@@ -11,10 +11,10 @@ import com.wbillingsley.handy.Ids._
 import upickle.Js
 
 
-object Pickles {
-
+object UPickles {
+/*
   def idWriter[T] = upickle.default.Writer[Id[T, String]] { case id => Js.Str(id.id) }
-  def idReader[T] = upickle.default.Reader[Id[T, String]] { case Js.Str(s) => s.asId[T] }
+  def idReader[T] = upickle.default.Reader[Id[T, String]] { case Js.Str(s) => s.toString.asId[T] }
 
 
   def idsWriter[T] = upickle.default.Writer[Ids[T, String]] { case id =>
@@ -25,6 +25,9 @@ object Pickles {
     (for { v <- a.value } yield v.value.asInstanceOf[String]).asIds[T]
   }
 
+  implicit def kqWriter[T](kq:KindedQuestion[T])(implicit qwriter:upickle.default.Writer[T]) = upickle.default.Writer {
+    Js.Obj("kind" -> kq.kind, "q" -> kq.q)
+  }
 
   val questionWriter:upickle.default.Writer[Question] = upickle.default.Writer {
     case st:ShortTextQuestion => upickle.default.writeJs(KindedQuestion("Short Text", st))
@@ -166,6 +169,6 @@ object Pickles {
     )
   }
 
-
+*/
 
 }

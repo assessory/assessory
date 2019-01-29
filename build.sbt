@@ -68,21 +68,22 @@ lazy val model = (project in file("modules/model"))
     )
   )
 
-lazy val clientPickle = (crossProject(JSPlatform, JVMPlatform) in file("modules/clientPickle"))
+val circeVersion = "0.11.1"
+lazy val clientPickle = (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure) in file("modules/clientPickle"))
   .settings(commonSettings:_*)
   .settings(
     libraryDependencies ++= Seq(
-      // Pickling
-      "com.lihaoyi" %%% "upickle" % "0.7.1",
-      "com.github.benhutchison" %%% "prickle" % "1.1.13"
-    )
+      "io.circe" %% "circe-core",
+      "io.circe" %% "circe-generic",
+      "io.circe" %% "circe-parser"
+    ).map(_ % circeVersion)
   )
   .dependsOn(api)
 
 lazy val clientPickleJS = clientPickle.js
 lazy val clientPickleJVM = clientPickle.jvm
 
-lazy val reactjs = project.in(file("modules/reactjs"))
+lazy val reactjs = project.in(file("modules/reactjs"))  
   .settings(commonSettings:_*)
   .enablePlugins(ScalaJSPlugin)
   .settings(
