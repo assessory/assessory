@@ -28,8 +28,8 @@ class PlayAuth @Inject() (environment:Environment, config:Configuration) {
     */
   def onAuthR(request: AppbaseRequest[AnyContent], rm:Ref[OAuthDetails]):Ref[Result] = {
     (for {
-      mem <- rm orIfNone Refused("The OAuth provider did not send us a login. Are you sure you logged in?")
-      u <- UserDAO.bySocialIdOrUsername(mem.userRecord.service, Some(mem.userRecord.id), mem.userRecord.username) orIfNone Refused(s"I couldn't find any users with ${mem.userRecord.service} ID ${mem.userRecord.username.getOrElse("")}. Check for typos / wrong case")
+      mem <- rm
+      u <- UserDAO.bySocialIdOrUsername(mem.userRecord.service, Some(mem.userRecord.id), mem.userRecord.username) orFail Refused(s"I couldn't find any users with ${mem.userRecord.service} ID ${mem.userRecord.username.getOrElse("")}. Check for typos / wrong case")
       withSession <- UserDAO.pushSession(u.itself, ActiveSession(request.sessionKey, ip = request.remoteAddress))
 
       saved <- {
@@ -43,7 +43,7 @@ class PlayAuth @Inject() (environment:Environment, config:Configuration) {
         if (updated == withSession) {
           withSession.itself
         } else {
-          UserDAO.saveDetails(updated)
+          UserDAO.saveDetails(updated).require
         }
       }
     } yield Results.Redirect(org.assessory.play.controllers.routes.Application.index())) recoverWith { case x => Results.Forbidden(x.getMessage).itself }

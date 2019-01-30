@@ -14,15 +14,16 @@ object Application {
   def getUser(request:RequestHeader) = UserDAO.bySessionKey(getSession(request))
 }
 
-class Application @Inject() (startupSettings: StartupSettings) extends Controller {
+class Application @Inject() (startupSettings: StartupSettings, cc: ControllerComponents, userAction: UserAction, indexTemplate: views.html.index)
+  extends AbstractController(cc) {
 
   /**
     * Another debugging method, this time returning the name of the logged in user
     */
-  def whoAmI = Action.async { request =>
+  def whoAmI:Action[AnyContent] = Action.async { request =>
     (for {
       u <- Application.getUser(request)
-    } yield Ok(u.name.toString)).toFuture
+    } yield Ok(u.name.toString)).require.toFuture
   }
 
   /**
@@ -51,8 +52,8 @@ class Application @Inject() (startupSettings: StartupSettings) extends Controlle
     * This also ensures the user's Play session cookie includes
     * a value for sessionKey.
     */
-  def index = UserAction { r =>
-    Ok(views.html.index())
+  def index = userAction { r =>
+    Ok(indexTemplate())
   }
 
 }

@@ -194,6 +194,10 @@ object Pickles {
   implicit val smallFileDetailsDecoder: Decoder[SmallFileDetails] = deriveDecoder[SmallFileDetails]
 
 
+  implicit val allocatedCritEncoder: Encoder[AllocatedCrit] = deriveEncoder[AllocatedCrit]
+  implicit val allocatedCritDecoder: Decoder[AllocatedCrit] = deriveDecoder[AllocatedCrit]
+  implicit val critAllocationEncoder: Encoder[CritAllocation] = deriveEncoder[CritAllocation]
+  implicit val critAllocationDecoder: Decoder[CritAllocation] = deriveDecoder[CritAllocation]
 
   def write[T](thing: T)(implicit encoder: Encoder[T]): String = thing.asJson.toString
 
@@ -203,6 +207,7 @@ object Pickles {
 
   def readR[T](text:String)(implicit decoder: Decoder[T]): Ref[T] = Ref(read(text)(decoder))
 
+  case class ParsingException(msg:String) extends RuntimeException
 
 }
 

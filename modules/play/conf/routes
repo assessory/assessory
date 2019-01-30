@@ -1,5 +1,5 @@
 # WebJars
-GET     /webjars/*file                      controllers.WebJarAssets.at(file)
+->      /webjars                            webjars.Routes
 GET     /vassets/*file                      controllers.Assets.versioned(path="/public", file: Asset)
 
 # Map static resources from the /public folder to the /assets URL path

@@ -73,9 +73,9 @@ lazy val clientPickle = (crossProject(JSPlatform, JVMPlatform).crossType(CrossTy
   .settings(commonSettings:_*)
   .settings(
     libraryDependencies ++= Seq(
-      "io.circe" %% "circe-core",
-      "io.circe" %% "circe-generic",
-      "io.circe" %% "circe-parser"
+      "io.circe" %%% "circe-core",
+      "io.circe" %%% "circe-generic",
+      "io.circe" %%% "circe-parser"
     ).map(_ % circeVersion)
   )
   .dependsOn(api)
@@ -130,7 +130,8 @@ lazy val play = (project in file("modules/play"))
     // triggers scalaJSPipeline when using compile or continuous compilation
     compile in Compile := ((compile in Compile) dependsOn scalaJSPipeline).value,
     libraryDependencies ++= Seq(
-      "com.vmunier" %% "scalajs-scripts" % "1.1.2"
+      "com.vmunier" %% "scalajs-scripts" % "1.1.2",
+      guice
     )
   )
   .enablePlugins(PlayScala)

@@ -16,20 +16,22 @@ import util.UserAction
 import scala.concurrent.Future
 import scala.language.implicitConversions
 import Pickles._
+import com.wbillingsley.handy.appbase.UserError
+import javax.inject.Inject
 
 object TaskOutputController {
   implicit def taskOutputToResult(rc:Ref[TaskOutput]):Future[Result] = {
-    rc.map(c => Results.Ok(upickle.default.write(c)).as("application/json")).toFuture
+    rc.map(c => Results.Ok(Pickles.write(c)).as("application/json")).toFuture
   }
 
   implicit def wptoToResult(rc:Ref[WithPerms[TaskOutput]]):Future[Result] = {
-    rc.map(c => Results.Ok(upickle.default.write(c)).as("application/json")).toFuture
+    rc.map(c => Results.Ok(Pickles.write(c)).as("application/json")).toFuture
   }
 
   implicit def manyTaskOutputToResult(rc:RefMany[TaskOutput]):Future[Result] = {
     val strings = rc.map(c => {
       try {
-        val p = upickle.default.write(c)
+        val p = Pickles.write(c)
         p
       } catch {
         case x:Exception => x.printStackTrace
@@ -43,7 +45,7 @@ object TaskOutputController {
   }
 
   implicit def manyWptoToResult(rc:RefMany[WithPerms[TaskOutput]]):Future[Result] = {
-    val strings = rc.map(c => upickle.default.write(c))
+    val strings = rc.map(c => Pickles.write(c))
 
     for {
       j <- strings.jsSource
@@ -52,35 +54,36 @@ object TaskOutputController {
 
 }
 
-class TaskOutputController extends Controller {
+class TaskOutputController @Inject() (startupSettings: StartupSettings, cc: ControllerComponents, userAction: UserAction)
+  extends AbstractController(cc) {
 
   import TaskOutputController._
 
-  def get(id:String) = UserAction.async { implicit request =>
+  def get(id:String) = userAction.async { implicit request =>
     TaskOutputModel.get(
       request.approval,
       id.asId
     )
   }
 
-  def myOutputs(taskId:String) = UserAction.async { implicit request =>
+  def myOutputs(taskId:String) = userAction.async { implicit request =>
     TaskOutputModel.myOutputs(
       a = request.approval,
       rTask = LazyId(taskId).of[Task]
     )
   }
 
-  def allOutputs(taskId:String) = UserAction.async { implicit request =>
+  def allOutputs(taskId:String) = userAction.async { implicit request =>
     TaskOutputModel.allOutputs(
       a = request.approval,
       rTask = LazyId(taskId).of[Task]
     )
   }
 
-  def create(taskId:String) = UserAction.async { implicit request =>
+  def create(taskId:String) = userAction.async { implicit request =>
     def wp = for {
-      text <- request.body.asText.toRef
-      client = upickle.default.read[TaskOutput](text)
+      text <- request.body.asText.toRef orFail UserError("Request to create TaskOutput had no body to parse")
+      client <- Pickles.read[TaskOutput](text).toRef
       wp <- TaskOutputModel.create(
         a = request.approval,
         task = LazyId(taskId).of[Task],
@@ -92,26 +95,26 @@ class TaskOutputController extends Controller {
     wp
   }
 
-  def updateBody(id:String) = UserAction.async { implicit request =>
+  def updateBody(id:String) = userAction.async { implicit request =>
     def wp = for {
-      text <- request.body.asText.toRef
-      client = upickle.default.read[TaskOutput](text)
+      text <- request.body.asText.toRef orFail UserError("Request to update TaskOutput had no body to parse")
+      client <- Pickles.read[TaskOutput](text).toRef
       wp <- TaskOutputModel.updateBody(
         a = request.approval,
         clientTaskOutput = client,
         finalise = false // TODO: allow finalising of tasks
-      )
+      ).require
     } yield wp
 
     wp
   }
 
-  def finalise(id:String) = UserAction.async { implicit request =>
+  def finalise(id:String) = userAction.async { implicit request =>
     TaskOutputModel.finalise(request.approval, id.asId[TaskOutput].lazily)
   }
 
   /** Fetches allocations as a CSV. */
-  def outputsAsCSV(taskId:String) = UserAction.async { implicit request =>
+  def outputsAsCSV(taskId:String) = userAction.async { implicit request =>
     val lines = TaskOutputModel.asCsv(
       request.approval,
       taskId.asId

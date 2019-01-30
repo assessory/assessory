@@ -8,7 +8,7 @@ import com.wbillingsley.handy.appbase.{Used, IdentityLookup, CourseRole, Course}
 import com.wbillingsley.handy.{Ids, Id}
 import com.wbillingsley.handy.Id._
 import com.wbillingsley.handy.Ids._
-import upickle.Js
+//import upickle.Js
 
 
 object UPickles {

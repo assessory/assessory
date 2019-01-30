@@ -80,12 +80,12 @@ object TaskOutputModel {
     } yield to
   }
 
-  def create(a:Approval[User], task:Ref[Task], clientTaskOutput:TaskOutput, finalise:Boolean) = {
+  def create(a:Approval[User], task:Ref[Task], clientTaskOutput:TaskOutput, finalise:Boolean):Ref[WithPerms[TaskOutput]] = {
     for {
-      u <- a.who
       t <- task
-      by <- byForTask(t, u)
       approved <- a ask Permissions.ViewCourse(t.course.lazily)
+      u <- a.who.require
+      by <- byForTask(t, u)
       to = clientTaskOutput.copy(
         id=TaskOutputDAO.allocateId.asId,
         task=t.id,

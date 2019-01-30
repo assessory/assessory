@@ -1,12 +1,11 @@
 package org.assessory.play.oauth
 
-import com.google.inject.Inject
-import com.wbillingsley.handy.{RefFuture, Ref}
+import com.wbillingsley.handy.{Ref, RefFuture, RefOpt}
 import Ref._
-import play.api.{Logger, Configuration}
-import play.api.mvc.{Results, Result, Action, Controller}
+import javax.inject.Inject
+import play.api.{Configuration, Logger}
+import play.api.mvc._
 import play.api.libs.ws._
-
 import play.api.libs.concurrent.Execution.Implicits._
 import util.UserAction
 
@@ -20,10 +19,11 @@ case object GitHub extends Service {
 /**
   * Controller for GitHub OAuth. Based on handy-play-oauth, updated for Play 2.5
   */
-class GitHubController @Inject() (playAuth:PlayAuth, config:Configuration, ws:WSClient) extends Controller {
+class GitHubController @Inject() (cc: ControllerComponents, playAuth:PlayAuth, config:Configuration, ws:WSClient, userAction: UserAction)
+  extends AbstractController(cc) {
 
-  val clientKey = config.getString("auth.github.ckey")
-  val secret = config.getString("auth.github.csecret")
+  val clientKey:Option[String] = config.getOptional[String]("auth.github.ckey")
+  val secret:Option[String] = config.getOptional[String]("auth.github.csecret")
 
   def getAuth = if (playAuth.allowGet) {
     requestAuth
@@ -36,18 +36,18 @@ class GitHubController @Inject() (playAuth:PlayAuth, config:Configuration, ws:WS
     * A random state is set in the session, and then the user is redirected to the GitHub
     * sign-in endpoint.
     */
-  def requestAuth = Action { implicit request =>
+  def requestAuth = Action { request =>
     val randomString = java.util.UUID.randomUUID().toString()
     val returnUrl = ""
 
     if (GitHub.available(config)) {
       Redirect(
-        "https://github.com/login/oauth/authorize",
-        Map(
+        url="https://github.com/login/oauth/authorize",
+        queryString=Map(
           "state" -> Seq(randomString),
           "client_id" -> clientKey.toSeq
         ),
-        303
+        status=303
       ).withSession(request.session + ("oauth_state" -> randomString))
     } else {
       InternalServerError("This server's client key and secret for GitHub have not been set")
@@ -57,9 +57,9 @@ class GitHubController @Inject() (playAuth:PlayAuth, config:Configuration, ws:WS
   /**
     * Calls GitHub to swap a code for an auth_token
     */
-  private def authTokenFromCode(code:String):Ref[String] = {
+  private def authTokenFromCode(code:String):RefOpt[String] = {
     val wsr = ws.url("https://github.com/login/oauth/access_token").
-      withHeaders("Accept" -> "application/json").
+      withHttpHeaders("Accept" -> "application/json").
       post(Map(
         "code" -> Seq(code),
         "client_id" -> clientKey.toSeq,
@@ -67,9 +67,7 @@ class GitHubController @Inject() (playAuth:PlayAuth, config:Configuration, ws:WS
       ))
     val authToken = for {
       resp <- wsr.toRef
-      tok <- {
-        println(resp.json); (resp.json \ "access_token").asOpt[String]
-      }
+      tok <- (resp.json \ "access_token").asOpt[String].toRef
     } yield tok
     authToken
   }
@@ -79,9 +77,9 @@ class GitHubController @Inject() (playAuth:PlayAuth, config:Configuration, ws:WS
     * These are filled into an "Interstitial Memory" -- details to remember during the display
     * of the confirmation page.
     */
-  private def userFromAuth(authToken:String):Ref[OAuthDetails] = {
+  private def userFromAuth(authToken:String):RefOpt[OAuthDetails] = {
     val wsr = ws.url("https://api.github.com/user").
-      withHeaders(
+      withHttpHeaders(
         "Accept" -> "application/json",
         "Authorization" -> ("token " + authToken)
       ).get()
@@ -89,7 +87,7 @@ class GitHubController @Inject() (playAuth:PlayAuth, config:Configuration, ws:WS
     for {
       resp <- wsr.toRef
       json = resp.json
-      id <- (resp.json \ "id").asOpt[Int].map(_.toString)
+      id <- (resp.json \ "id").asOpt[Int].map(_.toString).toRef
     } yield {
       OAuthDetails(
         userRecord = UserRecord(
@@ -105,7 +103,7 @@ class GitHubController @Inject() (playAuth:PlayAuth, config:Configuration, ws:WS
     }
   }
 
-  def callback = UserAction.async { implicit request =>
+  def callback = userAction.async { implicit request =>
 
     val stateFromSession = request.session.get("oauth_state")
     val stateFromRequest = request.getQueryString("state")
@@ -126,9 +124,9 @@ class GitHubController @Inject() (playAuth:PlayAuth, config:Configuration, ws:WS
     }
 
     val rMem = for {
-      code <- Ref(request.getQueryString("code")) orIfNone AuthFailed("GitHub provided no code")
-      authToken <- authTokenFromCode(code) orIfNone AuthFailed("GitHub did not provide an authorization token")
-      mem <- userFromAuth(authToken) orIfNone AuthFailed("GitHub did not provide any user data for that login")
+      code <- request.getQueryString("code").toRef orFail AuthFailed("GitHub provided no code")
+      authToken <- authTokenFromCode(code) orFail AuthFailed("GitHub did not provide an authorization token")
+      mem <- userFromAuth(authToken) orFail AuthFailed("GitHub did not provide any user data for that login")
     } yield mem
 
     playAuth.onAuthR(request, rMem).toFuture

@@ -2,11 +2,14 @@ package org.assessory.play.controllers
 
 import com.assessory.api.client.WithPerms
 import com.assessory.api.wiring.Lookups._
+import com.assessory.clientpickle.Pickles
+import Pickles._
 import com.assessory.model.GroupModel
 import com.wbillingsley.handy.Id._
 import com.wbillingsley.handy.Ref._
 import com.wbillingsley.handy._
-import com.wbillingsley.handy.appbase.{Course, Group, GroupSet}
+import com.wbillingsley.handy.appbase.{Course, Group, GroupSet, UserError}
+import javax.inject.Inject
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.mvc._
 import util.RefConversions._
@@ -15,26 +18,27 @@ import util.UserAction
 import scala.concurrent.Future
 import scala.language.implicitConversions
 
-class GroupController extends Controller {
+class GroupController @Inject() (startupSettings: StartupSettings, cc: ControllerComponents, userAction: UserAction)
+  extends AbstractController(cc) {
 
   implicit def groupToResult(rc:Ref[Group]):Future[Result] = {
-    rc.map(c => Results.Ok(upickle.default.write(c)).as("application/json")).toFuture
+    rc.map(c => Results.Ok(Pickles.write(c)).as("application/json")).toFuture
   }
 
   implicit def groupSetToResult(rc:Ref[GroupSet]):Future[Result] = {
-    rc.map(c => Results.Ok(upickle.default.write(c)).as("application/json")).toFuture
+    rc.map(c => Results.Ok(Pickles.write(c)).as("application/json")).toFuture
   }
 
   implicit def wpgToResult(rc:Ref[WithPerms[Group]]):Future[Result] = {
-    rc.map(c => Results.Ok(upickle.default.write(c)).as("application/json")).toFuture
+    rc.map(c => Results.Ok(Pickles.write(c)).as("application/json")).toFuture
   }
 
   implicit def wpgsToResult(rc:Ref[WithPerms[GroupSet]]):Future[Result] = {
-    rc.map(c => Results.Ok(upickle.default.write(c)).as("application/json")).toFuture
+    rc.map(c => Results.Ok(Pickles.write(c)).as("application/json")).toFuture
   }
 
   implicit def manyGroupToResult(rc:RefMany[Group]):Future[Result] = {
-    val strings = rc.map(c => upickle.default.write(c))
+    val strings = rc.map(c => Pickles.write(c))
 
     for {
       j <- strings.jsSource
@@ -42,7 +46,7 @@ class GroupController extends Controller {
   }
 
   implicit def manyGroupSetToResult(rc:RefMany[GroupSet]):Future[Result] = {
-    val strings = rc.map(c => upickle.default.write(c))
+    val strings = rc.map(c => Pickles.write(c))
 
     for {
       j <- strings.jsSource
@@ -50,7 +54,7 @@ class GroupController extends Controller {
   }
 
   implicit def manyWpgToResult(rc:RefMany[WithPerms[Group]]):Future[Result] = {
-    val strings = rc.map(c => upickle.default.write(c))
+    val strings = rc.map(c => Pickles.write(c))
 
     for {
       j <- strings.jsSource
@@ -58,7 +62,7 @@ class GroupController extends Controller {
   }
 
   implicit def manyWpgsToResult(rc:RefMany[WithPerms[GroupSet]]):Future[Result] = {
-    val strings = rc.map(c => upickle.default.write(c))
+    val strings = rc.map(c => Pickles.write(c))
 
     for {
       j <- strings.jsSource
@@ -66,25 +70,25 @@ class GroupController extends Controller {
   }
 
 
-  def groupSet(id:String) = UserAction.async { implicit request =>
+  def groupSet(id:String) = userAction.async { implicit request =>
     GroupModel.groupSet(request.approval, id.asId)
   }
 
-  def createGroupSet(courseId:String) = UserAction.async { implicit request =>
+  def createGroupSet(courseId:String) = userAction.async { implicit request =>
     def wp = for {
-      text <- request.body.asText.toRef
-      clientGS = upickle.default.read[GroupSet](text)
+      text <- request.body.asText.toRef orFail UserError("Request to create group set had no body to parse")
+      clientGS <- Pickles.read[GroupSet](text).toRef
       wp <- GroupModel.createGroupSet(request.approval, clientGS)
     } yield wp
 
     wp
   }
 
-  def editGroupSet(gsId:String) = UserAction.async { implicit request =>
+  def editGroupSet(gsId:String) = userAction.async { implicit request =>
     def wp = for {
-      text <- request.body.asText.toRef
-      clientGS = upickle.default.read[GroupSet](text)
-      wp <- GroupModel.editGroupSet(request.approval, clientGS)
+      text <- request.body.asText.toRef orFail UserError("Request to edit group set had no body to parse")
+      clientGS <- Pickles.read[GroupSet](text).toRef
+      wp <- GroupModel.editGroupSet(request.approval, clientGS).require
     } yield wp
 
     wp
@@ -93,7 +97,7 @@ class GroupController extends Controller {
   /**
    * The group sets in a course
    */
-  def courseGroupSets(courseId:String) = UserAction.async { implicit request =>
+  def courseGroupSets(courseId:String) = userAction.async { implicit request =>
     GroupModel.courseGroupSets(
       a=request.approval,
       rCourse=LazyId(courseId).of[Course]
@@ -115,7 +119,7 @@ class GroupController extends Controller {
     * )
     * }*/
 
-  def testCsv = UserAction.async(parse.tolerantText) { implicit request =>
+  def testCsv = userAction.async(parse.tolerantText) { implicit request =>
     import java.io.StringReader
 
     import au.com.bytecode.opencsv.CSVReader
@@ -161,34 +165,34 @@ class GroupController extends Controller {
   /**
    * The groups belonging to a particular group set
    */
-  def groupSetGroups(gsId:String) = UserAction.async { implicit request =>
+  def groupSetGroups(gsId:String) = userAction.async { implicit request =>
     GroupModel.groupSetGroups(
       a=request.approval,
       rGS=LazyId(gsId).of[GroupSet]
     )
   }
 
-  def group(id:String) = UserAction.async { implicit request =>
+  def group(id:String) = userAction.async { implicit request =>
     GroupModel.group(request.approval, id.asId)
   }
 
-  def myGroups = UserAction.async { implicit request =>
+  def myGroups = userAction.async { implicit request =>
     GroupModel.myGroupsWP(
       a=request.approval
     )
   }
 
-  def myGroupsInCourse(courseId:String) = UserAction.async { implicit request =>
+  def myGroupsInCourse(courseId:String) = userAction.async { implicit request =>
     GroupModel.myGroupsInCourseWP(
       a=request.approval,
       rCourse=LazyId(courseId).of[Course]
     )
   }
 
-  def findMany = UserAction.async { implicit request =>
+  def findMany = userAction.async { implicit request =>
     def wp = for {
       text <- request.body.asText.toRef
-      ids = upickle.default.read[Ids[Group,String]](text)
+      ids <- Pickles.read[Ids[Group,String]](text).toRef
       wp <- GroupModel.findMany(request.approval, ids)
     } yield wp
 

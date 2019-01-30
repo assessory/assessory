@@ -8,12 +8,13 @@ import com.assessory.model._
 import com.wbillingsley.handy.Id._
 import com.wbillingsley.handy.Ref._
 import com.wbillingsley.handy._
-import com.wbillingsley.handy.appbase.Course
+import com.wbillingsley.handy.appbase.{Course, UserError}
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import play.api.mvc.{Controller, Result, Results}
-import util.{UserAction, RefConversions}
+import play.api.mvc._
+import util.{RefConversions, UserAction}
 import RefConversions._
 import Pickles._
+import javax.inject.Inject
 
 import scala.concurrent.Future
 import scala.language.implicitConversions
@@ -21,15 +22,15 @@ import scala.language.implicitConversions
 object TaskController {
 
   implicit def taskToResult(rc:Ref[Task]):Future[Result] = {
-    rc.map(c => Results.Ok(upickle.default.write(c)).as("application/json")).toFuture
+    rc.map(c => Results.Ok(Pickles.write(c)).as("application/json")).toFuture
   }
 
   implicit def wptToResult(rc:Ref[WithPerms[Task]]):Future[Result] = {
-    rc.map(c => Results.Ok(upickle.default.write(c)).as("application/json")).toFuture
+    rc.map(c => Results.Ok(Pickles.write(c)).as("application/json")).toFuture
   }
 
   implicit def manyTaskToResult(rc:RefMany[Task]):Future[Result] = {
-    val strings = rc.map(c => upickle.default.write(c))
+    val strings = rc.map(c => Pickles.write(c))
 
     for {
       j <- strings.jsSource
@@ -38,7 +39,7 @@ object TaskController {
 
   implicit def manyWptToResult(rc:RefMany[WithPerms[Task]]):Future[Result] = {
 
-    val strings = rc.map({c => upickle.default.write(c) })
+    val strings = rc.map({c => Pickles.write(c) })
 
     for {
       j <- strings.jsSource
@@ -47,36 +48,37 @@ object TaskController {
 
 }
 
-class TaskController extends Controller {
+class TaskController @Inject() (startupSettings: StartupSettings, cc: ControllerComponents, userAction: UserAction)
+  extends AbstractController(cc) {
 
   import TaskController._
 
-  def get(id:String) = UserAction.async { implicit request =>
+  def get(id:String) = userAction.async { implicit request =>
     TaskModel.byId(request.approval, id.asId)
   }
   
   
-  def create(courseId:String) = UserAction.async { implicit request =>
+  def create(courseId:String) = userAction.async { implicit request =>
     def wp = for {
-      text <- request.body.asText.toRef
-      client = upickle.default.read[Task](text)
+      text <- request.body.asText.toRef orFail UserError("Request to create task had no body to parse")
+      client <- Pickles.read[Task](text).toRef
       wp <- TaskModel.create(request.approval, client)
     } yield wp
 
     wptToResult(wp)
   }
   
-  def updateBody(taskId:String) = UserAction.async { implicit request =>
+  def updateBody(taskId:String) = userAction.async { implicit request =>
     def wp = for {
-      text <- request.body.asText.toRef
-      client = upickle.default.read[Task](text)
+      text <- request.body.asText.toRef orFail UserError("Request to update task had no body to parse")
+      client <- Pickles.read[Task](text).toRef
       wp <- TaskModel.updateBody(request.approval, client)
     } yield wp
 
-    wptToResult(wp)
+    wptToResult(wp.require)
   }
   
-  def courseTasks(courseId:String) = UserAction.async { implicit request =>
+  def courseTasks(courseId:String) = userAction.async { implicit request =>
     manyWptToResult(
       TaskModel.courseTasks(
         a = request.approval,

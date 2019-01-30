@@ -4,9 +4,10 @@ import java.io.StringWriter
 
 import au.com.bytecode.opencsv.CSVWriter
 import com.assessory.api._
+import com.assessory.api.client.WithPerms
 import com.assessory.api.critique._
 import com.assessory.api.question._
-import com.assessory.api.video.{VideoTaskOutput, VideoTask}
+import com.assessory.api.video.{VideoTask, VideoTaskOutput}
 import com.assessory.api.wiring.Lookups._
 import com.assessory.asyncmongo._
 import com.wbillingsley.handy.Id._
@@ -215,9 +216,8 @@ object CritModel {
    * @param target
    * @return
    */
-  def findOrCreateCrit(a:Approval[User], rTask:Ref[Task], target:Target) = {
+  def findOrCreateCrit(a:Approval[User], rTask:Ref[Task], target:Target):Ref[WithPerms[TaskOutput]] = {
     for {
-      u <- a.who
       t <- rTask
       completeBy <- byFromTask(a, t)
       taskOutputs <- TaskOutputDAO.byTaskAndBy(t.id, completeBy).withFilter(
