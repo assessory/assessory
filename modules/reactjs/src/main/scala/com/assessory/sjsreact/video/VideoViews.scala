@@ -102,10 +102,26 @@ object VideoViews {
 
   case class VTOState(task:Task, orig:Option[TaskOutput], to:TaskOutput, s:Latch[String])
 
+  sealed trait Finalisable
+  object IsFinalisable extends Finalisable
+  object NeverSaved extends Finalisable
+  object UnsavedChanges extends Finalisable
+  object AlreadyFinalised extends Finalisable
+
   class VideoTaskOutputBackend($: BackendScope[_, Latch[VTOState]]) {
 
     def savable(vto:VTOState) = {
       !vto.orig.contains(vto.to) && vto.s.isCompleted
+    }
+
+    def finalisable(vto:VTOState) = {
+      if (vto.to.finalised.nonEmpty)
+        AlreadyFinalised
+      else if (vto.to.id.id == "invalid")
+        NeverSaved
+      else if (savable(vto))
+        UnsavedChanges
+      else IsFinalisable
     }
 
     def video(e: ReactEventI):Callback = { $.modState({ latched =>
@@ -133,6 +149,22 @@ object VideoViews {
               } yield VTOState(vto.task, Some(wp.item), wp.item, Latch.immediate("Saved"))
             ) recover {
               case e:Exception => VTOState(vto.task, vto.orig, vto.to, Latch.immediate("Failed to save: " + e.getMessage))
+            }
+          )
+        }
+      } else latched
+    })
+
+    def finalise() = $.modState({ latched =>
+      if (latched.isCompleted) {
+        latched.request.value match {
+          case Some(Success(vto)) => Latch.lazily(
+            (
+              for {
+                wp <- TaskOutputService.finalise(vto.to)
+              } yield VTOState(vto.task, Some(wp.item), wp.item, Latch.immediate("Finalised"))
+            ) recover {
+              case e:Exception => VTOState(vto.task, vto.orig, vto.to, Latch.immediate("Failed to finalise: " + e.getMessage))
             }
           )
         }
@@ -172,8 +204,16 @@ object VideoViews {
             case _ => <.div("Hang on, this reckons you're answering this as something other than a video?")
           },
           <.div(^.className := "form-group",
-            <.button(^.className:="btn btn-primary", ^.disabled := !savable(vto), ^.onClick --> save, "Save"),
-            CommonComponent.latchedString(vto.s)
+            <.button(^.className:="btn btn-primary", ^.disabled := !savable(vto), ^.onClick --> save, "Save"), " ",
+            finalisable(vto) match {
+              case IsFinalisable => <.button(^.className:="btn btn-default", ^.onClick --> finalise(), "Make available")
+              case UnsavedChanges => <.button(^.className:="btn btn-default", ^.disabled := true, "(You have unsaved changes)")
+              case NeverSaved => <.button(^.className:="btn btn-default", ^.disabled := true, "(Needs saving first)")
+              case AlreadyFinalised => <.button(^.className:="btn btn-default", ^.disabled := true, "(Already available)")
+            },
+            <.div(^.cls := "text-info",
+              CommonComponent.latchedString(vto.s)
+            )
           )
         )
       }
