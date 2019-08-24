@@ -13,6 +13,7 @@ lazy val commonSettings = Seq(
   resolvers ++= Seq(
     "Typesafe Releases" at "http://repo.typesafe.com/typesafe/releases/",
     "sonatype releases" at "https://oss.sonatype.org/content/repositories/releases/",
+    "jitpack" at "https://jitpack.io",
     DefaultMavenRepository
   ),
   libraryDependencies ++= Seq(
@@ -36,8 +37,8 @@ lazy val api = (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure) 
   .settings(commonSettings:_*)
   .settings(
     libraryDependencies ++= Seq(
-      "com.wbillingsley" %%% "handy" % "0.9.0-SNAPSHOT",
-      "com.wbillingsley" %%% "handy-appbase" % "0.9.0-SNAPSHOT",
+      "com.github.wbillingsley.handy" %%% "handy" % "v0.9-SNAPSHOT",
+      "com.github.wbillingsley.handy" %%% "handy-appbase" % "v0.9-SNAPSHOT",
       "org.specs2" %% "specs2-core" % "4.3.4" % "test"
     )
   )
@@ -52,8 +53,8 @@ lazy val mongo = (project in file("modules/asyncmongo"))
   .settings(
     libraryDependencies ++= Seq(
       "org.mongodb.scala" %% "mongo-scala-driver" % "2.5.0",
-      "com.wbillingsley" %% "handy-user" % "0.9.0-SNAPSHOT",
-      "com.wbillingsley" %% "handy-play" % "0.9.0-SNAPSHOT"
+      "com.github.wbillingsley.handy" %% "handy-user" % "v0.9-SNAPSHOT",
+      "com.github.wbillingsley.handy" %% "handy-play" % "v0.9-SNAPSHOT"
     )
   )
 
