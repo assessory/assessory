@@ -49,7 +49,7 @@ object CommonComponent {
   def latchR[T](l:Latch[T])(render: T => ReactElement):ReactElement = {
     l.request.value match {
       case Some(Success(x)) => render(x)
-      case Some(Failure(x)) => <.span(^.className := "error", x.getMessage)
+      case Some(Failure(x)) => <.span(^.className := "error", "Error: " + x.getMessage)
       case _ => <.i(^.className := "fa fa-spinner fa-spin")
     }
   }

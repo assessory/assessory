@@ -10,7 +10,9 @@ package object services {
   val AJAX_HEADERS =  Map("Accept" -> "application/json", "Content-Type" -> "text/plain; charset=utf-8")
 
   implicit class FXHROps(val fxhr:Future[dom.XMLHttpRequest]) extends AnyVal {
-    def responseText(implicit ec:ExecutionContext) = fxhr.map(_.responseText)
+    def responseText(implicit ec:ExecutionContext) = fxhr.map(_.responseText).recoverWith {
+      case dom.ext.AjaxException(req) => Future.failed(new RuntimeException(req.responseText))
+    }
   }
 
   implicit class FutOps[T](val f:Future[T]) extends AnyVal {

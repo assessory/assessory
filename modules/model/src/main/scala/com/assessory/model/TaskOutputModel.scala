@@ -51,7 +51,7 @@ object TaskOutputModel {
         gsId <- task.details.groupSet.toRef orFail new IllegalStateException(s"task ${task.id} is a group task with no groupset")
         gs <- gsId.lookUp
 
-        g <- GroupModel.myGroupInSet(u, gs) orFail new IllegalArgumentException("You are not in a group but this is a group task")
+        g <- GroupModel.myGroupInSet(u, gs) orFail UserError("You are not in a group but this is a group task")
       } yield TargetGroup(g.id)
     }
   }

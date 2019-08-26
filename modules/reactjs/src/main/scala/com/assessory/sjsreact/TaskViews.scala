@@ -121,8 +121,8 @@ object TaskViews {
   val viewOutputForTask = ReactComponentB[Task]("viewOutputForTask")
     .render_P(task =>
       task.body match {
-        case c:CritiqueTask => <.div("Sorry, this task doesn't appear to be open. (If you think it should be open, try refreshing the page -- maybe it's opened since I cached it.)")
         case v:VideoTask => VideoViews.front(task)
+        case _ => <.div("Sorry, this task doesn't appear to be open. (If you think it should be open, try refreshing the page -- maybe it's opened since I cached it.)")
       }
     ).build
 
