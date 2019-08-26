@@ -140,9 +140,10 @@ lazy val play = (project in file("modules/play"))
 // A sneaky backdoor way of getting stuff into the database
 lazy val cheatScript = project.in(file("modules/cheatScript"))
   .settings(commonSettings:_*)
-  .dependsOn(apiJVM, mongo, model)
+  .dependsOn(apiJVM, mongo, model, clientPickleJVM)
   .settings(
     libraryDependencies ++= Seq(
-      "org.specs2" %% "specs2-core" % "4.3.4" % "test"
+      "org.specs2" %% "specs2-core" % "4.3.4" % "test",
+      "com.typesafe.play" %% "play-ahc-ws-standalone" % "2.1.0-M4"
     )
   )

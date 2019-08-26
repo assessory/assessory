@@ -16,6 +16,7 @@ POST    /videosubmit                        org.assessory.play.controllers.LTICo
 GET     /whoami                             org.assessory.play.controllers.Application.whoAmI
 POST    /ltiTest                            org.assessory.play.controllers.Application.ltiTest
 
+POST    /api/call                           org.assessory.play.controllers.CallController.call
 
 # Logged in user
 POST	  /api/self						    org.assessory.play.controllers.UserController.self
