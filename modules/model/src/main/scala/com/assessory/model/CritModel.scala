@@ -147,7 +147,8 @@ object CritModel {
     // Get the user's groups in the corresponding groupSet, if it's not an individual assignment
     val groups:RefMany[Group] = for {
       u <- a.who
-      gs <- a.cache(t.details.groupSet.lazily orFail new IllegalStateException(s"Group had no groupset")) if !t.details.individual
+      gsId <- t.details.groupSet.toRef if !t.details.individual
+      gs <- a.cache(gsId.lazily)
       g <- GroupModel.myGroupsInCourse(a, t.course.lazily) if g.set == gs.id
     } yield g
 
