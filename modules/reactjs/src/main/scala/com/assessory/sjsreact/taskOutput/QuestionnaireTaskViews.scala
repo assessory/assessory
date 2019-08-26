@@ -5,7 +5,7 @@ import com.assessory.api.video.{YouTube, VideoTaskOutput}
 import com.assessory.api.{TaskOutputBody, TargetUser, TaskOutput, Task}
 import com.assessory.sjsreact
 import com.assessory.sjsreact.{QuestionViews, CommonComponent }
-import com.assessory.sjsreact.services.TaskOutputService
+import com.assessory.sjsreact.services._
 import com.assessory.sjsreact.video.VideoViews.VTOState
 import com.wbillingsley.handy.{Latch, Id}
 import japgolly.scalajs.react._
@@ -27,7 +27,7 @@ object QuestionnaireTaskViews {
   val front = ReactComponentB[Task]("taskOutputEdit")
     .initialState_P(task => Latch.lazily{
       for {
-        tos <- TaskOutputService.myOutputs(task.id)
+        tos <- TaskOutputService.myOutputs(task.id).captureUserError
       } yield {
         val orig = tos.headOption
         val to = orig getOrElse TaskOutput(
