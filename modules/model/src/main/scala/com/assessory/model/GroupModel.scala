@@ -106,6 +106,21 @@ object GroupModel {
     } yield g
   }
 
+  def addUserToGroup(a:Approval[User], gr:Group.Reg): Ref[Group.Reg] = {
+    for {
+      approved <- a ask Permissions.EditGroup(gr.target.lazily)
+
+      // Allocate the ID and last update
+      unsaved = gr.copy(
+        id=RegistrationDAO.group.allocateId.asId[Group.Reg],
+        updated=System.currentTimeMillis(),
+        created=System.currentTimeMillis()
+      )
+
+      saved <- RegistrationDAO.group.saveSafe(unsaved)
+    } yield saved
+  }
+
   /**
     * Retrieves the registrations who are registered to a group
     */

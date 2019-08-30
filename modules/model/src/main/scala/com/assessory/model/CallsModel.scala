@@ -20,7 +20,10 @@ object CallsModel {
 
     case CreateCourse(c) => CourseModel.create(a, c).map { wp => ReturnCourse(wp.item) }
     case CreateTask(t) => TaskModel.create(a, t).map { wp => ReturnTask(wp.item) }
+
     case CreateGroupSet(gs) => GroupModel.createGroupSet(a, gs).map { wp => ReturnGroupSet(wp.item) }
+    case AddGroupReg(gr) => GroupModel.addUserToGroup(a, gr).map(ReturnGroupReg.apply)
+
     case CreateGroupsFromCsv(set, csv) => {
       // Do the import
       val rm = GroupModel.importFromCsv(a, set, csv)

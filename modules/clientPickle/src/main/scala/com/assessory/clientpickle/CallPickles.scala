@@ -39,6 +39,12 @@ object CallPickles {
   implicit val createGroupsFromCsvEnc: Encoder[CreateGroupsFromCsv] = deriveEncoder
   implicit val createGroupsFromCsvDec: Decoder[CreateGroupsFromCsv] = deriveDecoder
 
+  implicit val createGroupEnc: Encoder[CreateGroup] = deriveEncoder
+  implicit val createGroupDec: Decoder[CreateGroup] = deriveDecoder
+
+  implicit val addGroupRegEnc: Encoder[AddGroupReg] = deriveEncoder
+  implicit val addGroupRegDec: Decoder[AddGroupReg] = deriveDecoder
+
   implicit val callEncoder: Encoder[Call] = {
     case GetSession => Json.obj(k -> Json.fromString("GetSession"))
     case w:WithSession => Json.obj(k -> Json.fromString("WithSession"), b -> w.asJson)
@@ -46,8 +52,11 @@ object CallPickles {
     case l:Login => Json.obj(k -> Json.fromString("Login"), b -> l.asJson)
 
     case c:CreateCourse => Json.obj(k -> Json.fromString("CreateCourse"), b -> c.asJson)
-    case c:CreateGroupSet => Json.obj(k -> Json.fromString("CreateGroupSet"), b -> c.asJson)
     case c:CreateTask => Json.obj(k -> Json.fromString("CreateTask"), b -> c.asJson)
+
+    case c:CreateGroupSet => Json.obj(k -> Json.fromString("CreateGroupSet"), b -> c.asJson)
+    case c:CreateGroup => Json.obj(k -> Json.fromString("CreateGroup"), b -> c.asJson)
+    case c:AddGroupReg => Json.obj(k -> Json.fromString("AddGroupReg"), b -> c.asJson)
     case c:CreateGroupsFromCsv => Json.obj(k -> Json.fromString("CreateGroupsFromCsv"), b -> c.asJson)
   }
 
@@ -60,7 +69,10 @@ object CallPickles {
 
       case "CreateCourse" => c.downField(b).as[CreateCourse]
       case "CreateTask" => c.downField(b).as[CreateTask]
+
       case "CreateGroupSet" => c.downField(b).as[CreateGroupSet]
+      case "CreateGroup" => c.downField(b).as[CreateGroup]
+      case "AddGroupReg" => c.downField(b).as[AddGroupReg]
       case "CreateGroupsFromCsv" => c.downField(b).as[CreateGroupsFromCsv]
     }
   }
@@ -90,6 +102,9 @@ object CallPickles {
   implicit val returnGroupSetEnc: Encoder[ReturnGroupSet] = deriveEncoder
   implicit val returnGroupSetDec: Decoder[ReturnGroupSet] = deriveDecoder
 
+  implicit val returnGroupRegEnc: Encoder[ReturnGroupReg] = deriveEncoder
+  implicit val returnGroupRegDec: Decoder[ReturnGroupReg] = deriveDecoder
+
   implicit val returnGroupsDataEnc: Encoder[ReturnGroupsData] = deriveEncoder
   implicit val returnGroupsDataDec: Decoder[ReturnGroupsData] = deriveDecoder
 
@@ -100,8 +115,8 @@ object CallPickles {
     case r:ReturnCourse => Json.obj(k -> Json.fromString("ReturnCourse"), b -> r.asJson)
     case r:ReturnTask => Json.obj(k -> Json.fromString("ReturnTask"), b -> r.asJson)
     case r:ReturnGroupSet => Json.obj(k -> Json.fromString("ReturnGroupSet"), b -> r.asJson)
+    case r:ReturnGroupReg => Json.obj(k -> Json.fromString("ReturnGroupReg"), b -> r.asJson)
     case r:ReturnGroupsData => Json.obj(k -> Json.fromString("ReturnGroupsData"), b -> r.asJson)
-
   }
 
   implicit val returnDecoder: Decoder[Return] = (c: HCursor) => {
@@ -111,6 +126,7 @@ object CallPickles {
       case "ReturnCourse" => c.downField(b).as[ReturnCourse]
       case "ReturnTask" => c.downField(b).as[ReturnTask]
       case "ReturnGroupSet" => c.downField(b).as[ReturnGroupSet]
+      case "ReturnGroupReg" => c.downField(b).as[ReturnGroupReg]
       case "ReturnGroupsData" => c.downField(b).as[ReturnGroupsData]
     }
   }
