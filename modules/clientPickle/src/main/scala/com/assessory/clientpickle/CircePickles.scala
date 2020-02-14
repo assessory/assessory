@@ -75,6 +75,31 @@ object Pickles {
     }
   }
 
+  implicit val groupRoleEnc: Encoder[GroupRole] = deriveEncoder
+  implicit val groupRoleDec: Decoder[GroupRole] = deriveDecoder
+
+  implicit val groupRegEncoder: Encoder[Group.Reg] = (r:Group.Reg) => Json.obj(
+    "id" -> r.id.asJson,
+    "user" -> r.user.asJson,
+    "target" -> r.target.asJson,
+    "roles" -> r.roles.asJson,
+    "updated" -> r.updated.asJson,
+    "created" -> r.created.asJson
+  )
+
+  implicit val groupRegDecoder: Decoder[Group.Reg] = (c: HCursor) => {
+    for {
+      id <- c.downField("id").as[Id[Group.Reg, String]]
+      user <- c.downField("user").as[Id[User, String]]
+      target <- c.downField("target").as[Id[Group,String]]
+      roles <- c.downField("roles").as[Set[GroupRole]]
+      updated <- c.downField("updated").as[Long]
+      created <- c.downField("created").as[Long]
+    } yield {
+      new Group.Reg(id=id, user=user, target=target, roles=roles, updated=updated, created=created, provenance=EmptyKind)
+    }
+  }
+
   implicit val identityLookupEncoder: Encoder[IdentityLookup] = deriveEncoder[IdentityLookup]
   implicit val identityLookupDecoder: Decoder[IdentityLookup] = deriveDecoder[IdentityLookup]
 
