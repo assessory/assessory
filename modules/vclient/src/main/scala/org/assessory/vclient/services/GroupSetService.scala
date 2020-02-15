@@ -24,4 +24,7 @@ object GroupSetService {
 
   def latch(s:String):Latch[WithPerms[GroupSet]] = cache.getOrElseUpdate(s, Latch.lazily(loadId(s.asId[GroupSet])))
 
+  def latch(id:Id[GroupSet,String]):Latch[WithPerms[GroupSet]] = cache.getOrElseUpdate(id.id, Latch.lazily(loadId(id)))
+
+
 }

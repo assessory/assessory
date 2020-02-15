@@ -1,11 +1,15 @@
 package org.assessory.vclient.course
 
 import com.assessory.api.client.WithPerms
+import com.wbillingsley.handy.Id
 import com.wbillingsley.handy.appbase.Course
 import com.wbillingsley.veautiful.html.{<, VHtmlNode, ^}
 import org.assessory.vclient.Routing
 import org.assessory.vclient.common.Components.LatchRender
+import org.assessory.vclient.common.Front
+import org.assessory.vclient.group.GroupViews
 import org.assessory.vclient.services.CourseService
+import org.assessory.vclient.task.TaskViews
 
 object CourseViews {
 
@@ -55,5 +59,39 @@ object CourseViews {
       <.div(<.a(^.href:=s"api/course/${wp.item.id.id}/autolinks.csv", "autolinks.csv"))
     } else <.div()
   }
+
+  /**
+   * The front page of a course
+   */
+  def courseFront(c:Id[Course, String]):VHtmlNode = LatchRender(CourseService.latch(c)) { wp =>
+    val course = wp.item
+
+    <.div(
+      Front.siteHeader,
+      <.div(^.cls := "course-view",
+        <.div(^.cls := "container",
+
+          courseInfo(wp),
+
+          <.div(^.cls := "row",
+            <.div(^.cls := "col-sm-8",
+              <.h3("Tasks"),
+              <.div(
+                TaskViews.courseTasks(course.id)
+              )
+            ),
+
+            <.div(^.cls := "col-sm-4",
+              <.h3("Groups"),
+              GroupViews.myGroups(course.id)
+            )
+          )
+
+        )
+      )
+    )
+  }
+
+
 
 }
