@@ -1,5 +1,6 @@
 package org.assessory.vclient
 
+import com.wbillingsley.handy.Refused
 import com.wbillingsley.handy.appbase.UserError
 import org.scalajs.dom
 import org.scalajs.dom.ext.AjaxException
@@ -11,7 +12,9 @@ package object services {
   val AJAX_HEADERS =  Map("Accept" -> "application/json", "Content-Type" -> "text/plain; charset=utf-8")
 
   implicit class FXHROps(val fxhr:Future[dom.XMLHttpRequest]) extends AnyVal {
-    def responseText(implicit ec:ExecutionContext) = fxhr.map(_.responseText)
+    def responseText(implicit ec:ExecutionContext):Future[String] = fxhr.map(_.responseText) recoverWith {
+      case AjaxException(req) if req.status == 403 => Future.failed[String](Refused(req.responseText))
+    }
   }
 
   implicit class FutOps[T](val f:Future[T]) extends AnyVal {

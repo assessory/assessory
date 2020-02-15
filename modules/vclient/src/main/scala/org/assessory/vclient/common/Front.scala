@@ -34,7 +34,7 @@ object Front {
 
       case None =>
         <.ul(^.cls := "nav navbar-nav pull-right",
-          <.li(<.a(^.href := "", "Log in")),
+          <.li(<.a(^.href := Routing.Login.path, "Log in")),
           <.li(<.a(^.href := "", "Sign up"))
         )
     }

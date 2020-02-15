@@ -5,6 +5,7 @@ import com.wbillingsley.veautiful.PathDSL./#
 import com.wbillingsley.veautiful.html.{<, VHtmlNode}
 import com.wbillingsley.veautiful.templates.HistoryRouter
 import org.assessory.vclient.common.Front
+import org.assessory.vclient.user.LoginViews
 
 object Routing {
 
@@ -18,15 +19,21 @@ object Routing {
     def render = Front.front
   }
 
+  case object Login extends Route {
+    def path = (/# / "login").stringify
+    def render = LoginViews.Login
+  }
+
 
   object Router extends HistoryRouter[Route] {
-    override var route: Route = _
+    override var route: Route = Home
 
     override def render: VHtmlNode = route.render
 
     override def path(route: Route): String = route.path
 
     override def routeFromLocation(): Route = PathDSL.hashPathArray() match {
+      case Array("login") => Login
       case _ => Home
     }
 

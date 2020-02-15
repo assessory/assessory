@@ -3,7 +3,7 @@ package org.assessory.vclient.common
 import com.wbillingsley.handy.Latch
 import com.wbillingsley.veautiful.DiffNode
 import com.wbillingsley.veautiful.html.{<, VHtmlComponent, VHtmlNode}
-import org.scalajs.dom.{Element, Node}
+import org.scalajs.dom.{Element, Event, Node, html}
 
 import scala.util.{Failure, Success}
 
@@ -33,6 +33,15 @@ object Components {
     override def beforeDetach(): Unit = {
       super.beforeDetach()
       latch.removeListener(listener)
+    }
+
+  }
+
+  implicit class EventMethods(val e:Event) extends AnyVal {
+
+    def inputValue:Option[String] = e.target match {
+      case h:html.Input => Some(h.value)
+      case _ => None
     }
 
   }

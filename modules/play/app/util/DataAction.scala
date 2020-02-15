@@ -2,7 +2,7 @@ package util
 
 import com.assessory.asyncmongo.UserDAO
 import com.wbillingsley.handy.appbase.{User, UserError}
-import com.wbillingsley.handy.{Approval, Ref, RefOpt, RefSome}
+import com.wbillingsley.handy.{Approval, Ref, RefOpt, RefSome, Refused}
 import javax.inject.Inject
 import play.api.libs.json.Json
 import play.api.mvc._
@@ -30,6 +30,7 @@ class UserAction @Inject() (val parser: BodyParsers.Default)(implicit val execut
   val errorPF:PartialFunction[Throwable, Future[Result]] = {
     case x:NoSuchElementException => Future.successful(Results.NotFound(x.getMessage))
     case UserError(x) => Future.successful(Results.BadRequest(x))
+    case Refused(x) => Future.successful(Results.Forbidden(x))
   }
 
   def transform[A](request: Request[A]) = Future.successful {
