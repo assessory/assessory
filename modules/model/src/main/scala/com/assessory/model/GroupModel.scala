@@ -280,7 +280,7 @@ object GroupModel {
 
           // Create the parent groups if needed
           parentMap <- ensureGroups(parentGS, parentGroupNames, None)
-          (optP, childLines) <- groupedByParent.toRefMany
+          (optP, childLines) <- groupedByParent.iterator.toRefMany
           p <- optP.toRef
 
           // Get the group names
@@ -386,7 +386,7 @@ object GroupModel {
     for {
       // Get the existing groups' names, and find which are missing
       existing <- (for {
-        (num, name) <- studentNumNames.toRefMany
+        (num, name) <- studentNumNames.iterator.toRefMany
         u <- UserDAO.bySocialIdOrUsername(I_STUDENT_NUMBER, Some(num), Some(num))
       } yield u).collect
 
@@ -441,7 +441,7 @@ object GroupModel {
             parentGs <- parentGsId.lazily
             parentMap <- ensureGroups(parentGs, groupedByParent.keySet, None)
             groupMap <- (for {
-              (parentName, groupLines) <- groupedByParent.toRefMany
+              (parentName, groupLines) <- groupedByParent.iterator.toRefMany
               groupNames = groupLines.map(_(2).trim).toSet
               gm <- ensureGroups(gs, groupNames, parentMap.get(parentName).map(_.id))
             } yield gm).foldLeft[Map[String,Group]](Map.empty)(_ ++ _)

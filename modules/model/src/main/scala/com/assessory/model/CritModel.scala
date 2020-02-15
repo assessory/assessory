@@ -71,13 +71,13 @@ object CritModel {
 
   def allocateGroups(inGroups:Seq[Group], num:Int, task:Id[Task,String]):RefMany[CritAllocation] = {
     for {
-      (rParent, groups) <- inGroups.groupBy(_.parent).toRefMany
+      (rParent, groups) <- inGroups.groupBy(_.parent).iterator.toRefMany
       groupIds = groups.map(_.id)
       registrations <- RegistrationDAO.group.byTargets(groupIds).collect
 
       critMap = allocateTheseGroups(groups, registrations, num)
 
-      (u, gIds) <- critMap.toRefMany
+      (u, gIds) <- critMap.iterator.toRefMany
 
       unsaved = CritAllocation(
         id = CritAllocationDAO.allocateId.asId,
