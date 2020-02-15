@@ -10,6 +10,8 @@ import org.assessory.vclient.Routing
 import org.assessory.vclient.common.Components.LatchRender
 import org.assessory.vclient.services.{GroupService, TaskService}
 import com.wbillingsley.handy.Ids._
+import org.assessory.vclient.common.Front
+import org.assessory.vclient.course.CourseViews
 import org.scalajs.dom.html
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -26,6 +28,9 @@ object TaskViews {
     )
   }
 
+  /**
+   * The information that appears in the Course task list
+   */
   def taskInfo(wp:WithPerms[Task]):VHtmlNode = {
     val task = wp.item
     val name = task.details.name.getOrElse("Untitled task")
@@ -44,6 +49,9 @@ object TaskViews {
     )
   }
 
+  /**
+   * Converts a due date to a span
+   */
   def due(due:Due):VHtmlNode = {
     val groups = Latch.lazily(
       for {
@@ -56,16 +64,53 @@ object TaskViews {
     LatchRender(groups) { g => optDate(due.due(g)) }
   }
 
+  /**
+   * Text for a date in Unix epoch
+   */
   def optDate(o:Option[Long]):DElement[html.Element] = <.span(
     for { d <- o } yield new Date(d).toLocaleString()
   )
 
+  /**
+   * Provides administrative links for a task
+   */
   def taskAdmin(wp:WithPerms[Task]):VHtmlNode = {
     if (wp.perms("edit")) {
       <.div(
         <.a(^.href := Routing.TaskOutputRoute(wp.item.id).path, "View submissions")
       )
     } else <.div()
+  }
+
+  def taskFront(id:Id[Task, String]):VHtmlNode = LatchRender(TaskService.latch(id)) { wp =>
+
+    val task = wp.item
+
+    <.div(
+      Front.siteHeader,
+
+      <.div(^.cls := "container",
+        CourseViews.courseInfo(task.course),
+        taskInfo(wp),
+        if (wp.perms("complete")) {
+          editOutputForTask(wp.item)
+        } else {
+          viewOutputForTask(wp.item)
+        }
+      )
+    )
+  }
+
+  def editOutputForTask(task: Task):VHtmlNode = {
+    task.body match {
+      case _ => <.div(s"Edit screen needs writing for ${task.body.getClass.getName}")
+    }
+  }
+
+  def viewOutputForTask(task: Task):VHtmlNode = {
+    task.body match {
+      case _ => <.div(s"View screen needs writing for ${task.body.getClass.getName}")
+    }
   }
 
 }

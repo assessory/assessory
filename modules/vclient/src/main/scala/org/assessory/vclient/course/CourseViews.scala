@@ -3,13 +3,14 @@ package org.assessory.vclient.course
 import com.assessory.api.client.WithPerms
 import com.wbillingsley.handy.Id
 import com.wbillingsley.handy.appbase.Course
-import com.wbillingsley.veautiful.html.{<, VHtmlNode, ^}
+import com.wbillingsley.veautiful.html.{<, DElement, VHtmlNode, ^}
 import org.assessory.vclient.Routing
 import org.assessory.vclient.common.Components.LatchRender
 import org.assessory.vclient.common.Front
 import org.assessory.vclient.group.GroupViews
 import org.assessory.vclient.services.CourseService
 import org.assessory.vclient.task.TaskViews
+import org.scalajs.dom.html
 
 object CourseViews {
 
@@ -27,12 +28,16 @@ object CourseViews {
       <.div(^.cls := "container")
   }
 
+  def courseInfo(id:Id[Course, String]):VHtmlNode = LatchRender(CourseService.latch(id)) { wp =>
+    courseInfo(wp)
+  }
+
   /**
    * The "album cover" for the course, as it would appear on the front page
    * @param wp
    * @return
    */
-  def courseInfo(wp:WithPerms[Course]):VHtmlNode = {
+  def courseInfo(wp:WithPerms[Course]):DElement[html.Element] = {
     val course = wp.item
 
     <.div(^.cls := "course-info",

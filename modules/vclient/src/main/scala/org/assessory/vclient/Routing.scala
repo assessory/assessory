@@ -11,6 +11,7 @@ import org.assessory.vclient.course.CourseViews
 import org.assessory.vclient.user.LoginViews
 import Id._
 import com.assessory.api.{Task, TaskOutput}
+import org.assessory.vclient.task.TaskViews
 
 object Routing {
 
@@ -36,7 +37,7 @@ object Routing {
 
   case class TaskRoute(id:Id[Task, String]) extends Route {
     def path:String = (/# / "task" / id.id).stringify
-    def render = <.div("todo")
+    def render = TaskViews.taskFront(id)
   }
 
   case class TaskOutputRoute(id:Id[Task, String]) extends Route {
