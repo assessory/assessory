@@ -97,7 +97,12 @@ lazy val vclient = project.in(file("modules/vclient"))
   .enablePlugins(ScalaJSPlugin)
   .settings(
     scalaJSUseMainModuleInitializer := true,
-    scalaJSUseMainModuleInitializer in Test := false
+    scalaJSUseMainModuleInitializer in Test := false,
+    libraryDependencies ++= Seq(
+      "org.scala-js" %%% "scalajs-dom" % "0.9.7",
+      "com.github.wbillingsley.veautiful" %%% "veautiful" % "master-SNAPSHOT",
+      "com.github.wbillingsley.veautiful" %%% "veautiful-templates" % "master-SNAPSHOT",
+    )
   )
   .dependsOn(apiJS, clientPickleJS)
 
