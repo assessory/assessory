@@ -9,27 +9,26 @@ import com.wbillingsley.handy.Id._
 import com.wbillingsley.handy.Ref._
 import com.wbillingsley.handy._
 import com.wbillingsley.handy.appbase.{Course, UserError}
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.mvc._
 import util.{RefConversions, UserAction}
 import RefConversions._
 import Pickles._
 import javax.inject.Inject
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.language.implicitConversions
 
 object TaskController {
 
-  implicit def taskToResult(rc:Ref[Task]):Future[Result] = {
+  implicit def taskToResult(rc:Ref[Task])(implicit ec:ExecutionContext):Future[Result] = {
     rc.map(c => Results.Ok(Pickles.write(c)).as("application/json")).toFuture
   }
 
-  implicit def wptToResult(rc:Ref[WithPerms[Task]]):Future[Result] = {
+  implicit def wptToResult(rc:Ref[WithPerms[Task]])(implicit ec:ExecutionContext):Future[Result] = {
     rc.map(c => Results.Ok(Pickles.write(c)).as("application/json")).toFuture
   }
 
-  implicit def manyTaskToResult(rc:RefMany[Task]):Future[Result] = {
+  implicit def manyTaskToResult(rc:RefMany[Task])(implicit ec:ExecutionContext):Future[Result] = {
     val strings = rc.map(c => Pickles.write(c))
 
     for {
@@ -37,7 +36,7 @@ object TaskController {
     } yield Results.Ok.chunked(j).as("application/json")
   }
 
-  implicit def manyWptToResult(rc:RefMany[WithPerms[Task]]):Future[Result] = {
+  implicit def manyWptToResult(rc:RefMany[WithPerms[Task]])(implicit ec:ExecutionContext):Future[Result] = {
 
     val strings = rc.map({c => Pickles.write(c) })
 
@@ -48,7 +47,7 @@ object TaskController {
 
 }
 
-class TaskController @Inject() (startupSettings: StartupSettings, cc: ControllerComponents, userAction: UserAction)
+class TaskController @Inject() (startupSettings: StartupSettings, cc: ControllerComponents, userAction: UserAction)(implicit ec:ExecutionContext)
   extends AbstractController(cc) {
 
   import TaskController._

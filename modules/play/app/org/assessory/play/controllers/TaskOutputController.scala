@@ -8,27 +8,26 @@ import com.assessory.model.TaskOutputModel
 import com.wbillingsley.handy.Id._
 import com.wbillingsley.handy.Ref._
 import com.wbillingsley.handy._
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.mvc._
 import util.RefConversions._
 import util.UserAction
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.language.implicitConversions
 import Pickles._
 import com.wbillingsley.handy.appbase.UserError
 import javax.inject.Inject
 
 object TaskOutputController {
-  implicit def taskOutputToResult(rc:Ref[TaskOutput]):Future[Result] = {
+  implicit def taskOutputToResult(rc:Ref[TaskOutput])(implicit ec:ExecutionContext):Future[Result] = {
     rc.map(c => Results.Ok(Pickles.write(c)).as("application/json")).toFuture
   }
 
-  implicit def wptoToResult(rc:Ref[WithPerms[TaskOutput]]):Future[Result] = {
+  implicit def wptoToResult(rc:Ref[WithPerms[TaskOutput]])(implicit ec:ExecutionContext):Future[Result] = {
     rc.map(c => Results.Ok(Pickles.write(c)).as("application/json")).toFuture
   }
 
-  implicit def manyTaskOutputToResult(rc:RefMany[TaskOutput]):Future[Result] = {
+  implicit def manyTaskOutputToResult(rc:RefMany[TaskOutput])(implicit ec:ExecutionContext):Future[Result] = {
     val strings = rc.map(c => {
       try {
         val p = Pickles.write(c)
@@ -44,7 +43,7 @@ object TaskOutputController {
     } yield Results.Ok.chunked(j).as("application/json")
   }
 
-  implicit def manyWptoToResult(rc:RefMany[WithPerms[TaskOutput]]):Future[Result] = {
+  implicit def manyWptoToResult(rc:RefMany[WithPerms[TaskOutput]])(implicit ec:ExecutionContext):Future[Result] = {
     val strings = rc.map(c => Pickles.write(c))
 
     for {
@@ -54,7 +53,7 @@ object TaskOutputController {
 
 }
 
-class TaskOutputController @Inject() (startupSettings: StartupSettings, cc: ControllerComponents, userAction: UserAction)
+class TaskOutputController @Inject() (startupSettings: StartupSettings, cc: ControllerComponents, userAction: UserAction)(implicit ec:ExecutionContext)
   extends AbstractController(cc) {
 
   import TaskOutputController._

@@ -7,7 +7,6 @@ import com.assessory.model._
 import com.wbillingsley.handy.Ref._
 import com.wbillingsley.handy._
 import com.wbillingsley.handy.appbase.{Course, UserError}
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.mvc._
 import util.{RefConversions, UserAction}
 import RefConversions._
@@ -16,19 +15,19 @@ import com.assessory.clientpickle.Pickles
 import Pickles._
 import javax.inject.Inject
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.language.implicitConversions
 
 object CourseController {
-  implicit def courseToResult(rc:Ref[Course]):Future[Result] = {
+  implicit def courseToResult(rc:Ref[Course])(implicit ec:ExecutionContext):Future[Result] = {
     rc.map(c => Results.Ok(Pickles.write(c)).as("application/json")).toFuture
   }
 
-  implicit def wpcToResult(rc:Ref[WithPerms[Course]]):Future[Result] = {
+  implicit def wpcToResult(rc:Ref[WithPerms[Course]])(implicit ec:ExecutionContext):Future[Result] = {
     rc.map(c => Results.Ok(Pickles.write(c)).as("application/json")).toFuture
   }
 
-  implicit def manyCourseToResult(rc:RefMany[Course]):Future[Result] = {
+  implicit def manyCourseToResult(rc:RefMany[Course])(implicit ec:ExecutionContext):Future[Result] = {
     val strings = rc.map(c => Pickles.write(c))
 
     for {
@@ -36,7 +35,7 @@ object CourseController {
     } yield Results.Ok.chunked(j).as("application/json")
   }
 
-  implicit def manyWpcToResult(rc:RefMany[WithPerms[Course]]):Future[Result] = {
+  implicit def manyWpcToResult(rc:RefMany[WithPerms[Course]])(implicit ec:ExecutionContext):Future[Result] = {
     val strings = rc.map(c => Pickles.write(c))
 
     for {
@@ -45,7 +44,7 @@ object CourseController {
   }
 }
 
-class CourseController @Inject() (startupSettings: StartupSettings, cc: ControllerComponents, userAction: UserAction)
+class CourseController @Inject() (startupSettings: StartupSettings, cc: ControllerComponents, userAction: UserAction)(implicit ec:ExecutionContext)
   extends AbstractController(cc) {
 
   import CourseController._

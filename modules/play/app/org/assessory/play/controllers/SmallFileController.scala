@@ -7,19 +7,20 @@ import com.wbillingsley.handy.{Approval, Id, Ref, Refused}
 import com.wbillingsley.handy.appbase.{Course, User}
 import Ref._
 import Id._
-import play.api.mvc.{AbstractController, Controller, ControllerComponents}
+import play.api.mvc.{AbstractController, ControllerComponents}
 import util.UserAction
 import com.assessory.api.wiring.Lookups._
 import com.assessory.clientpickle.Pickles
 import Pickles._
 import javax.inject.Inject
 
+import scala.concurrent.ExecutionContext
 import scala.util.Try
 
 /**
   * Created by wbilling on 15/02/2017.
   */
-class SmallFileController @Inject() (startupSettings: StartupSettings, cc: ControllerComponents, userAction: UserAction)
+class SmallFileController @Inject() (startupSettings: StartupSettings, cc: ControllerComponents, userAction: UserAction)(implicit ec:ExecutionContext)
   extends AbstractController(cc) {
 
 

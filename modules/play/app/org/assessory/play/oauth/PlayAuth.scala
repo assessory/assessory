@@ -1,16 +1,15 @@
 package org.assessory.play.oauth
 
-import javax.inject.{Singleton, Inject}
-
+import javax.inject.{Inject, Singleton}
 import com.assessory.asyncmongo.UserDAO
 import com.wbillingsley.handy.appbase.ActiveSession
-import com.wbillingsley.handy.{Refused, RefFuture, Ref}
+import com.wbillingsley.handy.{Ref, RefFuture, Refused}
 import Ref._
 import util.AppbaseRequest
 import play.api.mvc._
-import scala.util.{Try, Success, Failure}
-import scala.concurrent.Promise
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
+
+import scala.util.{Failure, Success, Try}
+import scala.concurrent.{ExecutionContext, Promise}
 import play.api.{Configuration, Environment}
 
 trait Service {
@@ -19,7 +18,7 @@ trait Service {
 }
 
 @Singleton
-class PlayAuth @Inject() (environment:Environment, config:Configuration) {
+class PlayAuth @Inject() (environment:Environment, config:Configuration)(implicit ec:ExecutionContext) {
 
   /**
     * What the module should do on completion of an OAuth sign in.
@@ -49,7 +48,7 @@ class PlayAuth @Inject() (environment:Environment, config:Configuration) {
     } yield Results.Redirect(org.assessory.play.controllers.routes.Application.index())) recoverWith { case x => Results.Forbidden(x.getMessage).itself }
   }
 
-  var allowGet = config.getBoolean("auth.oauth.allowGet").getOrElse(false)
+  var allowGet = config.getOptional[Boolean]("auth.oauth.allowGet").getOrElse(false)
 
   val allServices = Seq(
     GitHub

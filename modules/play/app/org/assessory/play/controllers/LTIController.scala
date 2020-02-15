@@ -10,14 +10,14 @@ import com.wbillingsley.handy.appbase._
 import com.wbillingsley.handy.{EmptyKind, Refused}
 import javax.inject.Inject
 import play.api.libs.Files.TemporaryFile
-import play.api.mvc.{AbstractController, Action, Controller, ControllerComponents}
+import play.api.mvc.{AbstractController, Action, ControllerComponents}
 import play.core.parsers.Multipart
 import util.UserAction
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.ExecutionContext
 import scala.util.Try
 
-class LTIController @Inject() (startupSettings: StartupSettings, cc: ControllerComponents, userAction: UserAction)
+class LTIController @Inject() (startupSettings: StartupSettings, cc: ControllerComponents, userAction: UserAction)(implicit ec: ExecutionContext)
   extends AbstractController(cc) {
 
 

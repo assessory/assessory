@@ -10,15 +10,14 @@ import com.wbillingsley.handy.Ref._
 import com.wbillingsley.handy._
 import com.wbillingsley.handy.appbase.{Course, Group, GroupSet, UserError}
 import javax.inject.Inject
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.mvc._
 import util.RefConversions._
 import util.UserAction
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.language.implicitConversions
 
-class GroupController @Inject() (startupSettings: StartupSettings, cc: ControllerComponents, userAction: UserAction)
+class GroupController @Inject() (startupSettings: StartupSettings, cc: ControllerComponents, userAction: UserAction)(implicit ec:ExecutionContext)
   extends AbstractController(cc) {
 
   implicit def groupToResult(rc:Ref[Group]):Future[Result] = {
@@ -123,7 +122,6 @@ class GroupController @Inject() (startupSettings: StartupSettings, cc: Controlle
     import java.io.StringReader
 
     import au.com.bytecode.opencsv.CSVReader
-    import com.wbillingsley.handyplay.RefConversions._
 
     import scala.collection.JavaConverters._
 

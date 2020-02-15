@@ -6,8 +6,9 @@ import javax.inject.Inject
 import play.api.{Configuration, Logger}
 import play.api.mvc._
 import play.api.libs.ws._
-import play.api.libs.concurrent.Execution.Implicits._
 import util.UserAction
+
+import scala.concurrent.ExecutionContext
 
 case object GitHub extends Service {
   val name = "GitHub"
@@ -19,8 +20,10 @@ case object GitHub extends Service {
 /**
   * Controller for GitHub OAuth. Based on handy-play-oauth, updated for Play 2.5
   */
-class GitHubController @Inject() (cc: ControllerComponents, playAuth:PlayAuth, config:Configuration, ws:WSClient, userAction: UserAction)
+class GitHubController @Inject() (cc: ControllerComponents, playAuth:PlayAuth, config:Configuration, ws:WSClient, userAction: UserAction)(implicit ec:ExecutionContext)
   extends AbstractController(cc) {
+
+  val logger:Logger = Logger("GitHub Controller")
 
   val clientKey:Option[String] = config.getOptional[String]("auth.github.ckey")
   val secret:Option[String] = config.getOptional[String]("auth.github.csecret")
@@ -43,7 +46,7 @@ class GitHubController @Inject() (cc: ControllerComponents, playAuth:PlayAuth, c
     if (GitHub.available(config)) {
       Redirect(
         url="https://github.com/login/oauth/authorize",
-        queryString=Map(
+        queryStringParams=Map(
           "state" -> Seq(randomString),
           "client_id" -> clientKey.toSeq
         ),
@@ -114,13 +117,13 @@ class GitHubController @Inject() (cc: ControllerComponents, playAuth:PlayAuth, c
      * whenever there is a mismatch to see if we can uncover why.
      */
     if (stateFromSession.isEmpty) {
-      Logger.warn("GitHub OAuth - state from session was empty")
+      logger.warn("GitHub OAuth - state from session was empty")
     }
     if (stateFromRequest.isEmpty) {
-      Logger.warn("GitHub OAuth - state from request was empty")
+      logger.warn("GitHub OAuth - state from request was empty")
     }
     if (stateFromSession != stateFromRequest) {
-      Logger.warn(s"GitHub OAuth - state from request was $stateFromRequest but state from session was $stateFromSession")
+      logger.warn(s"GitHub OAuth - state from request was $stateFromRequest but state from session was $stateFromSession")
     }
 
     val rMem = for {

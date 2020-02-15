@@ -8,7 +8,6 @@ import com.assessory.model._
 import com.wbillingsley.handy.Ref._
 import com.wbillingsley.handy.Id._
 import com.wbillingsley.handy._
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.mvc._
 import util.RefConversions._
 import util.UserAction
@@ -16,19 +15,19 @@ import Pickles._
 import com.wbillingsley.handy.appbase.UserError
 import javax.inject.Inject
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.language.implicitConversions
 
 object CritController {
-  implicit def caToResult(rc:Ref[CritAllocation]):Future[Result] = {
+  implicit def caToResult(rc:Ref[CritAllocation])(implicit ec: ExecutionContext):Future[Result] = {
     rc.map(c => Results.Ok(Pickles.write(c)).as("application/json")).toFuture
   }
 
-  implicit def targetToResult(rc:Ref[Target]):Future[Result] = {
+  implicit def targetToResult(rc:Ref[Target])(implicit ec: ExecutionContext):Future[Result] = {
     rc.map(c => Results.Ok(Pickles.write(c)).as("application/json")).toFuture
   }
 
-  implicit def manyCAToResult(rc:RefMany[CritAllocation]):Future[Result] = {
+  implicit def manyCAToResult(rc:RefMany[CritAllocation])(implicit ec: ExecutionContext):Future[Result] = {
     val strings = rc.map(c => Pickles.write(c))
 
     for {
@@ -36,7 +35,7 @@ object CritController {
     } yield Results.Ok.chunked(j).as("application/json")
   }
 
-  implicit def manyTargetToResult(rc:RefMany[Target]):Future[Result] = {
+  implicit def manyTargetToResult(rc:RefMany[Target])(implicit ec: ExecutionContext):Future[Result] = {
     val strings = rc.map(c => Pickles.write(c))
 
     for {
@@ -45,7 +44,7 @@ object CritController {
   }
 }
 
-class CritController @Inject() (startupSettings: StartupSettings, cc: ControllerComponents, userAction: UserAction)
+class CritController @Inject() (startupSettings: StartupSettings, cc: ControllerComponents, userAction: UserAction)(implicit ec: ExecutionContext)
   extends AbstractController(cc) {
 
   import CritController._

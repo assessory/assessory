@@ -6,11 +6,10 @@ import com.assessory.model._
 import com.wbillingsley.handy.Ref._
 import com.wbillingsley.handy._
 import com.wbillingsley.handy.appbase.{ActiveSession, User, UserError}
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.mvc._
 import util.{RefConversions, UserAction}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.language.implicitConversions
 import RefConversions._
 import Id._
@@ -18,7 +17,7 @@ import com.assessory.clientpickle.Pickles
 import Pickles._
 import javax.inject.Inject
 
-class UserController @Inject() (startupSettings: StartupSettings, cc: ControllerComponents, userAction: UserAction)
+class UserController @Inject() (startupSettings: StartupSettings, cc: ControllerComponents, userAction: UserAction)(implicit ec:ExecutionContext)
   extends AbstractController(cc) {
 
   implicit def userToResult(rc:Ref[User]):Future[Result] = {
