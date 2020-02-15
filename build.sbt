@@ -4,32 +4,33 @@ import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 
 lazy val commonSettings = Seq(
   // Gets snapshots from first resolver. TODO: Remove
-  updateOptions := updateOptions.value.withLatestSnapshots(false),
+  //updateOptions := updateOptions.value.withLatestSnapshots(false),
 
-  scalaVersion := "2.12.8",
-  organization := "com.impressory",
+  scalaVersion := "2.13.1",
+  organization := "org.assessory",
   version := "0.3-SNAPSHOT",
   scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),
   resolvers ++= Seq(
-    "Typesafe Releases" at "http://repo.typesafe.com/typesafe/releases/",
+    "Typesafe Releases" at "https://repo.typesafe.com/typesafe/releases/",
     "sonatype releases" at "https://oss.sonatype.org/content/repositories/releases/",
     "jitpack" at "https://jitpack.io",
     DefaultMavenRepository
   ),
   libraryDependencies ++= Seq(
     //Handy
-    "org.scalactic" %% "scalactic" % "3.0.5",
-    "org.scalatest" %% "scalatest" % "3.0.5" % "test"
+    "org.scalactic" %% "scalactic" % "3.1.0",
+    "org.scalatest" %% "scalatest" % "3.1.0" % "test",
+    "org.specs2" %% "specs2-core" % "4.8.3" % "test"
   )
 
 )
 
 
-name := "atemporary"
+name := "assessory"
   
-organization := "com.impressory"
+organization := "org.assessory"
   
-scalaVersion := "2.12.8"
+scalaVersion := "2.13.1"
 
 version := "1.0.0-SNAPSHOT"
 
@@ -37,9 +38,8 @@ lazy val api = (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure) 
   .settings(commonSettings:_*)
   .settings(
     libraryDependencies ++= Seq(
-      "com.github.wbillingsley.handy" %%% "handy" % "v0.9-SNAPSHOT",
-      "com.github.wbillingsley.handy" %%% "handy-appbase" % "v0.9-SNAPSHOT",
-      "org.specs2" %% "specs2-core" % "4.3.4" % "test"
+      "com.github.wbillingsley.handy" %%% "handy" % "v0.10-SNAPSHOT",
+      "com.github.wbillingsley.handy" %%% "handy-appbase" % "v0.10-SNAPSHOT"
     )
   )
 
@@ -52,9 +52,9 @@ lazy val mongo = (project in file("modules/asyncmongo"))
   .settings(commonSettings:_*)
   .settings(
     libraryDependencies ++= Seq(
-      "org.mongodb.scala" %% "mongo-scala-driver" % "2.5.0",
-      "com.github.wbillingsley.handy" %% "handy-user" % "v0.9-SNAPSHOT",
-      "com.github.wbillingsley.handy" %% "handy-play" % "v0.9-SNAPSHOT"
+      "org.mongodb.scala" %% "mongo-scala-driver" % "2.8.0",
+      "com.github.wbillingsley.handy" %% "handy-user" % "v0.10-SNAPSHOT",
+      "com.github.wbillingsley.handy" %% "handy-play" % "v0.10-SNAPSHOT"
     )
   )
 
@@ -64,12 +64,11 @@ lazy val model = (project in file("modules/model"))
   .settings(commonSettings:_*)
   .settings(
     libraryDependencies ++= Seq(
-      "net.sf.opencsv" % "opencsv" % "2.0",
-      "org.specs2" %% "specs2-core" % "4.3.4" % "test"
+      "net.sf.opencsv" % "opencsv" % "2.0"
     )
   )
 
-val circeVersion = "0.11.1"
+val circeVersion = "0.13.0"
 lazy val clientPickle = (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure) in file("modules/clientPickle"))
   .settings(commonSettings:_*)
   .settings(
@@ -119,7 +118,7 @@ lazy val play = (project in file("modules/play"))
     libraryDependencies ++= Seq(
       // JavaScript
       ws,
-      "org.webjars" %% "webjars-play" % "2.6.3",
+      "org.webjars" %% "webjars-play" % "2.8.0",
       "org.webjars" % "bootstrap" % "3.1.1-2",
       "org.webjars" % "font-awesome" % "4.5.0",
       "org.webjars" % "marked" % "0.3.2-1"
@@ -131,7 +130,7 @@ lazy val play = (project in file("modules/play"))
     // triggers scalaJSPipeline when using compile or continuous compilation
     compile in Compile := ((compile in Compile) dependsOn scalaJSPipeline).value,
     libraryDependencies ++= Seq(
-      "com.vmunier" %% "scalajs-scripts" % "1.1.2",
+      "com.vmunier" %% "scalajs-scripts" % "1.1.4",
       guice
     )
   )
