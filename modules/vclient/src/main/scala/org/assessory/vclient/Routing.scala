@@ -1,5 +1,7 @@
 package org.assessory.vclient
 
+import com.wbillingsley.handy.Id
+import com.wbillingsley.handy.appbase.Course
 import com.wbillingsley.veautiful.PathDSL
 import com.wbillingsley.veautiful.PathDSL./#
 import com.wbillingsley.veautiful.html.{<, VHtmlNode}
@@ -22,6 +24,11 @@ object Routing {
   case object Login extends Route {
     def path = (/# / "login").stringify
     def render = LoginViews.Login
+  }
+
+  case class CourseRoute(id:Id[Course, String]) extends Route {
+    def path:String = (/# / "course" / id.id).stringify
+    def render = <.div("course") // TODO: implement
   }
 
 

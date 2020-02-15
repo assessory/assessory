@@ -5,6 +5,7 @@ import com.wbillingsley.handy.appbase.User
 import com.wbillingsley.veautiful.html.{<, VHtmlNode, ^}
 import org.assessory.vclient.Routing
 import org.assessory.vclient.common.Components.LatchRender
+import org.assessory.vclient.course.CourseViews
 import org.assessory.vclient.services.UserService
 
 object Front {
@@ -43,8 +44,7 @@ object Front {
   def front:VHtmlNode = {
     <.div(
       siteHeader,
-      "My courses"
-
+      CourseViews.myCourses
 
     )
   }
