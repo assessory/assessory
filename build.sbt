@@ -83,7 +83,7 @@ lazy val clientPickle = (crossProject(JSPlatform, JVMPlatform).crossType(CrossTy
 lazy val clientPickleJS = clientPickle.js
 lazy val clientPickleJVM = clientPickle.jvm
 
-lazy val reactjs = project.in(file("modules/reactjs"))  
+lazy val reactjs = project.in(file("modules/reactjs"))
   .settings(commonSettings:_*)
   .enablePlugins(ScalaJSPlugin)
   .settings(
@@ -92,7 +92,16 @@ lazy val reactjs = project.in(file("modules/reactjs"))
   )
   .dependsOn(apiJS, clientPickleJS)
 
-lazy val sjsProjects = Seq(reactjs)
+lazy val vclient = project.in(file("modules/vclient"))
+  .settings(commonSettings:_*)
+  .enablePlugins(ScalaJSPlugin)
+  .settings(
+    scalaJSUseMainModuleInitializer := true,
+    scalaJSUseMainModuleInitializer in Test := false
+  )
+  .dependsOn(apiJS, clientPickleJS)
+
+lazy val sjsProjects = Seq(vclient)
 
 // The web layer
 lazy val play = (project in file("modules/play"))
