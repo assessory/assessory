@@ -26,7 +26,7 @@ class PreenrolmentB[W, T,R,RT](implicit r:ToFromBson[R]) {
     new Preenrolment[W,T,R,RT](
       id = doc[BsonObjectId]("_id"),
       name = doc.get[BsonString]("name"),
-      rows = doc[BsonArray]("rows").getValues.asScala.map({ r => prb.read(Document(r.asDocument())).get }),
+      rows = doc[BsonArray]("rows").getValues.asScala.map({ r => prb.read(Document(r.asDocument())).get }).toSeq,
       modified = doc[BsonInt64]("modified"),
       created = doc[BsonInt64]("created")
     )

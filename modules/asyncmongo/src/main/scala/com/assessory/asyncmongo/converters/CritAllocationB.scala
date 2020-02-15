@@ -24,7 +24,7 @@ object CritAllocationB {
       id = doc[BsonObjectId]("_id"),
       task = doc[BsonObjectId]("task"),
       completeBy = TargetB.read(Document(doc[BsonDocument]("completeBy"))).get,
-      allocation = doc[BsonArray]("allocation").getValues.asScala.map({ case x => AllocatedCritB.read(Document(x.asDocument())).get })
+      allocation = doc[BsonArray]("allocation").getValues.asScala.map({ case x => AllocatedCritB.read(Document(x.asDocument())).get }).toSeq
     )
   }
 }

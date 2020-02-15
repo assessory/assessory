@@ -32,7 +32,7 @@ object CourseB  {
       coverImage = doc.get[BsonString]("coverImage"),
       addedBy = doc[BsonObjectId]("addedBy"),
       secret = doc[BsonString]("secret"),
-      ltis = doc[BsonArray]("ltis").getValues.asScala.map({ d => LTIB.read(Document(d.asDocument())).get }),
+      ltis = doc[BsonArray]("ltis").getValues.asScala.map({ d => LTIB.read(Document(d.asDocument())).get }).toSeq,
       created = doc[BsonInt64]("created")
     )
   }

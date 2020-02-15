@@ -68,7 +68,7 @@ object TaskOutputBodyB {
         task = read(Document(doc[BsonDocument]("task"))).get
       ) }
       case "Questionnaire" => Try { QuestionnaireTaskOutput(
-        answers = doc[BsonArray]("answers").getValues.asScala.map({ case x => AnswerB.read(Document(x.asDocument())).get })
+        answers = doc[BsonArray]("answers").getValues.asScala.map({ case x => AnswerB.read(Document(x.asDocument())).get }).toSeq
       ) }
       case "Video" => Try { VideoTaskOutput(
         video = doc.get[BsonDocument]("video").map({ d => VideoResourceB.read(Document(d)).get })
@@ -103,7 +103,7 @@ object CompositeTaskOutputBodyB {
 
   def read(doc:Document): Try[CompositeTaskOutput] = Try {
     CompositeTaskOutput(
-      outputs = doc[BsonArray]("outputs").getValues.asScala.map({ d => TaskOutputBodyB.read(Document(d.asDocument())).get })
+      outputs = doc[BsonArray]("outputs").getValues.asScala.map({ d => TaskOutputBodyB.read(Document(d.asDocument())).get }).toSeq
     )
   }
 }

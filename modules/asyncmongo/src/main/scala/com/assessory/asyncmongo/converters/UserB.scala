@@ -29,9 +29,9 @@ object UserB {
       nickname = doc.get[BsonString]("nickname"),
       avatar = doc.get[BsonString]("avatar"),
       secret = doc[BsonString]("secret"),
-      activeSessions = doc[BsonArray]("activeSessions").getValues.asScala.map({ case x => ActiveSessionB.read(Document(x.asDocument())).get }),
+      activeSessions = doc[BsonArray]("activeSessions").getValues.asScala.map({ case x => ActiveSessionB.read(Document(x.asDocument())).get }).toSeq,
       pwlogin = PwLoginB.read(Document(doc[BsonDocument]("pwlogin"))).get,
-      identities = doc[BsonArray]("identities").getValues.asScala.map({ case x => IdentityB.read(Document(x.asDocument())).get }),
+      identities = doc[BsonArray]("identities").getValues.asScala.map({ case x => IdentityB.read(Document(x.asDocument())).get }).toSeq,
       created = doc[BsonInt64]("created")
     )
   }

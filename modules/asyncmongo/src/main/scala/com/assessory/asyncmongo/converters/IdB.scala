@@ -21,7 +21,7 @@ object IdB {
   def write[T](i:Ids[T, String]):Seq[BsonObjectId] = i.ids.map(BsonObjectId.apply)
 
   def read[T](s:BsonArray):Ids[T,String] = {
-    val it = s.getValues.asScala.map(_.asObjectId().getValue.toHexString)
+    val it = s.getValues.asScala.map(_.asObjectId().getValue.toHexString).toSeq
     it.asIds[T]
   }
 
