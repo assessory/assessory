@@ -62,11 +62,8 @@
   <!-- Marked, used for Markdown -->
   @webJarsUtil.locate("marked.js").script()
 
-  <script type='text/javascript' src='//cdn.jsdelivr.net/webjars/org.webjars/react/0.12.1/react.js'></script>
-
-
   @scalajs.html.scripts(
-    "reactjs",name => routes.Assets.at(name).toString,
+    "vclient",name => routes.Assets.at(name).toString,
     name => getClass.getResource(s"/public/$name") != null
   )
 
