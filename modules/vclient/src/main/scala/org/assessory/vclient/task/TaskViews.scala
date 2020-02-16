@@ -3,6 +3,7 @@ package org.assessory.vclient.task
 import com.assessory.api.Task
 import com.assessory.api.client.WithPerms
 import com.assessory.api.due.Due
+import com.assessory.api.question.QuestionnaireTask
 import com.wbillingsley.handy.{Id, Latch}
 import com.wbillingsley.handy.appbase.{Course, Group}
 import com.wbillingsley.veautiful.html.{<, DElement, VHtmlNode, ^}
@@ -103,6 +104,7 @@ object TaskViews {
 
   def editOutputForTask(task: Task):VHtmlNode = {
     task.body match {
+      case q:QuestionnaireTask => QuestionnaireViews.EditOutputView(task)
       case _ => <.div(s"Edit screen needs writing for ${task.body.getClass.getName}")
     }
   }

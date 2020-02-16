@@ -27,7 +27,7 @@ object TaskOutputService {
   )
 
   def myOutputs(taskId:Id[Task,String]):Future[Seq[TaskOutput]] = {
-    Ajax.get(s"/api/task/${taskId.id}/myOutputs", headers=AJAX_HEADERS).responseText.flatMap(Pickles.readF[Seq[TaskOutput]])
+    Ajax.get(s"/api/task/${taskId.id}/myOutputs", headers=AJAX_HEADERS).responseText.flatMap(Pickles.readF[Seq[TaskOutput]]).captureUserError
   }
 
   def myAllocations(taskId:Id[Task,String]):Future[Seq[Target]] = {
@@ -81,6 +81,20 @@ object TaskOutputService {
   def latch(id:Id[TaskOutput,String]):Latch[WithPerms[TaskOutput]] = Latch.lazily(cache.getOrElseUpdate(id.id, loadId(id)))
 
   def future(id:Id[TaskOutput,String]):Future[WithPerms[TaskOutput]] = cache.getOrElseUpdate(id.id, loadId(id))
+
+
+  /**
+   * Creates a blank answer for a given task
+   * @return
+   */
+  def blankOutputFor(t:Task, by:Target):TaskOutput = {
+    TaskOutput(
+      id = "invalidId".asId,
+      task = t.id,
+      by = by,
+      body = emptyBodyFor(t.body)
+    )
+  }
 
   def emptyBodyFor(tb:TaskBody):TaskOutputBody = tb match {
     case v:VideoTask => VideoTaskOutput(None)
