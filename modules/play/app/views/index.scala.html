@@ -12,6 +12,7 @@
   <!-- Boostrap 3 -->
   @webJarsUtil.locate("bootstrap.min.css").css()
   @webJarsUtil.locate("font-awesome.min.css").css()
+  <link rel="stylesheet" type="text/css" href="@{routes.Assets.at("stylesheets/assessory.css")}" >
 
   <div class="full-height" id="assessory-render">
     <style>
@@ -49,7 +50,7 @@
     </style>
 
     <div class="loading">
-      Loading React.js, Scala.js and all sorts of goodies...
+      Loading Veautiful, Scala.js and all sorts of goodies...
     </div>
   </div>
 
@@ -61,6 +62,7 @@
 
   <!-- Marked, used for Markdown -->
   @webJarsUtil.locate("marked.js").script()
+
 
   @scalajs.html.scripts(
     "vclient",name => routes.Assets.at(name).toString,

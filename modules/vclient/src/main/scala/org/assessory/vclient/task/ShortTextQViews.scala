@@ -14,8 +14,8 @@ object ShortTextQViews {
       f(a.copy(answer=Some(ans)))
     }
 
-    <.div(
-      <.textarea(^.cls := "form=-control", ^.prop("value") ?= a.answer,
+    <.div(^.cls := "form-group",
+      <.textarea(^.cls := "form-control", ^.prop("value") ?= a.answer,
         ^.on("input") ==> { _.inputValue.foreach(updateAnswer) }
       )
     )

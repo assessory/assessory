@@ -18,6 +18,8 @@ import scala.scalajs.concurrent.JSExecutionContext.Implicits.runNow
 
 object TaskOutputService {
 
+  val invalidId:Id[TaskOutput, String] = "invalid".asId[TaskOutput]
+
   val cache = mutable.Map.empty[String, Future[WithPerms[TaskOutput]]]
 
   UserService.self.addListener { _ => cache.clear() }
@@ -70,6 +72,10 @@ object TaskOutputService {
     fto
   }
 
+  def save(to:TaskOutput):Future[WithPerms[TaskOutput]] = {
+    if (to.id == invalidId) createNew(to) else updateBody(to)
+  }
+
   def loadId[KK <: String](id:Id[TaskOutput,KK]):Future[WithPerms[TaskOutput]] = {
     val fwp = Ajax.get(s"/api/taskoutput/${id.id}", headers=AJAX_HEADERS).responseText.flatMap(Pickles.readF[WithPerms[TaskOutput]])
     fwp.onComplete(_ => Routing.Router.rerender())
@@ -89,7 +95,7 @@ object TaskOutputService {
    */
   def blankOutputFor(t:Task, by:Target):TaskOutput = {
     TaskOutput(
-      id = "invalidId".asId,
+      id = invalidId,
       task = t.id,
       by = by,
       body = emptyBodyFor(t.body)

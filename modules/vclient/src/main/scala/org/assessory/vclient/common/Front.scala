@@ -12,7 +12,7 @@ object Front {
 
   def siteHeader: VHtmlNode = {
     <.div(^.cls := "site-header",
-      <.div(^.cls := "navbar navbar-static-top",
+      <.div(^.cls := "navbar navbar-expand-sm navbar-static-top",
         <.div(^.cls := "container",
           <.a(^.cls := "navbar-brand", "Assessory", ^.href := Routing.Home.path),
           <.ul(^.cls := "nav navbar-nav"),
@@ -29,14 +29,14 @@ object Front {
         val name: String = u.name.getOrElse("Anonymous")
 
         <.ul(^.cls := "nav navbar-nav pull-right",
-          <.li(<.a(^.onClick --> UserService.logOut(), "Log out")),
-          <.li(<.a(name))
+          <.li(^.cls := "nav-item", <.button(^.cls := "btn btn-link nav-link", ^.onClick --> UserService.logOut(), "Log out")),
+          <.li(^.cls := "nav-item", <.a(^.cls := "nav-link", name))
         )
 
       case None =>
         <.ul(^.cls := "nav navbar-nav pull-right",
-          <.li(<.a(^.href := Routing.Login.path, "Log in")),
-          <.li(<.a(^.href := "", "Sign up"))
+          <.li(^.cls := "nav-item", <.a(^.cls := "nav-link", ^.href := Routing.Login.path, "Log in")),
+          <.li(^.cls := "nav-item", <.a(^.cls := "nav-link", ^.href := "", "Sign up"))
         )
     }
   }

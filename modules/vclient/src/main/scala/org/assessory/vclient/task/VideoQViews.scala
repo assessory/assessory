@@ -43,16 +43,17 @@ object VideoQViews {
       f(a.copy(answer=VideoService.video(url)))
     }
 
-    <.div(
+    <.div(^.cls := "form-group",
       a.answer match {
         case Some(vr) => videoPlayer(vr)
         case _ => <.div("No video chosen yet")
       },
-      <.div(
-        <("label")("Paste video URL or embed code to replace: "),
-
-        <.input(^.attr("type") := "text", ^.on("change") ==> { e => e.inputValue.foreach(updateVideo) }),
-        <.button("Set")
+      <.div(^.cls := "input-group",
+        <.input(^.cls := "form-control col-md-6", ^.attr("type") := "text",
+          ^.attr("placeholder") := "Paste video URL or embed code to replace",
+          ^.on("change") ==> { e => e.inputValue.foreach(updateVideo) }
+        ),
+        <.div(^.cls := "input-group-append", <.button(^.cls := "btn btn-secondary", "Preview"))
       )
     )
   }

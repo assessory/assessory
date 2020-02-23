@@ -23,6 +23,12 @@ package object services {
     def captureUserError(implicit ec:ExecutionContext):Future[T] = f recoverWith {
       case AjaxException(req) if req.status == 400 => Future.failed(UserError(req.responseText))
     }
+
+    def captureError(implicit ec:ExecutionContext):Future[T] = f recoverWith {
+      case AjaxException(req) if req.status == 400 => Future.failed(UserError(req.responseText))
+      case AjaxException(req) if req.status == 403 => Future.failed(Refused(req.responseText))
+      case AjaxException(req) => Future.failed(new RuntimeException(req.responseText))
+    }
   }
 
 

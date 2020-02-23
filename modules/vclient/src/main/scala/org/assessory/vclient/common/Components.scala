@@ -1,8 +1,8 @@
 package org.assessory.vclient.common
 
 import com.wbillingsley.handy.Latch
-import com.wbillingsley.veautiful.DiffNode
-import com.wbillingsley.veautiful.html.{<, VHtmlComponent, VHtmlNode}
+import com.wbillingsley.veautiful.{DiffNode, Update}
+import com.wbillingsley.veautiful.html.{<, VHtmlComponent, VHtmlNode, ^}
 import org.scalajs.dom.{Element, Event, Node, html}
 
 import scala.util.{Failure, Success}
@@ -13,7 +13,7 @@ object Components {
                            some: T => DiffNode[Element, Node],
                            none: => DiffNode[Element, Node] = <.div(),
                            error: Throwable => DiffNode[Element, Node] = x => <.div(x.getMessage)
-  ) extends VHtmlComponent {
+  ) extends VHtmlComponent with Update {
 
     val listener:Latch.Listener[T] = { _ => rerender() }
 
@@ -44,6 +44,14 @@ object Components {
       case _ => None
     }
 
+  }
+
+  def latchErrorRender[T](latch:Latch[T]):LatchRender[T] = {
+    LatchRender(latch)(
+      some = { _ => <.span() },
+      none = { <.span() },
+      error = { x => <("label")(^.cls := "text-danger", "Error: " + x.getMessage)}
+    )
   }
 
 
