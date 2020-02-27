@@ -1,10 +1,10 @@
 package com.assessory.clientpickle
 
+import com.assessory.api.Task
 import com.assessory.api.call._
-import com.wbillingsley.handy.Ref
-import com.wbillingsley.handy.appbase.{Course, User}
+import com.wbillingsley.handy.{Id, Ref}
+import com.wbillingsley.handy.appbase.{ActiveSession, Course, Group, GroupSet, User}
 import io.circe._
-import io.circe.generic.semiauto._
 import io.circe.syntax._
 import io.circe.parser.decode
 
@@ -18,32 +18,56 @@ object CallPickles {
   val k = "kind"
   val b = "body"
 
-  implicit val registerEncoder: Encoder[Register] = deriveEncoder
-  implicit val registerDecoder: Decoder[Register] = deriveDecoder
+  implicit val registerEncoder: Encoder[Register] = (r:Register) => Json.obj(
+    "email" -> r.email.asJson, "password" -> r.password.asJson, "session" -> r.session.asJson
+  )
+  implicit val registerDecoder: Decoder[Register] = (c:HCursor) => for {
+    email <- c.downField("email").as[String]
+    pw <- c.downField("password").as[String]
+    session <- c.downField("session").as[ActiveSession]
+  } yield Register(email, pw, session)
 
-  implicit val withSessionEncoder: Encoder[WithSession] = deriveEncoder
-  implicit val withSessionDecoder: Decoder[WithSession] = deriveDecoder
+  implicit val withSessionEncoder: Encoder[WithSession] = (ws:WithSession) => Json.obj(
+    "session" -> ws.a.asJson, "call" -> ws.c.asJson
+  )
+  implicit val withSessionDecoder: Decoder[WithSession] = (c:HCursor) => for {
+    session <- c.downField("session").as[ActiveSession]
+    call <- c.downField("call").as[Call]
+  } yield WithSession(session, call)
 
-  implicit val loginEncoder: Encoder[Login] = deriveEncoder
-  implicit val loginDecoder: Decoder[Login] = deriveDecoder
+  implicit val loginEncoder: Encoder[Login] = (l:Login) => Json.obj(
+    "email" -> l.email.asJson,
+    "password" -> l.password.asJson,
+    "session" -> l.session.asJson
+  )
+  implicit val loginDecoder: Decoder[Login] = (c:HCursor) => for {
+    email <- c.downField("email").as[String]
+    pw <- c.downField("password").as[String]
+    session <- c.downField("session").as[ActiveSession]
+  } yield Login(email, pw, session)
 
-  implicit val createCourseEnc: Encoder[CreateCourse] = deriveEncoder
-  implicit val createCourseDec: Decoder[CreateCourse] = deriveDecoder
+  implicit val createCourseEnc: Encoder[CreateCourse] = (c:CreateCourse) => Json.obj("course" -> c.c.asJson)
+  implicit val createCourseDec: Decoder[CreateCourse] = (c:HCursor) => c.downField("course").as[Course].map(CreateCourse)
 
-  implicit val createGroupSetEnc: Encoder[CreateGroupSet] = deriveEncoder
-  implicit val createGroupSetDec: Decoder[CreateGroupSet] = deriveDecoder
+  implicit val createGroupSetEnc: Encoder[CreateGroupSet] = (c:CreateGroupSet) => Json.obj("groupSet" -> c.gs.asJson)
+  implicit val createGroupSetDec: Decoder[CreateGroupSet] = (c:HCursor) => c.downField("groupSet").as[GroupSet].map(CreateGroupSet)
 
-  implicit val createTaskEnc: Encoder[CreateTask] = deriveEncoder
-  implicit val createTaskDec: Decoder[CreateTask] = deriveDecoder
+  implicit val createTaskEnc: Encoder[CreateTask] = (c:CreateTask) => Json.obj("task" -> c.t.asJson)
+  implicit val createTaskDec: Decoder[CreateTask] = (c:HCursor) => c.downField("task").as[Task].map(CreateTask)
 
-  implicit val createGroupsFromCsvEnc: Encoder[CreateGroupsFromCsv] = deriveEncoder
-  implicit val createGroupsFromCsvDec: Decoder[CreateGroupsFromCsv] = deriveDecoder
+  implicit val createGroupsFromCsvEnc: Encoder[CreateGroupsFromCsv] = (c:CreateGroupsFromCsv) => Json.obj(
+    "set" -> c.setId.asJson, "csv" -> c.csv.asJson
+  )
+  implicit val createGroupsFromCsvDec: Decoder[CreateGroupsFromCsv] = (c:HCursor) => for {
+    set <- c.downField("set").as[Id[GroupSet, String]]
+    csv <- c.downField("csv").as[String]
+  } yield CreateGroupsFromCsv(set, csv)
 
-  implicit val createGroupEnc: Encoder[CreateGroup] = deriveEncoder
-  implicit val createGroupDec: Decoder[CreateGroup] = deriveDecoder
+  implicit val createGroupEnc: Encoder[CreateGroup] = (c:CreateGroup) => Json.obj("group" -> c.g.asJson)
+  implicit val createGroupDec: Decoder[CreateGroup] = (c:HCursor) => c.downField("group").as[Group].map(CreateGroup)
 
-  implicit val addGroupRegEnc: Encoder[AddGroupReg] = deriveEncoder
-  implicit val addGroupRegDec: Decoder[AddGroupReg] = deriveDecoder
+  implicit val addGroupRegEnc: Encoder[AddGroupReg] = (a:AddGroupReg) => Json.obj("groupReg" -> a.gr.asJson)
+  implicit val addGroupRegDec: Decoder[AddGroupReg] = (c:HCursor) => c.downField("groupReg").as[Group.Reg].map(AddGroupReg)
 
   implicit val callEncoder: Encoder[Call] = {
     case GetSession => Json.obj(k -> Json.fromString("GetSession"))
@@ -87,26 +111,26 @@ object CallPickles {
 
 
 
-  implicit val returnSessionEnc: Encoder[ReturnSession] = deriveEncoder
-  implicit val returnSessionDec: Decoder[ReturnSession] = deriveDecoder
+  implicit val returnSessionEnc: Encoder[ReturnSession] = (r:ReturnSession) => Json.obj("session" -> r.a.asJson)
+  implicit val returnSessionDec: Decoder[ReturnSession] = (c:HCursor) => c.downField("session").as[ActiveSession].map(ReturnSession)
 
-  implicit val returnUserEnc: Encoder[ReturnUser] = deriveEncoder
-  implicit val returnUserDec: Decoder[ReturnUser] = deriveDecoder
+  implicit val returnUserEnc: Encoder[ReturnUser] = (r:ReturnUser) => Json.obj("user" -> r.u.asJson)
+  implicit val returnUserDec: Decoder[ReturnUser] = (c:HCursor) => c.downField("user").as[User].map(ReturnUser)
 
-  implicit val returnCourseEnc: Encoder[ReturnCourse] = deriveEncoder
-  implicit val returnCourseDec: Decoder[ReturnCourse] = deriveDecoder
+  implicit val returnCourseEnc: Encoder[ReturnCourse] = (r:ReturnCourse) => Json.obj("course" -> r.c.asJson)
+  implicit val returnCourseDec: Decoder[ReturnCourse] = (c:HCursor) => c.downField("course").as[Course].map(ReturnCourse)
 
-  implicit val returnTaskEnc: Encoder[ReturnTask] = deriveEncoder
-  implicit val returnTaskDec: Decoder[ReturnTask] = deriveDecoder
+  implicit val returnTaskEnc: Encoder[ReturnTask] = (r:ReturnTask) => Json.obj("task" -> r.t.asJson)
+  implicit val returnTaskDec: Decoder[ReturnTask] = (c:HCursor) => c.downField("task").as[Task].map(ReturnTask)
 
-  implicit val returnGroupSetEnc: Encoder[ReturnGroupSet] = deriveEncoder
-  implicit val returnGroupSetDec: Decoder[ReturnGroupSet] = deriveDecoder
+  implicit val returnGroupSetEnc: Encoder[ReturnGroupSet] = (r:ReturnGroupSet) => Json.obj("groupSet" -> r.gs.asJson)
+  implicit val returnGroupSetDec: Decoder[ReturnGroupSet] = (c:HCursor) => c.downField("groupSet").as[GroupSet].map(ReturnGroupSet)
 
-  implicit val returnGroupRegEnc: Encoder[ReturnGroupReg] = deriveEncoder
-  implicit val returnGroupRegDec: Decoder[ReturnGroupReg] = deriveDecoder
+  implicit val returnGroupRegEnc: Encoder[ReturnGroupReg] = (r:ReturnGroupReg) => Json.obj("reg" -> r.gr.asJson)
+  implicit val returnGroupRegDec: Decoder[ReturnGroupReg] = (c:HCursor) => c.downField("reg").as[Group.Reg].map(ReturnGroupReg)
 
-  implicit val returnGroupsDataEnc: Encoder[ReturnGroupsData] = deriveEncoder
-  implicit val returnGroupsDataDec: Decoder[ReturnGroupsData] = deriveDecoder
+  implicit val returnGroupsDataEnc: Encoder[ReturnGroupsData] = (r:ReturnGroupsData) => Json.obj("groups" -> r.data.asJson)
+  implicit val returnGroupsDataDec: Decoder[ReturnGroupsData] = (c:HCursor) => c.downField("groups").as[Seq[(Group, Seq[String])]].map(ReturnGroupsData)
 
 
   implicit val returnEncoder: Encoder[Return] = {

@@ -74,7 +74,6 @@ lazy val clientPickle = (crossProject(JSPlatform, JVMPlatform).crossType(CrossTy
   .settings(
     libraryDependencies ++= Seq(
       "io.circe" %%% "circe-core",
-      "io.circe" %%% "circe-generic",
       "io.circe" %%% "circe-parser"
     ).map(_ % circeVersion)
   )
@@ -83,23 +82,14 @@ lazy val clientPickle = (crossProject(JSPlatform, JVMPlatform).crossType(CrossTy
 lazy val clientPickleJS = clientPickle.js
 lazy val clientPickleJVM = clientPickle.jvm
 
-lazy val reactjs = project.in(file("modules/reactjs"))
-  .settings(commonSettings:_*)
-  .enablePlugins(ScalaJSPlugin)
-  .settings(
-    scalaJSUseMainModuleInitializer := true,
-    scalaJSUseMainModuleInitializer in Test := false
-  )
-  .dependsOn(apiJS, clientPickleJS)
-
 lazy val vclient = project.in(file("modules/vclient"))
   .settings(commonSettings:_*)
-  .enablePlugins(ScalaJSPlugin)
+  .enablePlugins(ScalaJSPlugin, JSDependenciesPlugin)
   .settings(
     scalaJSUseMainModuleInitializer := true,
     scalaJSUseMainModuleInitializer in Test := false,
     libraryDependencies ++= Seq(
-      "org.scala-js" %%% "scalajs-dom" % "0.9.7",
+      "org.scala-js" %%% "scalajs-dom" % "1.0.0",
       "com.github.wbillingsley.veautiful" %%% "veautiful" % "master-SNAPSHOT",
       "com.github.wbillingsley.veautiful" %%% "veautiful-templates" % "master-SNAPSHOT",
     )

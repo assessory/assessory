@@ -11,7 +11,7 @@ import org.scalajs.dom.ext.Ajax
 
 import scala.collection.mutable
 import scala.concurrent.Future
-import scala.scalajs.concurrent.JSExecutionContext.Implicits.runNow
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Success
 
 object UserService {
