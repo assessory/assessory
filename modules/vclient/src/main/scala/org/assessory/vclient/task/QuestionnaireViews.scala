@@ -138,7 +138,9 @@ object QuestionnaireViews {
     def render = <.div(
       for { (a, i) <- qto.answers.zipWithIndex } yield {
         <.div(^.cls := "question",
-          Markup.marked.MarkupNode(() => qmap(a.question).prompt),
+          <.div(
+            Markup.marked.MarkupNode(() => qmap(a.question).prompt)
+          ),
           a match {
             case v:VideoAnswer => VideoQViews.editVideoAnswer(qmap(a.question), v) { a => replaceAnswer(a, i) }
             case s:ShortTextAnswer => ShortTextQViews.editShortTextAnswer(qmap(a.question), s) { s => replaceAnswer(s, i) }
