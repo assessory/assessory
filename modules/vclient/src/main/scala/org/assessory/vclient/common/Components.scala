@@ -41,6 +41,7 @@ object Components {
 
     def inputValue:Option[String] = e.target match {
       case h:html.Input => Some(h.value)
+      case t:html.TextArea => Some(t.value)
       case _ => None
     }
 
