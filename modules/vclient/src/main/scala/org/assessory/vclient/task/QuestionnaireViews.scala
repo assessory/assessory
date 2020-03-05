@@ -68,7 +68,7 @@ object QuestionnaireViews {
       rerender()
     }
 
-    private def savable:Boolean = status.isCompleted && modified
+    private def savable:Boolean = TaskOutputService.isUnsaved(taskOutput) || (status.isCompleted && modified)
 
     private def available:Boolean = taskOutput.finalised.nonEmpty
 

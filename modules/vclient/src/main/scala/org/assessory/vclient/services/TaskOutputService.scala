@@ -24,6 +24,8 @@ object TaskOutputService {
 
   UserService.self.addListener { _ => cache.clear() }
 
+  def isUnsaved(to:TaskOutput):Boolean = to.id == invalidId
+
   def courseTasks(courseId:Id[Course,String]):Latch[Seq[WithPerms[Task]]] = Latch.lazily(
     Ajax.get(s"/api/course/${courseId.id}/tasks", headers=AJAX_HEADERS).responseText.flatMap(Pickles.readF[Seq[WithPerms[Task]]])
   )
@@ -73,7 +75,7 @@ object TaskOutputService {
   }
 
   def save(to:TaskOutput):Future[WithPerms[TaskOutput]] = {
-    if (to.id == invalidId) createNew(to) else updateBody(to)
+    if (isUnsaved(to)) createNew(to) else updateBody(to)
   }
 
   def loadId[KK <: String](id:Id[TaskOutput,KK]):Future[WithPerms[TaskOutput]] = {
