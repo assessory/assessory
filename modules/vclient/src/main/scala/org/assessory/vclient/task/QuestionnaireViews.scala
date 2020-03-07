@@ -36,7 +36,7 @@ object QuestionnaireViews {
     def render = <.div(
       LatchRender(output) { to =>
         <.div(^.cls := "questionnaire",
-          EditAnswers(task, to)
+          EditBody(task, to)
         )
       }
     )
@@ -44,7 +44,33 @@ object QuestionnaireViews {
 
 
 
-  case class EditAnswers(task:Task, var taskOutput:TaskOutput) extends VHtmlComponent {
+  def editAnswers(q:QuestionnaireTask, qto:QuestionnaireTaskOutput)(update: QuestionnaireTaskOutput => Unit):VHtmlNode = {
+
+    val qmap = (for { q <- q.questionnaire} yield q.id -> q).toMap
+
+    def replaceAnswer(a:Answer, i:Int):Unit = {
+      update(qto.copy(answers = qto.answers.patch(i, Seq(a), 1)))
+    }
+
+    <.div(
+      for { (a, i) <- qto.answers.zipWithIndex } yield {
+        <.div(^.cls := "question",
+          <.div(
+            Markup.marked.MarkupNode(() => qmap(a.question).prompt)
+          ),
+          a match {
+            case v:VideoAnswer => VideoQViews.editVideoAnswer(qmap(a.question), v) { a => replaceAnswer(a, i) }
+            case s:ShortTextAnswer => ShortTextQViews.editShortTextAnswer(qmap(a.question), s) { s => replaceAnswer(s, i) }
+            case _ => <.div(s"Missing edit renderer for ${a.getClass.getName}")
+          }
+
+        )
+      }
+    )
+  }
+
+
+  case class EditBody(task:Task, var taskOutput:TaskOutput) extends VHtmlComponent {
 
     private var status = Latch.immediate(taskOutput)
     status.request
@@ -60,7 +86,12 @@ object QuestionnaireViews {
       case _ => QuestionnaireTask(Seq.empty)
     }
 
-    private val qmap = (for { q <- qt.questionnaire } yield q.id -> q).toMap
+
+    def replaceAnswers(updated:QuestionnaireTaskOutput):Unit = {
+      modified = true
+      taskOutput = taskOutput.copy(body=updated)
+      rerender()
+    }
 
     def replaceAnswer(a:Answer, i:Int):Unit = {
       modified = true
@@ -73,7 +104,7 @@ object QuestionnaireViews {
     private def available:Boolean = taskOutput.finalised.nonEmpty
 
     private def notFinalisable:Option[String] = {
-      if (taskOutput.finalised.nonEmpty) Some("Already published")
+      if (available) Some("Already published")
       else if (savable || taskOutput.id == TaskOutputService.invalidId) Some("Needs saving")
       else None
     }
@@ -136,19 +167,7 @@ object QuestionnaireViews {
     }
 
     def render = <.div(
-      for { (a, i) <- qto.answers.zipWithIndex } yield {
-        <.div(^.cls := "question",
-          <.div(
-            Markup.marked.MarkupNode(() => qmap(a.question).prompt)
-          ),
-          a match {
-            case v:VideoAnswer => VideoQViews.editVideoAnswer(qmap(a.question), v) { a => replaceAnswer(a, i) }
-            case s:ShortTextAnswer => ShortTextQViews.editShortTextAnswer(qmap(a.question), s) { s => replaceAnswer(s, i) }
-            case _ => <.div(s"Missing edit renderer for ${a.getClass.getName}")
-          }
-
-        )
-      },
+      editAnswers(qt, qto)(replaceAnswers),
       saveButtons
     )
 

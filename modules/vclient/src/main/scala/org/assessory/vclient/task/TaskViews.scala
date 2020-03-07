@@ -1,7 +1,8 @@
 package org.assessory.vclient.task
 
-import com.assessory.api.Task
+import com.assessory.api.{Target, TargetTaskOutput, Task}
 import com.assessory.api.client.WithPerms
+import com.assessory.api.critique.CritiqueTask
 import com.assessory.api.due.Due
 import com.assessory.api.question.QuestionnaireTask
 import com.wbillingsley.handy.{Id, Latch}
@@ -102,9 +103,15 @@ object TaskViews {
     )
   }
 
+  def preview(target:Target):VHtmlNode = target match {
+    case TargetTaskOutput(id) => <.div("task output " + id)
+  }
+
+
   def editOutputForTask(task: Task):VHtmlNode = {
     task.body match {
       case q:QuestionnaireTask => QuestionnaireViews.EditOutputView(task)
+      case c:CritiqueTask => CritiqueViews.EditOutputView(task)
       case _ => <.div(s"Edit screen needs writing for ${task.body.getClass.getName}")
     }
   }

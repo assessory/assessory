@@ -1,6 +1,6 @@
 package org.assessory.vclient.task
 
-import com.assessory.api.critique.Critique
+import com.assessory.api.critique.{Critique, CritiqueTask}
 import com.assessory.api.{TargetGroup, Task, TaskOutput}
 import com.wbillingsley.handy.Latch
 import com.wbillingsley.veautiful.DiffNode
@@ -29,18 +29,36 @@ object CritiqueViews {
       rerender()
     }
 
-    def render = <.div(
-      LatchRender(allocationsLatch) { all =>
-        <.ul(^.cls := "nav nav-pills", ^.role := "group",
-          for ((to, idx) <- all.zipWithIndex) yield {
-            <.li(^.cls := (if (selected.contains(to)) "active" else ""), ^.role := "presentation",
-              <.a(^.onClick --> select(Some(to)), idx.toString)
-            )
-          }
-        )
-      },
+    def render = {
 
-    )
+
+      <.div(
+        LatchRender(allocationsLatch) { all =>
+          <.ul(^.cls := "nav nav-pills", ^.role := "group",
+            for ((to, idx) <- all.zipWithIndex) yield {
+              <.li(^.cls := "nav-item" , ^.role := "presentation",
+                <.button(^.cls := (if (selected.contains(to)) "nav-link active" else "nav-link"),  ^.onClick --> select(Some(to)), (idx + 1).toString)
+              )
+            }
+          )
+        },
+        (task.body -> selected.map(_.body)) match {
+          case (ct:CritiqueTask, Some(crit:Critique)) =>
+            <.div(^.cls := "row",
+              <.div(^.cls := "col",
+                <.h3("What you are reviewing",
+                  TaskViews.preview(crit.target)
+                )
+              ),
+              <.div(^.cls := "col",
+                <.h3("Your critique")
+              )
+            )
+          case (_, None) => <.div()
+          case (tb, Some(x)) => <.div(s"Error: Either not a critique task or not a critique ${tb.getClass.getName} ${x.getClass.getName}")
+        }
+      )
+    }
   }
 
 
