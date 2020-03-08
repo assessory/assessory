@@ -1,19 +1,29 @@
 package org.assessory.vclient.services
 
-import com.assessory.api.Task
+import com.assessory.api.{Task, TaskOutput}
 import com.assessory.api.client.WithPerms
 import com.assessory.clientpickle.Pickles
 import com.assessory.clientpickle.Pickles._
 import com.wbillingsley.handy.Id._
 import com.wbillingsley.handy.appbase.Course
-import com.wbillingsley.handy.{Id, Latch}
+import com.wbillingsley.handy.{Id, Ids, Latch, LookUp, Ref, RefMany}
 import org.scalajs.dom.ext.Ajax
 
 import scala.collection.mutable
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import Ref._
 
 object TaskService {
+
+
+  implicit val lookup = new LookUp[Task, String] {
+    override def one[KK <: String](r: Id[Task, KK]): Ref[Task] = {
+      latch(r.id).request.map(_.item).toRef
+    }
+
+    override def many[KK <: String](r: Ids[Task, KK]): RefMany[Task] = ???
+  }
 
   val cache = mutable.Map.empty[String, Latch[WithPerms[Task]]]
 
@@ -25,7 +35,6 @@ object TaskService {
 
   def loadId[KK <: String](id:Id[Task,KK]):Future[WithPerms[Task]] = {
     val t = Ajax.get(s"/api/task/${id.id}", headers = Map("Accept" -> "application/json")).responseText
-    //t.onComplete { text => println(text); 1 }
     t.flatMap(Pickles.readF[WithPerms[Task]])
   }
 

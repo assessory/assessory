@@ -46,8 +46,11 @@ object CritiqueViews {
           case (ct:CritiqueTask, Some(crit:Critique)) =>
             <.div(^.cls := "row",
               <.div(^.cls := "col",
-                <.h3("What you are reviewing",
-                  TaskViews.preview(crit.target)
+                <.div(^.cls := "card",
+                  <.div(^.cls := "card-header", "What you are reviewing"),
+                  <.div(^.cls := "card-body",
+                    TaskViews.preview(crit.target)
+                  )
                 )
               ),
               <.div(^.cls := "col",

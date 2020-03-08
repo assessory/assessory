@@ -44,10 +44,7 @@ object VideoQViews {
     }
 
     <.div(^.cls := "form-group",
-      a.answer match {
-        case Some(vr) => videoPlayer(vr)
-        case _ => <.div("No video chosen yet")
-      },
+      viewVideoAnswer(q, a),
       <.div(^.cls := "input-group",
         <.input(^.cls := "form-control col-md-6", ^.attr("type") := "text",
           ^.attr("placeholder") := "Paste video URL or embed code to replace",
@@ -56,6 +53,13 @@ object VideoQViews {
         <.div(^.cls := "input-group-append", <.button(^.cls := "btn btn-secondary", "Preview"))
       )
     )
+  }
+
+  def viewVideoAnswer(q:Question, a:VideoAnswer):VHtmlNode = {
+    a.answer match {
+      case Some(vr) => videoPlayer(vr)
+      case _ => <.div("No video chosen yet")
+    }
   }
 
 }

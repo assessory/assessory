@@ -1,23 +1,26 @@
 package org.assessory.vclient.task
 
-import com.assessory.api.{Target, TargetTaskOutput, Task}
+import com.assessory.api.{Target, TargetTaskOutput, Task, TaskOutput}
 import com.assessory.api.client.WithPerms
 import com.assessory.api.critique.CritiqueTask
 import com.assessory.api.due.Due
-import com.assessory.api.question.QuestionnaireTask
+import com.assessory.api.question.{QuestionnaireTask, QuestionnaireTaskOutput}
 import com.wbillingsley.handy.{Id, Latch}
 import com.wbillingsley.handy.appbase.{Course, Group}
-import com.wbillingsley.veautiful.html.{<, DElement, VHtmlNode, ^}
+import com.wbillingsley.veautiful.html.{<, DElement, VHtmlComponent, VHtmlNode, ^}
 import org.assessory.vclient.Routing
 import org.assessory.vclient.common.Components.LatchRender
-import org.assessory.vclient.services.{GroupService, TaskService}
+import org.assessory.vclient.services.{GroupService, TaskOutputService, TaskService}
 import com.wbillingsley.handy.Ids._
 import org.assessory.vclient.common.Front
 import org.assessory.vclient.course.CourseViews
-import org.scalajs.dom.html
+import org.scalajs.dom.{Element, Node, html}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.scalajs.js.Date
+import TaskService._
+import TaskOutputService._
+import com.wbillingsley.veautiful.DiffNode
 
 object TaskViews {
 
@@ -104,7 +107,21 @@ object TaskViews {
   }
 
   def preview(target:Target):VHtmlNode = target match {
-    case TargetTaskOutput(id) => <.div("task output " + id)
+    case TargetTaskOutput(id) => Preview(id)
+  }
+
+
+  case class Preview(to:Id[TaskOutput, String]) extends VHtmlComponent {
+
+    val latches = Latch.lazily((for {
+      taskOutput <- to.lazily(TaskOutputService.lookup)
+      task <- taskOutput.task.lazily(TaskService.lookup)
+    } yield (task, task.body, taskOutput, taskOutput.body)).toFuture)
+
+    override protected def render: DiffNode[Element, Node] = <.div(LatchRender(latches) {
+      case (t, tb:QuestionnaireTask, to, tob:QuestionnaireTaskOutput) =>
+        <.div(QuestionnaireViews.previewAnswers(tb, tob))
+    })
   }
 
 

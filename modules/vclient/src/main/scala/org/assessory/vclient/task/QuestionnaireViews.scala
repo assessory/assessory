@@ -69,6 +69,27 @@ object QuestionnaireViews {
     )
   }
 
+  def previewAnswers(q:QuestionnaireTask, qto:QuestionnaireTaskOutput):VHtmlNode = {
+
+    val qmap = (for { q <- q.questionnaire} yield q.id -> q).toMap
+
+    <.div(
+      for { (a, i) <- qto.answers.zipWithIndex } yield {
+        <.div(^.cls := "question",
+          <.div(
+            Markup.marked.MarkupNode(() => qmap(a.question).prompt)
+          ),
+          a match {
+            case v:VideoAnswer => VideoQViews.viewVideoAnswer(qmap(a.question), v)
+            case s:ShortTextAnswer => ShortTextQViews.viewShortTextAnswer(qmap(a.question), s)
+            case _ => <.div(s"Missing view renderer for ${a.getClass.getName}")
+          }
+
+        )
+      }
+    )
+  }
+
 
   case class EditBody(task:Task, var taskOutput:TaskOutput) extends VHtmlComponent {
 

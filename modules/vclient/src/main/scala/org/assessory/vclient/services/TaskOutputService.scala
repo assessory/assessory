@@ -8,15 +8,24 @@ import com.assessory.clientpickle.Pickles
 import com.assessory.clientpickle.Pickles._
 import com.wbillingsley.handy.Id._
 import com.wbillingsley.handy.appbase.Course
-import com.wbillingsley.handy.{Id, Latch}
+import com.wbillingsley.handy.{Id, Ids, Latch, LookUp, Ref, RefMany}
 import org.assessory.vclient.Routing
 import org.scalajs.dom.ext.Ajax
 
 import scala.collection.mutable
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import Ref._
 
 object TaskOutputService {
+
+  implicit val lookup = new LookUp[TaskOutput, String] {
+    override def one[KK <: String](r: Id[TaskOutput, KK]): Ref[TaskOutput] = {
+      future(r.id.toString.asId[TaskOutput]).map(_.item).toRef
+    }
+
+    override def many[KK <: String](r: Ids[TaskOutput, KK]): RefMany[TaskOutput] = ???
+  }
 
   val invalidId:Id[TaskOutput, String] = "invalid".asId[TaskOutput]
 
@@ -49,7 +58,6 @@ object TaskOutputService {
 
   def findOrCreateCrit(taskId:Id[Task,String], target:Target):Future[TaskOutput] = {
     val fwp = Ajax.post(s"/api/critique/${taskId.id}/findOrCreateCrit", Pickles.write(target), headers=AJAX_HEADERS).responseText.flatMap(Pickles.readF[WithPerms[TaskOutput]])
-    fwp.onComplete(_ => Routing.Router.rerender())
     for { wp <- fwp } yield {
       cache.put(wp.item.id.id, fwp)
       wp.item
@@ -80,7 +88,6 @@ object TaskOutputService {
 
   def loadId[KK <: String](id:Id[TaskOutput,KK]):Future[WithPerms[TaskOutput]] = {
     val fwp = Ajax.get(s"/api/taskoutput/${id.id}", headers=AJAX_HEADERS).responseText.flatMap(Pickles.readF[WithPerms[TaskOutput]])
-    fwp.onComplete(_ => Routing.Router.rerender())
     fwp
   }
 
