@@ -12,33 +12,31 @@ object Front {
 
   def siteHeader: VHtmlNode = {
     <.div(^.cls := "site-header",
-      <.div(^.cls := "navbar navbar-expand-sm navbar-static-top",
-        <.div(^.cls := "container",
-          <.a(^.cls := "navbar-brand", "Assessory", ^.href := Routing.Home.path),
-          <.ul(^.cls := "nav navbar-nav"),
-            loginStatus(UserService.self)
-        )
+      <.div(^.cls := "navbar navbar-light navbar-expand justify-content-between",
+        <.a(^.cls := "navbar-brand", "Assessory", ^.href := Routing.Home.path),
+        <.div(loginStatus(UserService.self))
       )
     )
   }
 
 
   def loginStatus(l:Latch[Option[User]]):VHtmlNode = {
-    LatchRender(l) {
+    LatchRender(l)({
       case Some(u) =>
         val name: String = u.name.getOrElse("Anonymous")
 
-        <.ul(^.cls := "nav navbar-nav pull-right",
-          <.li(^.cls := "nav-item", <.button(^.cls := "btn btn-link nav-link", ^.onClick --> UserService.logOut(), "Log out")),
-          <.li(^.cls := "nav-item", <.a(^.cls := "nav-link", name))
+        <.div(^.cls := "navbar-nav mr-auto test",
+          <.a(^.cls := "nav-link nav-item", name),
+          <.button(^.cls := "btn btn-outline-secondary nav-link nav-item", ^.onClick --> UserService.logOut(), "Log out"),
         )
 
       case None =>
-        <.ul(^.cls := "nav navbar-nav pull-right",
-          <.li(^.cls := "nav-item", <.a(^.cls := "nav-link", ^.href := Routing.Login.path, "Log in")),
-          <.li(^.cls := "nav-item", <.a(^.cls := "nav-link", ^.href := "", "Sign up"))
+        <.div(^.cls := "navbar-nav mr-auto test",
+          <.a(^.cls := "nav-link nav-item", ^.href := Routing.Login.path, "Log in"),
+          <.a(^.cls := "nav-link nav-item", ^.href := "", "Sign up")
         )
-    }
+      }
+    )
   }
 
   def front:VHtmlNode = {

@@ -42,16 +42,16 @@ object CourseViews {
 
     <.div(^.cls := "course-info",
       <.div(^.cls := "media",
-        <.div(^.cls := "pull-left",
+        <.div(^.cls := "mr-4",
           <.span(^.cls := "cover-image", <.img(^.src := wp.item.coverImage.getOrElse("http://placehold.it/100x100")))
+        ),
+        <.div(^.cls := "media-body",
+          <.h4(^.cls := "mt-0",  course.shortName),
+          <.h2(^.cls := "mt-0", <.a(^.href := Routing.CourseRoute(course.id).path, course.title)),
+          courseAdmin(wp),
+          <.p(wp.item.shortDescription)
         )
       ),
-      <.div(^.cls := "media-body",
-        <.h4(^.cls := "media-heading",  course.shortName),
-        <.h2(^.cls := "media-heading", <.a(^.href := Routing.CourseRoute(course.id).path, course.title)),
-        courseAdmin(wp),
-        <.p(wp.item.shortDescription)
-      )
 
     )
   }
