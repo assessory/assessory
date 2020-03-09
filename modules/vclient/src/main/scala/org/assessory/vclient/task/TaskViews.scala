@@ -1,8 +1,8 @@
 package org.assessory.vclient.task
 
-import com.assessory.api.{Target, TargetTaskOutput, Task, TaskOutput}
+import com.assessory.api.{Target, TargetTaskOutput, Task, TaskBody, TaskOutput, TaskOutputBody}
 import com.assessory.api.client.WithPerms
-import com.assessory.api.critique.CritiqueTask
+import com.assessory.api.critique.{Critique, CritiqueTask}
 import com.assessory.api.due.Due
 import com.assessory.api.question.{QuestionnaireTask, QuestionnaireTaskOutput}
 import com.wbillingsley.handy.{Id, Latch}
@@ -12,7 +12,7 @@ import org.assessory.vclient.Routing
 import org.assessory.vclient.common.Components.LatchRender
 import org.assessory.vclient.services.{GroupService, TaskOutputService, TaskService}
 import com.wbillingsley.handy.Ids._
-import org.assessory.vclient.common.Front
+import org.assessory.vclient.common.{Components, Front}
 import org.assessory.vclient.course.CourseViews
 import org.scalajs.dom.{Element, Node, html}
 
@@ -21,6 +21,8 @@ import scala.scalajs.js.Date
 import TaskService._
 import TaskOutputService._
 import com.wbillingsley.veautiful.DiffNode
+
+import scala.util.{Failure, Success}
 
 object TaskViews {
 
@@ -137,6 +139,101 @@ object TaskViews {
     task.body match {
       case _ => <.div(s"View screen needs writing for ${task.body.getClass.getName}")
     }
+  }
+
+  def editOutputBody(task:TaskBody, taskOutput:TaskOutputBody)(updateBody: TaskOutputBody => Unit) = (task, taskOutput) match {
+    case (q:QuestionnaireTask, qto:QuestionnaireTaskOutput) =>
+      QuestionnaireViews.editAnswers(q, qto)(updateBody)
+    case (ct:CritiqueTask, c:Critique) =>
+      CritiqueViews.editBody(ct, c)(updateBody)
+    case _ =>
+      <.div(s"Error: Missing EditBody renderer for ${task.getClass.getName} -> ${taskOutput.getClass.getName}")
+  }
+
+
+  case class EditOutputBody(task:Task, var taskOutput:TaskOutput) extends VHtmlComponent {
+
+    private var status = Latch.immediate(taskOutput)
+    status.request
+    var modified = false
+
+    def replaceBody(updated:TaskOutputBody):Unit = {
+      modified = true
+      taskOutput = taskOutput.copy(body=updated)
+      rerender()
+    }
+
+    private def savable:Boolean = TaskOutputService.isUnsaved(taskOutput) || (status.isCompleted && modified)
+
+    private def available:Boolean = taskOutput.finalised.nonEmpty
+
+    private def notFinalisable:Option[String] = {
+      if (available) Some("Already published")
+      else if (savable || taskOutput.id == TaskOutputService.invalidId) Some("Needs saving")
+      else None
+    }
+
+    def save():Unit = {
+      if (savable) {
+        status = Latch.lazily {
+          TaskOutputService.save(taskOutput).map(_.item)
+        }
+
+        status.request.onComplete {
+          case Success(to) =>
+            taskOutput = to
+            modified = false
+            rerender()
+          case Failure(exception) =>
+            println("failed")
+            rerender()
+        }
+
+        rerender()
+      }
+    }
+
+    def makeAvailable():Unit = {
+      if (notFinalisable.isEmpty) {
+        status = Latch.lazily {
+          TaskOutputService.finalise(taskOutput).map(_.item)
+        }
+
+        status.request.onComplete {
+          case Success(to) =>
+            taskOutput = to
+            modified = false
+            rerender()
+          case Failure(exception) =>
+            println("failed")
+            rerender()
+        }
+
+        rerender()
+      }
+    }
+
+    private def saveButtons = {
+      <.div(^.cls := "form-group",
+        <.button(^.cls := "btn btn-default",
+          ^.on("click") --> save(),
+          ^.attr("disabled") ?= (if (savable) None else Some("disabled")),
+          (if (savable) "Save" else if (!status.isCompleted) "(Saving)" else "Already saved")
+        ),
+        <.button(^.cls := "btn btn-primary",
+          ^.on("click") --> makeAvailable(),
+          ^.attr("disabled") ?= notFinalisable.map(_ => "disabled"),
+          ("" + notFinalisable.getOrElse("Publish"))
+        ),
+        Components.latchErrorRender(status)
+      )
+    }
+
+    def render = <.div(
+      editOutputBody(task.body, taskOutput.body)(replaceBody),
+      saveButtons
+    )
+
   }
 
 }

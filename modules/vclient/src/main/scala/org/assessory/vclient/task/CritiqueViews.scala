@@ -1,10 +1,10 @@
 package org.assessory.vclient.task
 
 import com.assessory.api.critique.{Critique, CritiqueTask}
-import com.assessory.api.{TargetGroup, Task, TaskOutput}
+import com.assessory.api.{TargetGroup, Task, TaskBody, TaskOutput, TaskOutputBody}
 import com.wbillingsley.handy.Latch
 import com.wbillingsley.veautiful.DiffNode
-import com.wbillingsley.veautiful.html.{<, VHtmlComponent, ^}
+import com.wbillingsley.veautiful.html.{<, VHtmlComponent, VHtmlNode, ^}
 import org.assessory.vclient.common.Components.LatchRender
 import org.assessory.vclient.group.GroupViews
 import org.assessory.vclient.services.TaskOutputService
@@ -42,26 +42,31 @@ object CritiqueViews {
             }
           )
         },
-        (task.body -> selected.map(_.body)) match {
-          case (ct:CritiqueTask, Some(crit:Critique)) =>
-            <.div(^.cls := "row",
-              <.div(^.cls := "col",
-                <.div(^.cls := "card",
-                  <.div(^.cls := "card-header", "What you are reviewing"),
-                  <.div(^.cls := "card-body",
-                    TaskViews.preview(crit.target)
-                  )
-                )
-              ),
-              <.div(^.cls := "col",
-                <.h3("Your critique")
-              )
-            )
-          case (_, None) => <.div()
-          case (tb, Some(x)) => <.div(s"Error: Either not a critique task or not a critique ${tb.getClass.getName} ${x.getClass.getName}")
-        }
+        (for { to <- selected } yield TaskViews.EditOutputBody(task, to))
       )
     }
+  }
+
+
+  def editBody(critiqueTask: CritiqueTask, critique: Critique)(updateBody: TaskOutputBody => Unit):VHtmlNode = {
+    <.div(^.cls := "row",
+      <.div(^.cls := "col",
+        <.div(^.cls := "card",
+          <.div(^.cls := "card-header", "What you are reviewing"),
+          <.div(^.cls := "card-body",
+            TaskViews.preview(critique.target)
+          )
+        )
+      ),
+      <.div(^.cls := "col",
+        <.div(^.cls := "card",
+          <.div(^.cls := "card-header", "Your critique"),
+          <.div(^.cls := "card-body",
+            TaskViews.editOutputBody(critiqueTask.task, critique.task) { t => updateBody(critique.copy(task = t))}
+          )
+        )
+      )
+    )
   }
 
 
