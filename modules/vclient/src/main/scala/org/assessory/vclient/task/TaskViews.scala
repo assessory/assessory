@@ -68,7 +68,7 @@ object TaskViews {
       }
     )
 
-    LatchRender(groups) { g => optDate(due.due(g)) }
+    LatchRender(groups)({ g => optDate(due.due(g)) }, none = <.span())
   }
 
   /**
@@ -89,8 +89,11 @@ object TaskViews {
     } else <.div()
   }
 
+  /**
+   * The "front page" for a task - letting a user edit or view their entry depending on whether it is open
+   * @return
+   */
   def taskFront(id:Id[Task, String]):VHtmlNode = LatchRender(TaskService.latch(id)) { wp =>
-
     val task = wp.item
 
     <.div(
@@ -107,6 +110,65 @@ object TaskViews {
       )
     )
   }
+
+  /**
+   * Show a screen where the marker can review all submitted task outputs (whether published or not)
+   * @return
+   */
+  def allOutputs(id:Id[Task, String]):VHtmlNode = {
+    LatchRender(TaskService.latch(id), _key="outputs") { wp =>
+      val task = wp.item
+
+      <.div(
+        Front.siteHeader,
+
+        <.div(^.cls := "container",
+          CourseViews.courseInfo(task.course),
+          <.h3(task.details.name),
+          AllOutputsViewer(task)
+        )
+      )
+    }
+  }
+
+  case class AllOutputsViewer(task:Task) extends VHtmlComponent {
+
+    private val outputsLatch = Latch.lazily(TaskOutputService.allOutputs(task.id))
+
+    private var selected:Option[TaskOutput] = None
+
+    def select(o:TaskOutput) = {
+      selected = Some(o)
+      rerender()
+    }
+
+    override protected def render: DiffNode[Element, Node] = {
+      <.div(^.cls := "row",
+        <.div(^.cls := "col-md-3 scrolling-sidebar",
+          LatchRender(outputsLatch) { outputs =>
+
+            <.ul(^.cls := "nav nav-pills",
+              for {
+                o <- outputs
+              } yield <.li(^.cls := "nav-item",
+                <.button(^.cls := (if (selected.contains(o)) "btn btn-link nav-link active" else "btn btn-link nav-link"), ^.onClick --> select(o), o.id.id)
+              )
+            )
+          }
+        ),
+        <.div(^.cls := "col-md-9",
+          selected match {
+            case Some(output) =>
+              viewOutputBody(task.body, output.body)
+            case None => <.div()
+          }
+        )
+      )
+
+    }
+
+  }
+
 
   def preview(target:Target):VHtmlNode = target match {
     case TargetTaskOutput(id) => Preview(id)
@@ -146,6 +208,13 @@ object TaskViews {
       QuestionnaireViews.editAnswers(q, qto)(updateBody)
     case (ct:CritiqueTask, c:Critique) =>
       CritiqueViews.editBody(ct, c)(updateBody)
+    case _ =>
+      <.div(s"Error: Missing EditBody renderer for ${task.getClass.getName} -> ${taskOutput.getClass.getName}")
+  }
+
+  def viewOutputBody(task:TaskBody, taskOutput:TaskOutputBody) = (task, taskOutput) match {
+    case (q:QuestionnaireTask, qto:QuestionnaireTaskOutput) =>
+      QuestionnaireViews.previewAnswers(q, qto)
     case _ =>
       <.div(s"Error: Missing EditBody renderer for ${task.getClass.getName} -> ${taskOutput.getClass.getName}")
   }

@@ -11,9 +11,12 @@ import org.assessory.vclient.course.CourseViews
 import org.assessory.vclient.user.LoginViews
 import Id._
 import com.assessory.api.{Task, TaskOutput}
+import com.wbillingsley.veautiful.logging.Logger
 import org.assessory.vclient.task.TaskViews
 
 object Routing {
+
+  private val logger = Logger.getLogger(this.getClass)
 
   sealed trait Route {
     def render: VHtmlNode
@@ -42,7 +45,7 @@ object Routing {
 
   case class TaskOutputRoute(id:Id[Task, String]) extends Route {
     def path:String = (/# / "task" / id.id / "outputs").stringify
-    def render = <.div("todo")
+    def render = TaskViews.allOutputs(id)
   }
 
   case class GroupRoute(id:Id[Group, String]) extends Route {
@@ -53,19 +56,28 @@ object Routing {
   object Router extends HistoryRouter[Route] {
     override var route: Route = Home
 
-    override def render: VHtmlNode = route.render
+    override def render: VHtmlNode = {
+      logger.info(s"Rendering route $route")
+      route.render
+    }
 
     override def path(route: Route): String = route.path
 
-    override def routeFromLocation(): Route = PathDSL.hashPathArray() match {
-      case Array("login") => Login
-      case Array("course", id) => CourseRoute(id.asId[Course])
-      case Array("task", id) => TaskRoute(id.asId[Task])
-      case Array("task", id, "outputs") => TaskOutputRoute(id.asId[Task])
-      case _ => Home
+    override def routeFromLocation(): Route = {
+      logger.info("Getting route from location")
+      PathDSL.hashPathArray() match {
+        case Array("login") => Login
+        case Array("course", id) => CourseRoute(id.asId[Course])
+        case Array("task", id, "outputs") => TaskOutputRoute(id.asId[Task])
+        case Array("task", id) => TaskRoute(id.asId[Task])
+        case _ => Home
+      }
     }
 
-    def rerender():Unit = renderElements(route.render)
+    def rerender():Unit = {
+      logger.trace("Rerender")
+      renderElements(route.render)
+    }
   }
 
 }

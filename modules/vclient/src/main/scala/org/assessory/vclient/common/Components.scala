@@ -9,7 +9,7 @@ import scala.util.{Failure, Success}
 
 object Components {
 
-  case class LatchRender[T](latch: Latch[T])(
+  case class LatchRender[T](latch: Latch[T], _key: String = "")(
                            some: T => DiffNode[Element, Node],
                            none: => DiffNode[Element, Node] = <.div(),
                            error: Throwable => DiffNode[Element, Node] = x => <.div(x.getMessage)
