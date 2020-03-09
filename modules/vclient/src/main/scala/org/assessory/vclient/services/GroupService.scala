@@ -6,15 +6,29 @@ import com.assessory.clientpickle.Pickles._
 import com.wbillingsley.handy.Id._
 import com.wbillingsley.handy.Ids._
 import com.wbillingsley.handy.appbase.{Course, Group}
-import com.wbillingsley.handy.{Id, Ids, Latch}
+import com.wbillingsley.handy.{Id, Ids, Latch, LookUp, Ref, RefMany}
 import org.scalajs.dom.ext.Ajax
 
 import scala.collection.mutable
 import scala.concurrent.{Future, Promise}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
+import Ref._
 
 object GroupService {
+
+  implicit val lookup = new LookUp[Group, String] {
+    override def one[KK <: String](r: Id[Group, KK]): Ref[Group] = {
+      latch(r.id).request.map(_.item).toRef
+    }
+
+    override def many[KK <: String](r: Ids[Group, KK]): RefMany[Group] = {
+      for {
+        gs <- loadIds(r).toRef
+        g <- gs.toRefMany
+      } yield g.item
+    }
+  }
 
   val cache = mutable.Map.empty[String, Latch[WithPerms[Group]]]
 

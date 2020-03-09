@@ -1,6 +1,6 @@
 package org.assessory.vclient.task
 
-import com.assessory.api.{Target, TargetTaskOutput, Task, TaskBody, TaskOutput, TaskOutputBody}
+import com.assessory.api.{Target, TargetCourseReg, TargetTaskOutput, Task, TaskBody, TaskOutput, TaskOutputBody}
 import com.assessory.api.client.WithPerms
 import com.assessory.api.critique.{Critique, CritiqueTask}
 import com.assessory.api.due.Due
@@ -111,6 +111,15 @@ object TaskViews {
     )
   }
 
+
+  def outputLabel(task:Task, taskOutput:TaskOutput):VHtmlNode = taskOutput.body match {
+    case c:Critique =>
+      <.span(TargetViews.ByLabel(taskOutput.by), " critiques ", TargetViews.ByLabel(c.target))
+    case _ =>
+      TargetViews.ByLabel(taskOutput.by)
+  }
+
+
   /**
    * Show a screen where the marker can review all submitted task outputs (whether published or not)
    * @return
@@ -147,11 +156,15 @@ object TaskViews {
         <.div(^.cls := "col-md-3 scrolling-sidebar",
           LatchRender(outputsLatch) { outputs =>
 
-            <.ul(^.cls := "nav nav-pills",
+            <.ul(^.cls := "nav nav-pills flex-column",
               for {
                 o <- outputs
               } yield <.li(^.cls := "nav-item",
-                <.button(^.cls := (if (selected.contains(o)) "btn btn-link nav-link active" else "btn btn-link nav-link"), ^.onClick --> select(o), o.id.id)
+                <.button(
+                  ^.cls := (if (selected.contains(o)) "btn btn-link nav-link active" else "btn btn-link nav-link"),
+                  ^.onClick --> select(o),
+                  outputLabel(task, o)
+                )
               )
             )
           }
@@ -215,8 +228,10 @@ object TaskViews {
   def viewOutputBody(task:TaskBody, taskOutput:TaskOutputBody) = (task, taskOutput) match {
     case (q:QuestionnaireTask, qto:QuestionnaireTaskOutput) =>
       QuestionnaireViews.previewAnswers(q, qto)
+    case (c:CritiqueTask, ct:Critique) =>
+      CritiqueViews.viewBody(c, ct)
     case _ =>
-      <.div(s"Error: Missing EditBody renderer for ${task.getClass.getName} -> ${taskOutput.getClass.getName}")
+      <.div(s"Error: Missing ViewBody renderer for ${task.getClass.getName} -> ${taskOutput.getClass.getName}")
   }
 
 

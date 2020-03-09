@@ -70,4 +70,14 @@ object CritiqueViews {
   }
 
 
+  def viewBody(critiqueTask: CritiqueTask, critique: Critique):VHtmlNode = {
+    <.div(^.cls := "card",
+      <.div(^.cls := "card-header", "Your critique"),
+      <.div(^.cls := "card-body",
+        TaskViews.viewOutputBody(critiqueTask.task, critique.task)
+      )
+    )
+  }
+
+
 }

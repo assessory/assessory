@@ -7,6 +7,7 @@ import org.assessory.vclient.Routing
 import org.assessory.vclient.common.Components.LatchRender
 import org.assessory.vclient.course.CourseViews
 import org.assessory.vclient.services.UserService
+import org.assessory.vclient.user.UserViews
 
 object Front {
 
@@ -23,10 +24,8 @@ object Front {
   def loginStatus(l:Latch[Option[User]]):VHtmlNode = {
     LatchRender(l)({
       case Some(u) =>
-        val name: String = u.name.getOrElse("Anonymous")
-
         <.div(^.cls := "navbar-nav mr-auto test",
-          <.a(^.cls := "nav-link nav-item", name),
+          <.a(^.cls := "nav-link nav-item", UserViews.name(u)),
           <.button(^.cls := "btn btn-outline-secondary nav-link nav-item", ^.onClick --> UserService.logOut(), "Log out"),
         )
 

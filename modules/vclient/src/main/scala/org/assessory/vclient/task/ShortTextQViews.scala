@@ -23,7 +23,7 @@ object ShortTextQViews {
 
   def viewShortTextAnswer(q:Question, a:ShortTextAnswer):VHtmlNode = {
     <.div(^.cls := "form-group",
-      <.textarea(^.cls := "form-control", ^.prop("value") ?= a.answer, ^.attr("readonly") := "readonly")
+      <.textarea(^.cls := "form-control", ^.prop("value") := a.answer.getOrElse(""), ^.attr("readonly") := "readonly")
     )
   }
 
