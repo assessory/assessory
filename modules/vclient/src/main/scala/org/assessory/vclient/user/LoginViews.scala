@@ -5,6 +5,7 @@ import com.wbillingsley.handy.Latch
 import com.wbillingsley.handy.appbase.UserError
 import com.wbillingsley.veautiful.DiffNode
 import com.wbillingsley.veautiful.html.{<, VHtmlComponent, VHtmlNode, ^}
+import org.assessory.vclient.Routing
 import org.assessory.vclient.common.Front
 import org.scalajs.dom.{Element, Node}
 import org.assessory.vclient.common.Components._
@@ -25,7 +26,7 @@ object LoginViews {
       val ep = EmailAndPassword(email, password)
       val f = UserService.logIn(ep).map(_ => "Logged in")
       error = Latch.lazily(f)
-      rerender()
+      Routing.Router.routeTo(Routing.Home)
     }
 
     def socialLogin:VHtmlNode = {

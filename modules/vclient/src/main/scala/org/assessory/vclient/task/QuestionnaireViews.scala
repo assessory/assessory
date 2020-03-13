@@ -34,17 +34,13 @@ object QuestionnaireViews {
     var output = Latch.lazily(loadOrDefaultOutput(task))
 
     def render = <.div(
-      LatchRender(output) { to =>
-        <.div(^.cls := "questionnaire",
-          EditBody(task, to)
-        )
-      }
+      LatchRender(output) { to => <.div(TaskViews.EditOutputBody(task, to)) }
     )
   }
 
 
 
-  def editAnswers(q:QuestionnaireTask, qto:QuestionnaireTaskOutput)(update: QuestionnaireTaskOutput => Unit):VHtmlNode = {
+  def editAnswers(q:QuestionnaireTask, qto:QuestionnaireTaskOutput)(update: QuestionnaireTaskOutput => Unit, actions: => Seq[VHtmlNode]):VHtmlNode = {
 
     val qmap = (for { q <- q.questionnaire} yield q.id -> q).toMap
 
@@ -65,7 +61,8 @@ object QuestionnaireViews {
           }
 
         )
-      }
+      },
+      <.div(^.cls := "form-group", actions)
     )
   }
 
@@ -88,110 +85,6 @@ object QuestionnaireViews {
         )
       }
     )
-  }
-
-
-  case class EditBody(task:Task, var taskOutput:TaskOutput) extends VHtmlComponent {
-
-    private var status = Latch.immediate(taskOutput)
-    status.request
-    var modified = false
-
-    def qto = taskOutput.body match {
-      case q:QuestionnaireTaskOutput => q
-      case _ => QuestionnaireTaskOutput(Seq.empty) // FIXME: shouldn't be empty
-    }
-
-    val qt = task.body match {
-      case q:QuestionnaireTask => q
-      case _ => QuestionnaireTask(Seq.empty)
-    }
-
-
-    def replaceAnswers(updated:QuestionnaireTaskOutput):Unit = {
-      modified = true
-      taskOutput = taskOutput.copy(body=updated)
-      rerender()
-    }
-
-    def replaceAnswer(a:Answer, i:Int):Unit = {
-      modified = true
-      taskOutput = taskOutput.copy(body=qto.copy(answers = qto.answers.patch(i, Seq(a), 1)))
-      rerender()
-    }
-
-    private def savable:Boolean = TaskOutputService.isUnsaved(taskOutput) || (status.isCompleted && modified)
-
-    private def available:Boolean = taskOutput.finalised.nonEmpty
-
-    private def notFinalisable:Option[String] = {
-      if (available) Some("Already published")
-      else if (savable || taskOutput.id == TaskOutputService.invalidId) Some("Needs saving")
-      else None
-    }
-
-    def save():Unit = {
-      if (savable) {
-        status = Latch.lazily {
-          TaskOutputService.save(taskOutput).map(_.item)
-        }
-
-        status.request.onComplete {
-          case Success(to) =>
-            taskOutput = to
-            modified = false
-            rerender()
-          case Failure(exception) =>
-            println("failed")
-            rerender()
-        }
-
-
-        rerender()
-      }
-    }
-
-    def makeAvailable():Unit = {
-      if (notFinalisable.isEmpty) {
-        status = Latch.lazily {
-          TaskOutputService.finalise(taskOutput).map(_.item)
-        }
-
-        status.request.onComplete {
-          case Success(to) =>
-            taskOutput = to
-            modified = false
-            rerender()
-          case Failure(exception) =>
-            println("failed")
-            rerender()
-        }
-
-        rerender()
-      }
-    }
-
-    private def saveButtons = {
-      <.div(^.cls := "form-group",
-        <.button(^.cls := "btn btn-default",
-          ^.on("click") --> save(),
-          ^.attr("disabled") ?= (if (savable) None else Some("disabled")),
-          (if (savable) "Save" else if (!status.isCompleted) "(Saving)" else "Already saved")
-        ),
-        <.button(^.cls := "btn btn-primary",
-          ^.on("click") --> makeAvailable(),
-          ^.attr("disabled") ?= notFinalisable.map(_ => "disabled"),
-          ("" + notFinalisable.getOrElse("Publish"))
-        ),
-        latchErrorRender(status)
-      )
-    }
-
-    def render = <.div(
-      editAnswers(qt, qto)(replaceAnswers),
-      saveButtons
-    )
-
   }
 
 

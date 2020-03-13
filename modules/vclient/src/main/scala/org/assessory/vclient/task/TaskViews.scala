@@ -216,11 +216,15 @@ object TaskViews {
     }
   }
 
-  def editOutputBody(task:TaskBody, taskOutput:TaskOutputBody)(updateBody: TaskOutputBody => Unit) = (task, taskOutput) match {
+  /**
+   * Forwards to the correct renderer for editing a TaskOutput's body. The action buttons (save, publish) are passed
+   * on, as some renderers (e.g. for critiques) may need to put the buttons in a different place.
+   */
+  def editOutputBody(task:TaskBody, taskOutput:TaskOutputBody)(updateBody: TaskOutputBody => Unit, actions: => Seq[VHtmlNode]) = (task, taskOutput) match {
     case (q:QuestionnaireTask, qto:QuestionnaireTaskOutput) =>
-      QuestionnaireViews.editAnswers(q, qto)(updateBody)
+      QuestionnaireViews.editAnswers(q, qto)(updateBody, actions)
     case (ct:CritiqueTask, c:Critique) =>
-      CritiqueViews.editBody(ct, c)(updateBody)
+      CritiqueViews.editBody(ct, c)(updateBody, actions)
     case _ =>
       <.div(s"Error: Missing EditBody renderer for ${task.getClass.getName} -> ${taskOutput.getClass.getName}")
   }
@@ -314,8 +318,7 @@ object TaskViews {
     }
 
     def render = <.div(
-      editOutputBody(task.body, taskOutput.body)(replaceBody),
-      saveButtons
+      editOutputBody(task.body, taskOutput.body)(replaceBody, Seq(saveButtons))
     )
 
   }

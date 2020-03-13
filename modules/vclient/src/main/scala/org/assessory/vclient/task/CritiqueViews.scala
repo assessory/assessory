@@ -37,7 +37,7 @@ object CritiqueViews {
           <.ul(^.cls := "nav nav-pills", ^.role := "group",
             for ((to, idx) <- all.zipWithIndex) yield {
               <.li(^.cls := "nav-item" , ^.role := "presentation",
-                <.button(^.cls := (if (selected.contains(to)) "nav-link active" else "nav-link"),  ^.onClick --> select(Some(to)), (idx + 1).toString)
+                <.button(^.cls := (if (selected.contains(to)) "btn btn-link nav-link active" else "btn btn-link nav-link"),  ^.onClick --> select(Some(to)), (idx + 1).toString)
               )
             }
           )
@@ -48,10 +48,10 @@ object CritiqueViews {
   }
 
 
-  def editBody(critiqueTask: CritiqueTask, critique: Critique)(updateBody: TaskOutputBody => Unit):VHtmlNode = {
+  def editBody(critiqueTask: CritiqueTask, critique: Critique)(updateBody: TaskOutputBody => Unit, actions: => Seq[VHtmlNode]):VHtmlNode = {
     <.div(^.cls := "row",
       <.div(^.cls := "col",
-        <.div(^.cls := "card",
+        <.div(^.cls := "card mt-1 mb-1",
           <.div(^.cls := "card-header", "What you are reviewing"),
           <.div(^.cls := "card-body",
             TaskViews.preview(critique.target)
@@ -62,7 +62,7 @@ object CritiqueViews {
         <.div(^.cls := "card",
           <.div(^.cls := "card-header", "Your critique"),
           <.div(^.cls := "card-body",
-            TaskViews.editOutputBody(critiqueTask.task, critique.task) { t => updateBody(critique.copy(task = t))}
+            TaskViews.editOutputBody(critiqueTask.task, critique.task)({ t => updateBody(critique.copy(task = t))}, actions)
           )
         )
       )
