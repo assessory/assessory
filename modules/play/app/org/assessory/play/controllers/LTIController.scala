@@ -73,7 +73,7 @@ class LTIController @Inject() (startupSettings: StartupSettings, cc: ControllerC
 
     for {
       c <- rCourse.toFuture
-    } yield Redirect(s"/#!/" + path).withSession(request.session + ("sessionKey" -> session))
+    } yield Redirect(s"/#/" + path).withSession(request.session + ("sessionKey" -> session))
 
   }
 
