@@ -1,6 +1,6 @@
 package org.assessory.vclient.task
 
-import com.assessory.api.question.{Answer, Question, QuestionnaireTask, QuestionnaireTaskOutput, ShortTextAnswer, VideoAnswer}
+import com.assessory.api.question.{Answer, BooleanAnswer, Question, QuestionnaireTask, QuestionnaireTaskOutput, ShortTextAnswer, VideoAnswer}
 import com.assessory.api.video.{Kaltura, UnrecognisedVideoUrl, VideoResource, YouTube}
 import com.assessory.api.{TargetUser, Task, TaskOutput}
 import com.wbillingsley.handy.{Id, Latch}
@@ -62,6 +62,7 @@ object QuestionnaireViews {
           a match {
             case v:VideoAnswer => VideoQViews.editVideoAnswer(qmap(a.question), v) { a => replaceAnswer(a, i) }
             case s:ShortTextAnswer => ShortTextQViews.editShortTextAnswer(qmap(a.question), s) { s => replaceAnswer(s, i) }
+            case b:BooleanAnswer => BooleanQViews.editBooleanAnswer(qmap(a.question), b) { s => replaceAnswer(s, i) }
             case _ => <.div(s"Missing edit renderer for ${a.getClass.getName}")
           }
 
@@ -76,7 +77,7 @@ object QuestionnaireViews {
     val qmap = (for { q <- q.questionnaire} yield q.id -> q).toMap
 
     <.div(
-      for { (a, i) <- qto.answers.zipWithIndex if showHidden || !qmap(a.question).hideInCrit } yield {
+      for { a <- qto.answers if showHidden || !qmap(a.question).hideInCrit } yield {
         <.div(^.cls := "question",
           <.div(
             Markup.marked.MarkupNode(() => qmap(a.question).prompt)

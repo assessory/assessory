@@ -45,6 +45,11 @@ object Components {
       case _ => None
     }
 
+    def checked:Option[Boolean] = e.target match {
+      case h:html.Input => Some(h.checked)
+      case _ => None
+    }
+
   }
 
   def latchErrorRender[T](latch:Latch[T]):LatchRender[T] = {
