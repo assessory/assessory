@@ -73,7 +73,6 @@ object QuestionnaireViews {
   }
 
   def previewAnswers(q:QuestionnaireTask, qto:QuestionnaireTaskOutput, showHidden:Boolean = false):VHtmlNode = {
-
     val qmap = (for { q <- q.questionnaire} yield q.id -> q).toMap
 
     <.div(

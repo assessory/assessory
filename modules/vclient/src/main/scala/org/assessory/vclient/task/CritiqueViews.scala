@@ -90,5 +90,8 @@ object CritiqueViews {
     )
   }
 
+  def previewBody(critiqueTask: CritiqueTask, critique: Critique):VHtmlNode = {
+    TaskViews.viewOutputBody(critiqueTask.task, critique.task)
+  }
 
 }

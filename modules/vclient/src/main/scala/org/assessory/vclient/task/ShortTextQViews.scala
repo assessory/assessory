@@ -15,7 +15,7 @@ object ShortTextQViews {
     }
 
     <.div(^.cls := "form-group",
-      <.textarea(^.cls := "form-control", ^.prop("value") ?= a.answer,
+      <.textarea(^.cls := "form-control", ^.prop("value") ?= a.answer, ^.attr("rows") := 10,
         ^.on("input") ==> { _.inputValue.foreach(updateAnswer) }
       )
     )
@@ -23,7 +23,7 @@ object ShortTextQViews {
 
   def viewShortTextAnswer(q:Question, a:ShortTextAnswer):VHtmlNode = {
     <.div(^.cls := "form-group",
-      <.textarea(^.cls := "form-control", ^.prop("value") := a.answer.getOrElse(""), ^.attr("readonly") := "readonly")
+      <.textarea(^.cls := "form-control", ^.prop("value") := a.answer.getOrElse(""), ^.attr("rows") := 10, ^.attr("readonly") := "readonly")
     )
   }
 

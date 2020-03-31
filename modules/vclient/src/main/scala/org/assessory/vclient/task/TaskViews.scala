@@ -185,6 +185,7 @@ object TaskViews {
 
   def preview(target:Target):VHtmlNode = target match {
     case TargetTaskOutput(id) => Preview(id)
+    case x => <.div("Missing preview renderer for target: " + x.getClass.getName)
   }
 
 
@@ -198,6 +199,10 @@ object TaskViews {
     override protected def render: DiffNode[Element, Node] = <.div(LatchRender(latches) {
       case (t, tb:QuestionnaireTask, to, tob:QuestionnaireTaskOutput) =>
         <.div(QuestionnaireViews.previewAnswers(tb, tob))
+      case (t, tb:CritiqueTask, to, tob:Critique) =>
+        <.div(CritiqueViews.previewBody(tb, tob))
+      case (t, tb, to, tob) =>
+        <.div(s"Missing preview renderer for ${tb.getClass.getName} with output ${tob.getClass.getName}")
     })
   }
 
