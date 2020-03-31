@@ -71,12 +71,12 @@ object QuestionnaireViews {
     )
   }
 
-  def previewAnswers(q:QuestionnaireTask, qto:QuestionnaireTaskOutput):VHtmlNode = {
+  def previewAnswers(q:QuestionnaireTask, qto:QuestionnaireTaskOutput, showHidden:Boolean = false):VHtmlNode = {
 
     val qmap = (for { q <- q.questionnaire} yield q.id -> q).toMap
 
     <.div(
-      for { (a, i) <- qto.answers.zipWithIndex } yield {
+      for { (a, i) <- qto.answers.zipWithIndex if showHidden || !qmap(a.question).hideInCrit } yield {
         <.div(^.cls := "question",
           <.div(
             Markup.marked.MarkupNode(() => qmap(a.question).prompt)
