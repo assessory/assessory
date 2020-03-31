@@ -33,8 +33,13 @@ object QuestionnaireViews {
 
     var output = Latch.lazily(loadOrDefaultOutput(task))
 
+    def refresh():Unit = {
+      output.clear()
+      rerender()
+    }
+
     def render = <.div(
-      LatchRender(output) { to => <.div(TaskViews.EditOutputBody(task, to)) }
+      LatchRender(output) { to => <.div(TaskViews.EditOutputBody(task, to) { _ => refresh() }) }
     )
   }
 

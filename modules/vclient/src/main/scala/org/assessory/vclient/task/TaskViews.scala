@@ -105,7 +105,7 @@ object TaskViews {
         if (wp.perms("complete")) {
           editOutputForTask(wp.item)
         } else {
-          viewOutputForTask(wp.item)
+          <.p("This task is currently not open. This may be because you have not yet completed a prerequisite task, or simply the date.")
         }
       )
     )
@@ -239,7 +239,7 @@ object TaskViews {
   }
 
 
-  case class EditOutputBody(task:Task, var taskOutput:TaskOutput) extends VHtmlComponent {
+  case class EditOutputBody(task:Task, var taskOutput:TaskOutput)(onSave: TaskOutput => Unit) extends VHtmlComponent {
 
     private var status = Latch.immediate(taskOutput)
     status.request
@@ -271,7 +271,7 @@ object TaskViews {
           case Success(to) =>
             taskOutput = to
             modified = false
-            rerender()
+            onSave(to)
           case Failure(exception) =>
             println("failed")
             rerender()

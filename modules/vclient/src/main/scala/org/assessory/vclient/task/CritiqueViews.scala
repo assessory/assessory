@@ -2,15 +2,16 @@ package org.assessory.vclient.task
 
 import com.assessory.api.critique.{Critique, CritiqueTask}
 import com.assessory.api.{TargetGroup, Task, TaskBody, TaskOutput, TaskOutputBody}
-import com.wbillingsley.handy.Latch
+import com.wbillingsley.handy.{Id, Latch}
 import com.wbillingsley.veautiful.DiffNode
 import com.wbillingsley.veautiful.html.{<, VHtmlComponent, VHtmlNode, ^}
 import org.assessory.vclient.common.Components.LatchRender
 import org.assessory.vclient.group.GroupViews
 import org.assessory.vclient.services.TaskOutputService
-import org.scalajs.dom.{Element, Node}
+import TaskOutputService.lookup
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 object CritiqueViews {
 
@@ -19,12 +20,20 @@ object CritiqueViews {
    */
   case class EditOutputView(task:Task) extends VHtmlComponent {
 
+    // These are the original (unedited) allocations
     private val allocations = TaskOutputService.taskOutputsFor(task.id)
-    private val allocationsLatch = Latch.lazily(allocations)
 
-    private var selected:Option[TaskOutput] = None
+    private def taskOutputs:Future[Seq[Id[TaskOutput, String]]] = for {
+      alloc <- allocations
+    } yield alloc.map(_.id)
 
-    private def select(o:Option[TaskOutput]):Unit = {
+    // We need to latch the IDs of the outputs rather than the outputs themselves. Otherwise, if this component
+    // re-renders (e.g. moving between entries) it's re-show the unedited versions it first fetched.
+    private val allocationsLatch = Latch.lazily(taskOutputs)
+
+    private var selected:Option[Id[TaskOutput, String]] = None
+
+    private def select(o:Option[Id[TaskOutput, String]]):Unit = {
       selected = o
       rerender()
     }
@@ -42,7 +51,9 @@ object CritiqueViews {
             }
           )
         },
-        (for { to <- selected } yield TaskViews.EditOutputBody(task, to))
+        (for { taskOutputId <- selected } yield LatchRender(Latch.lazily(taskOutputId.lazily.toFuture)) { to =>
+          <.div(TaskViews.EditOutputBody(task, to) { _ =>  })
+        })
       )
     }
   }
