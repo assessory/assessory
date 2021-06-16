@@ -6,9 +6,9 @@ lazy val commonSettings = Seq(
   // Gets snapshots from first resolver. TODO: Remove
   //updateOptions := updateOptions.value.withLatestSnapshots(false),
 
-  scalaVersion := "2.13.1",
+  scalaVersion := "3.0.0",
   organization := "org.assessory",
-  version := "0.3-SNAPSHOT",
+  version := "0.4-SNAPSHOT",
   scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),
   resolvers ++= Seq(
     "Typesafe Releases" at "https://repo.typesafe.com/typesafe/releases/",
@@ -30,7 +30,7 @@ name := "assessory"
   
 organization := "org.assessory"
   
-scalaVersion := "2.13.1"
+scalaVersion := "3.0.0"
 
 version := "1.0.0-SNAPSHOT"
 
@@ -38,8 +38,8 @@ lazy val api = (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure) 
   .settings(commonSettings:_*)
   .settings(
     libraryDependencies ++= Seq(
-      "com.github.wbillingsley.handy" %%% "handy" % "v0.10-SNAPSHOT",
-      "com.github.wbillingsley.handy" %%% "handy-appbase" % "v0.10-SNAPSHOT"
+      "com.github.wbillingsley.handy" %%% "handy" % "v0.11-SNAPSHOT",
+//      "com.github.wbillingsley.handy" %%% "handy-appbase" % "v0.10-SNAPSHOT"
     )
   )
 
