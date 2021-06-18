@@ -4,9 +4,9 @@ import com.wbillingsley.handy._
 
 case class Registration[T, R, P <: HasKind](
 
-  id: Id[Registration[T, R, P], String],
+  id: RegistrationId[T, R, P],
 
-  user: Id[User, String],
+  user: UserId,
 
   target: Id[T, String],
 
@@ -18,5 +18,6 @@ case class Registration[T, R, P <: HasKind](
 
   created:Long = System.currentTimeMillis
 
-) extends HasId[Id[Registration[T, R, P], String]]
+) extends HasId[RegistrationId[T, R, P]]
 
+case class RegistrationId[T, R, P <: HasKind](id:String) extends Id[Registration[T, R, P], String]

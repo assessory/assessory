@@ -1,7 +1,8 @@
 package com.assessory.asyncmongo.converters
 
-import com.wbillingsley.handy.appbase.{GroupSet, Course, Group}
-import com.wbillingsley.handy.{Ids, Id}
+import com.assessory.api.appbase.{Course, CourseId, Group, GroupId, GroupSet, GroupSetId, RegistrationId}
+import com.assessory.asyncmongo.helpers._
+import com.wbillingsley.handy.{Id, Ids}
 import org.mongodb.scala.bson._
 
 import scala.util.Try
@@ -14,20 +15,20 @@ object GroupB {
     "parent" -> IdB.write(i.parent),
     "name" -> i.name,
     "provenance" -> i.provenance,
-    "members" -> IdB.write(i.members),
+    "members" -> i.members.write,
     "created" -> i.created
   )
 
   def read(doc: Document): Try[Group] = Try {
     new Group(
-      id = doc[BsonObjectId]("_id"),
-      course = doc.get[BsonObjectId]("course"),
-      set = doc[BsonObjectId]("set"),
-      parent = doc.get[BsonObjectId]("parent"),
-      name = doc.get[BsonString]("name"),
-      provenance = doc.get[BsonString]("provenance"),
-      members = doc[BsonArray]("members"),
-      created = doc[BsonInt64]("created")
+      id = GroupId(doc.hexOid("_id")),
+      course = doc.optHexOid("course").map(CourseId(_)),
+      set = GroupSetId(doc.hexOid("set")),
+      parent = doc.optHexOid("parent").map(GroupId(_)),
+      name = doc.optString("name"),
+      provenance = doc.optString("provenance"),
+      members = doc.seqHexOid("members").map(RegistrationId(_)),
+      created = doc.long("created")
     )
   }
 }

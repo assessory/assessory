@@ -1,6 +1,6 @@
 package com.assessory.asyncmongo.converters
 
-import com.wbillingsley.handy.appbase._
+import com.assessory.api.appbase._
 import com.wbillingsley.handy.{EmptyKind, HasKind, Id}
 import org.mongodb.scala.bson._
 import BsonHelpers._
@@ -19,15 +19,15 @@ class RegistrationB[T, R, P <: HasKind](val rToFromBson:ToFromBson[R], val pToFr
     "created" -> i.created
   )
 
-  def read(doc: Document): Try[Registration[T, R, P]] = Try {
+  def read(doc: Document)(using targetId: String => Id[T, String]): Try[Registration[T, R, P]] = Try {
     new Registration[T, R, P](
-      id = doc[BsonObjectId]("_id"),
-      user = doc[BsonObjectId]("user"),
-      target = doc[BsonObjectId]("target"),
+      id = RegistrationId(doc.hexOid("_id")),
+      user = UserId(doc.hexOid("user")),
+      target = targetId(doc.hexOid("target")),
       roles = doc[BsonArray]("roles").iterator().asScala.map({ b => rToFromBson.fromBson(b) }).toSet,
       provenance = pToFromBson.fromBson(doc[BsonValue]("provenance")),
-      updated = doc[BsonInt64]("updated"),
-      created = doc[BsonInt64]("created")
+      updated = doc.long("updated"),
+      created = doc.long("created")
     )
   }
 }

@@ -1,7 +1,7 @@
 package com.assessory.asyncmongo.converters
 
 
-import com.wbillingsley.handy.appbase.{Course, GroupSet}
+import com.assessory.api.appbase.{Course, CourseId, GroupSet, GroupSetId}
 import org.mongodb.scala.bson._
 
 import scala.util.Try
@@ -18,12 +18,12 @@ object GroupSetB {
 
   def read(doc: Document): Try[GroupSet] = Try {
     new GroupSet(
-      id = doc[BsonObjectId]("_id"),
-      course = doc[BsonObjectId]("course"),
-      name = doc.get[BsonString]("name"),
-      description = doc.get[BsonString]("description"),
-      parent = doc.get[BsonObjectId]("parent"),
-      created = doc[BsonInt64]("created")
+      id = GroupSetId(doc.hexOid("_id")),
+      course = CourseId(doc.hexOid("course")),
+      name = doc.optString("name"),
+      description = doc.optString("description"),
+      parent = doc.optHexOid("parent").map(GroupSetId(_)),
+      created = doc.long("created")
     )
   }
 }

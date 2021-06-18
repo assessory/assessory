@@ -2,9 +2,9 @@ package com.assessory.asyncmongo
 
 import com.assessory.asyncmongo.converters.BsonHelpers._
 import com.assessory.asyncmongo.converters.GroupB
-import com.wbillingsley.handy._
-import com.wbillingsley.handy.appbase._
-import Ref._
+import com.wbillingsley.handy.{Id, Ref, refOps, EmptyKind}
+import com.assessory.api.appbase._
+import com.assessory.api.given
 import org.mongodb.scala.bson.{BsonArray, BsonString}
 
 object GroupDAO extends DAO(classOf[Group], "assessoryGroup", GroupB.read) {
@@ -50,16 +50,16 @@ object GroupDAO extends DAO(classOf[Group], "assessoryGroup", GroupB.read) {
     for {
       s <- bySet(gsId).collect
       r <- RegistrationDAO.group.byUserAndTargets(u, s.map(_.id))
-      g <- r.target.lazily
+      g <- LookUp.eagerOne(r.target)
     } yield {
       g
     }
   }
 
   def byNames(gsId:Id[GroupSet, String], names:Set[String]) = {
-    findMany(bsonDoc("set" -> gsId, "name" -> $in(BsonArray(names.toSeq.map(BsonString(_))))))
+    findMany(bsonDoc("set" -> gsId, "name" -> $in(BsonArray.fromIterable(names.toSeq.map(BsonString(_))))))
   }
 
-  def byNames(names:Set[String]) = findMany(bsonDoc("name" -> $in(BsonArray(names.toSeq.map(BsonString(_))))))
+  def byNames(names:Set[String]) = findMany(bsonDoc("name" -> $in(BsonArray.fromIterable(names.toSeq.map(BsonString(_))))))
 
 }

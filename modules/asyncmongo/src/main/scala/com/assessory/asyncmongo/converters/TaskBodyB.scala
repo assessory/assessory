@@ -2,17 +2,16 @@ package com.assessory.asyncmongo.converters
 
 
 import com.assessory.api.question.QuestionnaireTask
-import com.assessory.api.video.{SmallFileTask, MessageTask, CompositeTask, VideoTask}
+import com.assessory.api.video.{CompositeTask, MessageTask, SmallFileTask, VideoTask}
 import com.wbillingsley.handy.Id
-import com.wbillingsley.handy.appbase.{GroupSet}
+import com.assessory.api.appbase.{GroupSet, GroupSetId}
 import com.assessory.api._
 import critique._
 import question._
 import org.mongodb.scala.bson._
+
 import scala.collection.JavaConverters._
-
-
-import scala.util.{Success, Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 object TaskBodyB {
   def write(i: TaskBody):Document = i match {
@@ -129,8 +128,8 @@ object TargetTypeB {
 
   def read(doc: Document): Try[TargetType] = Try {
     doc[BsonString]("kind").getValue match {
-      case "Groups" => TTGroups(set = doc[BsonObjectId]("set"))
-      case "Outputs" => TTOutputs(task = doc[BsonObjectId]("task"))
+      case "Groups" => TTGroups(set = GroupSetId(doc.hexOid("set")))
+      case "Outputs" => TTOutputs(task = TaskId(doc.hexOid("task")))
       case "Self" => TTSelf
     }
 
@@ -156,21 +155,21 @@ object CritTargetStrategyB  {
       case "Target My" => for {
         w <- TargetTypeB.read(Document(doc[BsonDocument]("what")))
       } yield TargetMyStrategy(
-        task = doc[BsonObjectId]("task"),
+        task = TaskId(doc.hexOid("task")),
         what = w,
-        number = doc.get[BsonInt32]("number")
+        number = doc.optInt("number")
       )
       case "Allocate" => for {
         w <- TargetTypeB.read(Document(doc[BsonDocument]("what")))
       } yield AllocateStrategy(
         what = w,
-        number = doc[BsonInt32]("number")
+        number = doc.int("number")
       )
       case "Any" => for {
         w <- TargetTypeB.read(Document(doc[BsonDocument]("what")))
       } yield AllocateStrategy(
         what = w,
-        number = doc[BsonInt32]("number")
+        number = doc.int("number")
       )
     }
   }

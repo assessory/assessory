@@ -2,22 +2,20 @@ package com.assessory.asyncmongo
 
 import com.mongodb.WriteConcern
 import com.mongodb.client.model._
-import com.wbillingsley.handy.Ref._
-import com.wbillingsley.handy._
+import com.wbillingsley.handy.{HasId, Id, LookUp, Ref, RefFuture, RefMany, RefOpt, refOps}
 import org.bson.conversions.Bson
 import org.bson.types.ObjectId
 import org.bson.{BsonArray, BsonObjectId}
-import org.mongodb.scala.{Subscription, Observer, Observable}
+import org.mongodb.scala.{Observable, Observer, Subscription}
 import org.mongodb.scala.bson._
 import org.mongodb.scala.model.Filters._
 import org.mongodb.scala.model.{FindOneAndReplaceOptions, UpdateOptions}
 
 import scala.collection.JavaConverters._
-import scala.concurrent.{Promise, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Try
 import DAO._
-
-import DB.executionContext
+import com.assessory.api.wiring.IdLookUp
 
 /**
   *
@@ -26,20 +24,20 @@ import DB.executionContext
   * @param converter Converts from BSON to the transfer object
   * @tparam DataT The type this DAO retrieves
   */
-class DAO[DataT <: HasStringId[DataT]] (
+class DAO[DataT <: HasId[Id[DataT, String]]] (
                                          clazz:Class[DataT],
                                          collName:String,
                                          converter: (Document => Try[DataT]),
                                          writeConcern: WriteConcern = WriteConcern.JOURNALED
                                        ) {
 
-  implicit val executionContext = DB.executionContext
+  import DB.given
 
-  implicit object LookUp extends LookUp[DataT, String] {
+  implicit object LookUp extends IdLookUp[DataT] {
 
-    def one[K <: String](r: Id[DataT, K]) = byId(r.id).require
-
-    def many[K <: String](r: Ids[DataT, K]) = manyById(r.ids)
+    override def eagerOne(r: Id[DataT, String]) = byId(r.id).require
+    override def eagerOpt(r: Id[DataT, String]) = byId(r.id)
+    override def many(seq: Seq[Id[DataT, String]]) = manyById(seq.map(_.id))
 
   }
 
@@ -66,7 +64,7 @@ class DAO[DataT <: HasStringId[DataT]] (
 
   def obsToRefMany(o:Observable[Document]):RefMany[DataT] = {
     for {
-      seq <- o.toFuture().toRef
+      seq <- o.collect().head().toRef     // FIXME: Should use streaming instead
       doc <- seq.toRefMany
       converted <- converter(doc).toRef
     } yield converted
@@ -83,12 +81,10 @@ class DAO[DataT <: HasStringId[DataT]] (
   def findOne(query:Bson):RefOpt[DataT] = {
     for {
       opt <- coll.find(query).headOption().toRef
-      doc <- opt.toRef
+      doc <- opt.toRefOpt
       converted <- Future.fromTry(converter(doc)).toRef
     } yield converted
   }
-
-
 
   /**
     * A test on whether _id matches
@@ -98,9 +94,16 @@ class DAO[DataT <: HasStringId[DataT]] (
   /**
     * A test on whether _id is in the set.
     */
-  def idsIn(ids:Ids[_, String]) = {
+  def idsIn(ids:Seq[Id[_, String]]) = {
     val arr = for {
-      id <- ids.ids
+      id <- ids
+    } yield new BsonObjectId(new ObjectId(id.id))
+    Filters.in("_id", new BsonArray(arr.asJava))
+  }
+
+  def idsInStr(ids:Seq[String]) = {
+    val arr = for {
+      id <- ids
     } yield new BsonObjectId(new ObjectId(id))
     Filters.in("_id", new BsonArray(arr.asJava))
   }
@@ -109,7 +112,7 @@ class DAO[DataT <: HasStringId[DataT]] (
     * Fetches and deserializes items by their ID
     */
   def byId(id:String) = {
-    findOne(idIs(Id(id)))
+    findOne(Filters.eq("_id", new ObjectId(id)))
   }
 
   /**
@@ -120,7 +123,7 @@ class DAO[DataT <: HasStringId[DataT]] (
      * First, fetch the items.  These might not return in the same order as the
      * sequence of IDs, and duplicate IDs will only return once
      */
-    val futureSeq = coll.find(idsIn(Ids(ids))).toFuture()
+    val futureSeq = coll.find(idsInStr(ids)).collect().head() // FIXME: Should use streaming instead
 
     val futureItems:Future[Seq[DataT]] = {
       futureSeq.map { docSeq =>
@@ -144,7 +147,7 @@ class DAO[DataT <: HasStringId[DataT]] (
      */
     val reordered = for (
       map <- new RefFuture(futIdMap);
-      id <- new RefIterableOnce(ids);
+      id <- ids.toRefMany;
       item <- RefOpt(map.get(id))
     ) yield item
 

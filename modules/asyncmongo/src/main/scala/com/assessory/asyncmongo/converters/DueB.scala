@@ -2,8 +2,7 @@ package com.assessory.asyncmongo.converters
 
 import com.assessory.api.due._
 import com.wbillingsley.handy.Id
-import com.wbillingsley.handy.appbase.Group
-
+import com.assessory.api.appbase.{Group, GroupId}
 import org.mongodb.scala.bson._
 
 import scala.collection.JavaConverters._
@@ -19,13 +18,12 @@ object DueB {
 
   def read(doc: Document): Try[Due] = Try {
     doc[BsonString]("kind").getValue match {
-      case "Date" => DueDate(time = doc[BsonInt64]("time"))
+      case "Date" => DueDate(time = doc.long("time"))
       case "Per Group" => {
-        val times = {
-          val arr = doc[BsonArray]("times").getValues.asScala
-          for (entry <- arr) yield {
-            val e = entry.asDocument()
-            IdB.read[Group](e.get("group").asObjectId()) -> doc[BsonInt64]("time").getValue
+        val times:Map[Id[Group, String], Long] = {
+          val arr = doc[BsonArray]("times")
+          for (entry <- arr.getValues.asScala.map(_.asDocument())) yield {
+            GroupId(entry.hexOid("group")) -> doc.long("time")
           }
         }.toMap
 

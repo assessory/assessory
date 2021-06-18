@@ -1,6 +1,6 @@
 package com.assessory.asyncmongo.converters
 
-import com.wbillingsley.handy.appbase.ActiveSession
+import com.assessory.api.appbase.ActiveSession
 import org.mongodb.scala.bson._
 
 import scala.util.Try

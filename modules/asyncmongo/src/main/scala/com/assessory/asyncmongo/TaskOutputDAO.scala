@@ -1,12 +1,14 @@
 package com.assessory.asyncmongo
 
-import com.assessory.api._
+import com.assessory.api.{given, _}
 import com.assessory.asyncmongo.converters.BsonHelpers._
 import com.assessory.asyncmongo.converters.{TargetB, TaskOutputBodyB, TaskOutputB}
-import com.wbillingsley.handy._
-import Ref._
+import com.wbillingsley.handy.{Ref, RefMany, refOps, Id}
+import refOps._
 
 object TaskOutputDAO extends DAO(classOf[TaskOutput], "taskOutput", TaskOutputB.read) {
+
+  import DB.given
 
   def saveSafe(c:TaskOutput) = {
     findAndReplace("_id" $eq c.id, TaskOutputB.write(c), upsert=true).toRef

@@ -19,7 +19,7 @@ import com.wbillingsley.handy.{HasId, Id}
  */
 case class Preenrolment[W, T, R, RT] (
 
-  id:Id[Preenrolment[W, T, R, RT],String],
+  id:PreenrolmentId[W, T, R, RT],
 
   within: Option[Id[W, String]] = None,
 
@@ -30,8 +30,9 @@ case class Preenrolment[W, T, R, RT] (
   created: Long = System.currentTimeMillis,
 
   modified: Long = System.currentTimeMillis
-) extends HasId[Id[Preenrolment[W, T, R, RT], String]]
+) extends HasId[PreenrolmentId[W, T, R, RT]]
 
+case class PreenrolmentId[W, T, R, RT](id:String) extends Id[Preenrolment[W, T, R, RT], String]
 
 object Preenrolment {
 

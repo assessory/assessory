@@ -41,20 +41,18 @@ lazy val api = (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure) 
 lazy val apiJS = api.js
 lazy val apiJVM = api.jvm
 
-/*
-
 // Mongo contains the database serialisation and deserialisation
 lazy val mongo = (project in file("modules/asyncmongo"))
   .dependsOn(apiJVM)
   .settings(commonSettings:_*)
   .settings(
-    useScala2,
     libraryDependencies ++= Seq(
-      "org.mongodb.scala" %% "mongo-scala-driver" % "2.8.0",
-      "com.github.wbillingsley.handy" %% "handy-user" % "v0.10-SNAPSHOT",
-      "com.github.wbillingsley.handy" %% "handy-play" % "v0.10-SNAPSHOT"
+      ("org.mongodb.scala" %% "mongo-scala-driver" % "4.2.3").cross(CrossVersion.for3Use2_13),
+      "org.mindrot" % "jbcrypt" % "0.3m"
     )
   )
+
+/*
 
 // Model relies on both the API and the database layer, just not the web layer
 lazy val model = (project in file("modules/model"))

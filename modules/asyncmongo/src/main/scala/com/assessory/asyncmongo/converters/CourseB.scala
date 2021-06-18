@@ -1,10 +1,10 @@
 package com.assessory.asyncmongo.converters
 
 import com.wbillingsley.handy.Id
-import com.wbillingsley.handy.appbase.{LTIConsumer, Course}
+import com.assessory.api.appbase.{Course, CourseId, LTIConsumer, RegistrationId}
 import org.mongodb.scala.bson._
-import scala.collection.JavaConverters._
 
+import scala.collection.JavaConverters._
 import scala.util.Try
 
 object CourseB  {
@@ -24,16 +24,16 @@ object CourseB  {
 
   def read(doc: Document): Try[Course] = Try {
     new Course(
-      id = doc[BsonObjectId]("_id"),
-      title = doc.get[BsonString]("title"),
-      shortName = doc.get[BsonString]("shortName"),
-      shortDescription = doc.get[BsonString]("shortDescription"),
-      website = doc.get[BsonString]("website"),
-      coverImage = doc.get[BsonString]("coverImage"),
-      addedBy = doc[BsonObjectId]("addedBy"),
-      secret = doc[BsonString]("secret"),
+      id = CourseId(doc.hexOid("_id")),
+      title = doc.optString("title"),
+      shortName = doc.optString("shortName"),
+      shortDescription = doc.optString("shortDescription"),
+      website = doc.optString("website"),
+      coverImage = doc.optString("coverImage"),
+      addedBy = RegistrationId(doc.hexOid("addedBy")),
+      secret = doc.string("secret"),
       ltis = doc[BsonArray]("ltis").getValues.asScala.map({ d => LTIB.read(Document(d.asDocument())).get }).toSeq,
-      created = doc[BsonInt64]("created")
+      created = doc.long("created")
     )
   }
 }
@@ -47,9 +47,9 @@ object LTIB {
 
   def read(doc:Document) = Try {
     new LTIConsumer(
-      clientKey = doc[BsonString]("clientKey"),
-      secret = doc[BsonString]("secret"),
-      comment = doc.get[BsonString]("comment")
+      clientKey = doc.string("clientKey"),
+      secret = doc.string("secret"),
+      comment = doc.optString("comment")
     )
   }
 }

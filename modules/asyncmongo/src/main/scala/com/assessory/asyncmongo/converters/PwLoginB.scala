@@ -1,7 +1,8 @@
 package com.assessory.asyncmongo.converters
 
-import com.wbillingsley.handy.appbase.PasswordLogin
+import com.assessory.api.appbase.PasswordLogin
 import org.mongodb.scala.bson._
+import com.assessory.asyncmongo.converters._
 
 import scala.util.Try
 
@@ -15,9 +16,9 @@ object PwLoginB  {
 
   def read(doc: Document): Try[PasswordLogin] = Try {
     new PasswordLogin(
-      email = doc.get[BsonString]("email"),
-      username  = doc.get[BsonString]("username"),
-      pwhash = doc.get[BsonString]("pwhash")
+      email = doc.optString("email"),
+      username  = doc.optString("username"),
+      pwhash = doc.optString("pwhash")
     )
   }
 }

@@ -21,6 +21,7 @@ given GetsId[Task, TaskId] = autoGetsId[Task, TaskId]
 given GetsId[TaskOutput, TaskOutputId] = autoGetsId[TaskOutput, TaskOutputId]
 given GetsId[User, UserId] = autoGetsId[User, UserId]
 given GetsId[CritAllocation, CritAllocationId] = autoGetsId[CritAllocation, CritAllocationId]
+given [W, T, R, RT]: GetsId[Preenrolment[W, T, R, RT], PreenrolmentId[W, T, R, RT]] = autoGetsId[Preenrolment[W, T, R, RT], PreenrolmentId[W, T, R, RT]]
 
 
 object Permissions {

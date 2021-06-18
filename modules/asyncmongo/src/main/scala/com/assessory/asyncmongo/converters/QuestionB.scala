@@ -2,6 +2,7 @@ package com.assessory.asyncmongo.converters
 
 import com.wbillingsley.handy.Id
 import com.assessory.api.question._
+import com.assessory.api.video._
 import org.mongodb.scala.bson._
 
 import scala.util.{Failure, Try}
@@ -18,24 +19,24 @@ object QuestionB {
 
     doc[BsonString]("kind").getValue match {
       case "Short Text" => ShortTextQuestion(
-        id = doc[BsonObjectId]("_id"),
-        prompt = doc[BsonString]("prompt"),
-        maxLength = doc.get[BsonInt32]("maxLength"),
+        id = QuestionId(doc.hexOid("_id")),
+        prompt = doc.string("prompt"),
+        maxLength = doc.optInt("maxLength"),
         hideInCrit = doc.get[BsonBoolean]("hideInCrit").map(_.getValue).getOrElse(false)
       )
       case "Boolean" => BooleanQuestion(
-        id = doc[BsonObjectId]("_id"),
-        prompt = doc[BsonString]("prompt"),
+        id = QuestionId(doc.hexOid("_id")),
+        prompt = doc.string("prompt"),
         hideInCrit = doc.get[BsonBoolean]("hideInCrit").map(_.getValue).getOrElse(true)
       )
       case "Video" => VideoQuestion(
-        id = doc[BsonObjectId]("_id"),
-        prompt = doc[BsonString]("prompt"),
+        id = QuestionId(doc.hexOid("_id")),
+        prompt = doc.string("prompt"),
         hideInCrit = doc.get[BsonBoolean]("hideInCrit").map(_.getValue).getOrElse(false)
       )
       case "File" => FileQuestion(
-        id = doc[BsonObjectId]("_id"),
-        prompt = doc[BsonString]("prompt"),
+        id = QuestionId(doc.hexOid("_id")),
+        prompt = doc.string("prompt"),
         hideInCrit = doc.get[BsonBoolean]("hideInCrit").map(_.getValue).getOrElse(false)
       )
     }
@@ -57,20 +58,20 @@ object AnswerB {
   def read(doc: Document): Try[Answer] = Try {
     doc[BsonString]("kind").getValue match {
       case "Short Text" => ShortTextAnswer(
-        question = doc[BsonObjectId]("question"),
-        answer = doc.get[BsonString]("answer")
+        question = QuestionId(doc.hexOid("question")),
+        answer = doc.optString("answer")
       )
       case "Boolean" => BooleanAnswer(
-        question = doc[BsonObjectId]("question"),
-        answer = doc.get[BsonBoolean]("answer")
+        question = QuestionId(doc.hexOid("question")),
+        answer = doc.optBoolean("answer")
       )
       case "Video" => VideoAnswer(
-        question = doc[BsonObjectId]("question"),
+        question = QuestionId(doc.hexOid("question")),
         answer = doc.get[BsonDocument]("answer").map({ d => VideoResourceB.read(Document(d)).get })
       )
       case "SmallFile" => FileAnswer(
-        question = doc[BsonObjectId]("question"),
-        answer = doc.get[BsonObjectId]("answer")
+        question = QuestionId(doc.hexOid("question")),
+        answer = doc.optHexOid("answer").map(SmallFileId(_))
       )
     }
   }

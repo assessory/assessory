@@ -4,7 +4,7 @@ import com.assessory.api.critique._
 import com.assessory.api.question.QuestionnaireTaskOutput
 import com.assessory.api.video._
 import com.wbillingsley.handy.Id
-import com.wbillingsley.handy.appbase.{User, Group, Course}
+import com.assessory.api.appbase.{User, Group, Course}
 import com.assessory.api._
 import org.mongodb.scala.bson._
 import scala.collection.JavaConverters._
@@ -29,13 +29,13 @@ object TaskOutputB  {
 
   def read(doc: Document): Try[TaskOutput] = Try {
     new TaskOutput(
-      id = doc[BsonObjectId]("_id"),
-      task = doc[BsonObjectId]("task"),
+      id = TaskOutputId(doc[BsonObjectId]("_id").getValue.toHexString),
+      task = TaskId(doc[BsonObjectId]("task").getValue.toHexString),
       by = rTarget(doc[BsonDocument]("by")),
       attn = doc[BsonArray]("attn").getValues.asScala.map({ case d => rTarget(d.asDocument()) }).toSeq,
       body = TaskOutputBodyB.read(Document(doc[BsonDocument]("body"))).get,
-      created = doc[BsonInt64]("created"),
-      finalised = doc.get[BsonInt64]("finalised")
+      created = doc[BsonInt64]("created").longValue(),
+      finalised = doc.get[BsonInt64]("finalised").map(_.longValue())
     )
   }
 }
@@ -89,9 +89,9 @@ object VideoResourceB {
 
   def read(doc:Document): Try[VideoResource] = Try {
     doc[BsonString]("kind").getValue match {
-      case "YouTube" => YouTube(doc[BsonString]("youtubeId"))
-      case "Kaltura" => Kaltura(doc[BsonString]("kalturaId"))
-      case "URL" => UnrecognisedVideoUrl(doc[BsonString]("url"))
+      case "YouTube" => YouTube(doc.string("youtubeId"))
+      case "Kaltura" => Kaltura(doc.string("kalturaId"))
+      case "URL" => UnrecognisedVideoUrl(doc.string("url"))
     }
   }
 }
@@ -116,7 +116,7 @@ object MessageTaskOutputBodyB {
 
   def read(doc:Document): Try[MessageTaskOutput] = Try {
     MessageTaskOutput(
-      text = doc[BsonString]("text")
+      text = doc.string("text")
     )
   }
 }
@@ -129,7 +129,7 @@ object SmallFileTaskOutputBodyB {
 
   def read(doc:Document): Try[SmallFileTaskOutput] = Try {
     SmallFileTaskOutput(
-      file = doc.get[BsonObjectId]("fileId")
+      file = doc.optHexOid("fileId").map(SmallFileId(_))
     )
   }
 }

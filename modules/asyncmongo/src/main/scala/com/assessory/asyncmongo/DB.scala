@@ -7,6 +7,9 @@ import Id._
 
 import scala.concurrent.ExecutionContext
 
+
+given ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
+
 object DB {
 
   val mongoClient: MongoClient = MongoClient()
@@ -16,7 +19,5 @@ object DB {
   lazy val db = mongoClient.getDatabase(dbName)
 
   def allocateId:String = BsonObjectId.apply().getValue.toHexString
-
-  implicit val executionContext = scala.concurrent.ExecutionContext.Implicits.global
 
 }

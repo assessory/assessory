@@ -41,11 +41,12 @@ case class SmallFileDetails(
 ) extends HasId[Id[SmallFile, String]] with File
 
 case class SmallFile(
-    id:Id[SmallFile, String],
+    id:SmallFileId,
     details: SmallFileDetails,
     data:Array[Byte]
-) extends HasId[Id[SmallFile, String]] with File
+) extends HasId[SmallFileId] with File
 
+case class SmallFileId(id:String) extends Id[SmallFile, String]
 
 case class SmallFileTask() extends TaskBody
 case class SmallFileTaskOutput(file:Option[Id[SmallFile, String]]) extends TaskOutputBody {

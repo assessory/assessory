@@ -3,14 +3,15 @@ package com.assessory.asyncmongo
 import com.assessory.asyncmongo.converters.BsonHelpers._
 import com.assessory.asyncmongo.converters.{ActiveSessionB, IdentityB, UserB}
 import com.wbillingsley.handy.Id._
-import com.wbillingsley.handy.Ref._
-import com.wbillingsley.handy.appbase.{ActiveSession, Identity, User, Course}
+import com.wbillingsley.handy.{Ref, RefOpt, refOps}
+import com.assessory.api.appbase.{ActiveSession, Course, Identity, PasswordLogin, User, UserId}
+import com.assessory.api.given
 import com.wbillingsley.handy.{LazyId, Ref, RefOpt, Refused}
-import com.wbillingsley.handyplay.UserProvider
+import org.mindrot.jbcrypt.BCrypt
 
-object UserDAO extends DAO(classOf[User], "assessoryUser", UserB.read) with UserProvider[User] with com.wbillingsley.handy.user.UserDAO[User, Identity] {
+object UserDAO extends DAO(classOf[User], "assessoryUser", UserB.read) with com.assessory.api.appbase.UserDAO[User, Identity] {
 
-  def unsaved = User(id = allocateId.asId)
+  def unsaved = User(id = UserId(allocateId))
 
   def saveSafe(c:User) = {
     findAndReplace("_id" $eq c.id, UserB.write(c), upsert=true).toRef
@@ -73,7 +74,7 @@ object UserDAO extends DAO(classOf[User], "assessoryUser", UserB.read) with User
     findOne(query="activeSessions.key" $eq sessionKey)
   }
 
-  override def byIdentity(service:String, id:String):RefOpt[User] = {
+  def byIdentity(service:String, id:String):RefOpt[User] = {
     findOne(query=("identities.service" $eq service) and ("identities.value" $eq id))
   }
 
@@ -82,12 +83,12 @@ object UserDAO extends DAO(classOf[User], "assessoryUser", UserB.read) with User
   def bySocialIdOrUsername(service:String, optId:Option[String], optUserName:Option[String] = None):RefOpt[User] = {
 
     def byId(service:String, oid:Option[String]) = for {
-      id <- oid.toRef
+      id <- RefOpt(oid)
       u <- findOne(query=("identities.service" $eq service) and ("identities.value" $eq id))
     } yield u
 
     def byUsername(service:String, oun:Option[String]) = for {
-      n <- oun.toRef
+      n <- RefOpt(oun)
       u <- findOne(query=("identities.service" $eq service) and ("identities.username" $eq n))
     } yield u
 
@@ -129,4 +130,18 @@ object UserDAO extends DAO(classOf[User], "assessoryUser", UserB.read) with User
   def removeSession(user: Ref[User], sessionKey: String): Ref[User] = deleteSession(user, ActiveSession(key=sessionKey, ip=""))
 
   def addIdentity(user: Ref[User], identity: Identity): Ref[User] = pushIdentity(user, identity)
+
+
+  /**
+   * Generate a salt and hash for this password
+   */
+  override def hash(password: String) = BCrypt.hashpw(password, BCrypt.gensalt())
+
+  /**
+   * Check if the given password matches the given password login
+   */
+  override def checkPassword(pwlogin:PasswordLogin, pw:String) = pwlogin.pwhash match {
+    case Some(hashed) => BCrypt.checkpw(pw, hashed)
+    case None => false
+  }
 }

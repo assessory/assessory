@@ -1,14 +1,15 @@
 package com.assessory.asyncmongo
 
-import com.assessory.api._
+import com.assessory.api.{given, _}
 import com.assessory.api.critique._
 import com.assessory.asyncmongo.converters.BsonHelpers._
 import com.assessory.asyncmongo.converters.{TargetB, CritAllocationB}
-import com.wbillingsley.handy._
-import com.wbillingsley.handy.appbase.User
-import Ref._
+import com.wbillingsley.handy.{Id, Ref, RefFuture, refOps}
+import com.assessory.api.appbase.User
 
 object CritAllocationDAO extends DAO(classOf[CritAllocation], "critAllocation", CritAllocationB.read) {
+
+  import DB.given
 
   def byTask(t:Ref[Task]) = {
     for {
@@ -26,7 +27,7 @@ object CritAllocationDAO extends DAO(classOf[CritAllocation], "critAllocation", 
   }
 
   def saveSafe(c:CritAllocation) = {
-    findAndReplace("_id" $eq c.id, CritAllocationB.write(c), upsert=true).toRef
+    RefFuture(findAndReplace("_id" $eq c.id, CritAllocationB.write(c), upsert=true))
   }
 
   def saveNew(gca:CritAllocation) = saveSafe(gca)

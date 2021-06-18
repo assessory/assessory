@@ -2,9 +2,10 @@ package com.assessory.asyncmongo
 
 import com.assessory.asyncmongo.converters.BsonHelpers._
 import com.assessory.asyncmongo.converters.GroupSetB
-import com.wbillingsley.handy._
-import com.wbillingsley.handy.appbase.{Course, Group, GroupSet}
-import Ref._
+import com.wbillingsley.handy.{Ref, refOps}
+import com.assessory.api.appbase.{Course, Group, GroupSet}
+import com.assessory.api.given
+
 
 object GroupSetDAO extends DAO(classOf[GroupSet], "groupSet", GroupSetB.read) {
 

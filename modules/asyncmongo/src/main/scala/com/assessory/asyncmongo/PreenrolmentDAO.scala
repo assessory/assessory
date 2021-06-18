@@ -2,11 +2,12 @@ package com.assessory.asyncmongo
 
 import com.assessory.asyncmongo.converters.BsonHelpers._
 import com.assessory.asyncmongo.converters.PreenrolmentB
-import com.wbillingsley.handy._
-import com.wbillingsley.handy.appbase._
+import com.wbillingsley.handy.{Ref, refOps, Id}
+import com.assessory.api.appbase._
+import com.assessory.api.given
 import Ref._
 
-class PreenrolmentDAO[W,T, R, UT](collName:String)(implicit p:PreenrolmentB[W,T,R,UT])
+class PreenrolmentDAO[W,T, R, UT](collName:String)(using p:PreenrolmentB[W,T,R,UT], targetId: String => Id[T, String], usedTargetId: String => Id[UT, String])
   extends DAO(classOf[Preenrolment[W,T,R,UT]], collName, p.read) {
 
   private def filterByWithin(id:Id[W, String]) = "within" $eq id
@@ -75,8 +76,8 @@ class PreenrolmentDAO[W,T, R, UT](collName:String)(implicit p:PreenrolmentB[W,T,
 }
 
 object PreenrolmentDAO {
-  val course = new PreenrolmentDAO[Course, Course, CourseRole, Course.Reg]("coursePreenrolment")
+  val course = new PreenrolmentDAO[Course, Course, CourseRole, Course.Reg]("coursePreenrolment")(using targetId = CourseId(_), usedTargetId = RegistrationId(_))
 
-  val group = new PreenrolmentDAO[GroupSet, Group, GroupRole, Group.Reg]("groupPreenrolment")
+  val group = new PreenrolmentDAO[GroupSet, Group, GroupRole, Group.Reg]("groupPreenrolment")(using targetId = GroupId(_), usedTargetId = RegistrationId(_))
 }
 

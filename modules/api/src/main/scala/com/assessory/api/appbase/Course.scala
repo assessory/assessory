@@ -33,7 +33,7 @@ object Course {
   type Preenrol = Preenrolment[Course, Course, CourseRole, Course.Reg]
   type PreenrolRow = Preenrolment.Row[Course, CourseRole, Course.Reg]
 
-  case class RegId(id:String) extends Id[Reg, String]
+  type RegId = RegistrationId[Course, CourseRole, HasKind]
 }
 
 case class CourseRole(r:String)

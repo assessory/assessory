@@ -1,10 +1,10 @@
 package com.assessory.asyncmongo
 
-import com.assessory.api._
+import com.assessory.api.{given, _}
 import com.assessory.asyncmongo.converters.BsonHelpers._
 import com.assessory.asyncmongo.converters.{TaskBodyB, TaskB}
-import com.wbillingsley.handy._
-import com.wbillingsley.handy.appbase.Course
+import com.wbillingsley.handy.{Ref, refOps}
+import com.assessory.api.appbase.Course
 import Ref._
 
 object TaskDAO extends DAO(classOf[Task], "task", TaskB.read) {

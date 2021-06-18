@@ -1,7 +1,8 @@
 package com.assessory.asyncmongo.converters
 
-import com.wbillingsley.handy.appbase.Identity
+import com.assessory.api.appbase.Identity
 import org.mongodb.scala.bson._
+import com.assessory.asyncmongo.converters._
 
 import scala.util.Try
 
@@ -16,11 +17,11 @@ object IdentityB {
 
   def read(doc: Document): Try[Identity] = Try {
     new Identity(
-      service = doc[BsonString]("service"),
-      value = doc.get[BsonString]("value"),
-      username = doc.get[BsonString]("username"),
-      avatar = doc.get[BsonString]("avatar"),
-      since = doc[BsonInt64]("since")
+      service = doc.string("service"),
+      value = doc.optString("value"),
+      username = doc.optString("username"),
+      avatar = doc.optString("avatar"),
+      since = doc.long("since")
     )
   }
 }

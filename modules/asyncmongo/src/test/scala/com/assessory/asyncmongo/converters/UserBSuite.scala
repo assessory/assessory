@@ -1,17 +1,19 @@
 package com.assessory.asyncmongo.converters
 
 import com.assessory.asyncmongo.{RegistrationDAO, UserDAO}
-import com.wbillingsley.handy.appbase.{Course, User}
+import com.assessory.api.appbase.{Course, CourseId, RegistrationId, User, UserId}
 import com.wbillingsley.handy.Id._
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest._
+import flatspec._
+import matchers._
 
 import scala.util.Success
 
-class UserBSpec extends FlatSpec with Matchers {
+class UserBSuite extends AnyFlatSpec with should.Matchers {
 
   "UserB" should "convert in both directions" in {
     val source = User(
-      id = UserDAO.allocateId.asId,
+      id = UserId(UserDAO.allocateId),
       name = Some("Algernon")
     )
     UserB.read(UserB.write(source)) should be (Success(source))
@@ -19,8 +21,8 @@ class UserBSpec extends FlatSpec with Matchers {
 
   "CourseB" should "convert in both directions" in {
     val source = Course(
-      id = UserDAO.allocateId.asId,
-      addedBy = RegistrationDAO.course.allocateId.asId,
+      id = CourseId(UserDAO.allocateId),
+      addedBy = RegistrationId(RegistrationDAO.course.allocateId),
       title = Some("Foo"),
       shortName = Some("Bar")
     )

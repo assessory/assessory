@@ -1,8 +1,8 @@
 package com.assessory.asyncmongo
 
 import com.assessory.asyncmongo.converters.{CourseB, IdB}
-import com.wbillingsley.handy.appbase.Course
-import com.wbillingsley.handy.Ref._
+import com.assessory.api.appbase.Course
+import com.wbillingsley.handy.{Ref, refOps}
 import org.mongodb.scala.model.FindOneAndReplaceOptions
 
 import org.mongodb.scala.model.Filters._
@@ -12,6 +12,7 @@ import scala.concurrent.Future
 
 object CourseDAO extends DAO(clazz = classOf[Course], collName="course", converter = CourseB.read) {
 
+  import DB.given
 
   def byShortName(sn:String) = findMany("shortName" $eq sn)
 
