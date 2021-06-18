@@ -1,45 +1,62 @@
 package com.assessory.api.wiring
 
 import com.assessory.api.critique.CritAllocation
-import com.wbillingsley.handy._
-import Id._
-import appbase._
+import com.wbillingsley.handy.{HasKind, Id, Ids, LookUp, RefFailed, RefMany, RefManyFailed, RefOpt, RefOptFailed}
 import com.assessory.api._
-import com.wbillingsley.handy.appbase.GroupRole
+import appbase._
+import com.wbillingsley.handy.{EagerLookUpOne, EagerLookUpOpt, EagerLookUpMany}
+
+trait IdLookUp[T] extends LookUp[Id[T, String], T]:
+  def many(ids:Seq[Id[T, String]]):RefMany[T]
+
 
 object Lookups {
 
-  val a = com.wbillingsley.handy.LookUp
+  private def fails[T](msg:String):IdLookUp[T] = new IdLookUp[T] {
+    override def eagerOne(id: Id[T, String]) = RefFailed(IllegalStateException(msg))
+    override def eagerOpt(id: Id[T, String]) = RefOptFailed(IllegalStateException(msg))
+    override def many(ids: Seq[Id[T, String]]) = RefManyFailed(IllegalStateException(msg))
+  }
 
-  implicit var luUser:LookUp[User, String] = LookUp.fails("User lookup has not been configured")
+  type ELO[T] = EagerLookUpOne[Id[T, String], T]
+  type ELOpt[T] = EagerLookUpOpt[Id[T, String], T]
+  type ELM[T] = EagerLookUpMany[Seq[Id[T, String]], T]
 
-  implicit var luCReg:LookUp[Course.Reg, String] = LookUp.fails("Course Registration lookup has not been configured")
+  given one[T](using lu:IdLookUp[T]):ELO[T] = lu.eagerOne _
+  def opt[T](using lu:IdLookUp[T]):ELOpt[T] = lu.eagerOpt _
+  given many[T](using lu:IdLookUp[T]):ELM[T] = lu.many _
 
-  implicit var luGReg:LookUp[Group.Reg, String] = LookUp.fails("Group Registration lookup has not been configured")
+  extension [T] (opt:Option[Id[T, String]])(using lu:IdLookUp[T]) {
+    def lookUp:RefOpt[T] = RefOpt(opt).flatMap(id => lu.eagerOpt(id))
+  }
 
-  implicit var luCourse:LookUp[Course, String] = LookUp.fails("Course lookup has not been configured")
+  given luUser:IdLookUp[User] = fails("User lookup has not been configured")
 
-  implicit var luPreenrol:LookUp[Course.Preenrol, String] = LookUp.fails("Preenrol lookup has not been configured")
+  given luCReg:IdLookUp[Course.Reg] = fails("Course Registration lookup has not been configured")
 
-  implicit var luGroup:LookUp[Group, String] = LookUp.fails("Group lookup has not been configured")
+  given luGReg:IdLookUp[Group.Reg] = fails("Group Registration lookup has not been configured")
 
-  implicit var luGPreenrol:LookUp[Group.Preenrol, String] = LookUp.fails("GPreenrol lookup has not been configured")
+  given luCourse:IdLookUp[Course] = fails("Course lookup has not been configured")
 
-  implicit var luGroupSet:LookUp[GroupSet, String] = LookUp.fails("GroupSet lookup has not been configured")
+  given luPreenrol:IdLookUp[Course.Preenrol] = fails("Preenrol lookup has not been configured")
 
-  implicit var luTask:LookUp[Task, String] = LookUp.fails("Task lookup has not been configured")
+  given luGroup:IdLookUp[Group] = fails("Group lookup has not been configured")
 
-  implicit var luTaskOutput:LookUp[TaskOutput, String] = LookUp.fails("TaskOutput lookup has not been configured")
+  given luGPreenrol:IdLookUp[Group.Preenrol] = fails("GPreenrol lookup has not been configured")
 
-  implicit var luCritAlloc:LookUp[CritAllocation, String] = LookUp.fails("CritAllocation lookup has not been configured")
+  given luGroupSet:IdLookUp[GroupSet] = fails("GroupSet lookup has not been configured")
+
+  given luTask:IdLookUp[Task] = fails("Task lookup has not been configured")
+
+  given luTaskOutput:IdLookUp[TaskOutput] = fails("TaskOutput lookup has not been configured")
+
+  given luCritAlloc:IdLookUp[CritAllocation] = fails("CritAllocation lookup has not been configured")
 
   var courseRegistrationProvider:RegistrationProvider[Course, CourseRole, HasKind] = new NullRegistrationProvider
 
   var groupRegistrationProvider:RegistrationProvider[Group, GroupRole, HasKind] = new NullRegistrationProvider
 
   var idAllocationF:Function0[String] = () => "None"
-
-  def allocateId[T]:Id[T,String] = idAllocationF().asId
 }
 
 trait RegistrationProvider[T, R, P <: HasKind] {

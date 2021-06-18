@@ -2,7 +2,7 @@ package com.assessory.api.call
 
 import com.assessory.api.Task
 import com.wbillingsley.handy.Id
-import com.wbillingsley.handy.appbase.{ActiveSession, Course, Group, GroupRole, GroupSet, User}
+import com.assessory.api.appbase.{ActiveSession, Course, Group, GroupRole, GroupSet, User}
 
 class CallsAPI {
 

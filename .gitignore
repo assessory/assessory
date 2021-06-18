@@ -35,3 +35,4 @@ tmp
 # Metals
 .metals/
 .bloop/
+.bsp/

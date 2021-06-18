@@ -1,6 +1,6 @@
 package com.assessory.api
 
-import com.wbillingsley.handy._
+import com.wbillingsley.handy.{Id, HasId, HasKind}
 
 trait TaskOutputBody extends HasKind
 case class KindedTaskOutputBody[T <: TaskOutputBody](kind:String, body:T)
@@ -12,9 +12,9 @@ object EmptyTaskOutputBody extends TaskOutputBody {
 
 case class TaskOutput (
 
-  id:Id[TaskOutput, String],
+  id:TaskOutputId,
 
-  task:Id[Task, String],
+  task:TaskId,
 
   by:Target,
 
@@ -27,4 +27,6 @@ case class TaskOutput (
   finalised:Option[Long] = None,
 
   updated:Long = System.currentTimeMillis
-) extends HasStringId[TaskOutput]
+) extends HasId[TaskOutputId]
+
+case class TaskOutputId(id:String) extends Id[TaskOutput, String]

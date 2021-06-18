@@ -1,7 +1,7 @@
 package com.assessory.api
 
 import com.wbillingsley.handy.{Id, HasKind}
-import com.wbillingsley.handy.appbase._
+import com.assessory.api.appbase._
 
 sealed trait Target
 

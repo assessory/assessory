@@ -1,16 +1,31 @@
 package com.assessory.api
 
-import com.assessory.api.wiring.Lookups
-import com.wbillingsley.handy._
-import com.wbillingsley.handy.appbase._
+import com.assessory.api.wiring.{Lookups}
+import com.wbillingsley.handy.{
+  Perm, Approval, Approved, Refused, autoGetsId, LookUpCache, HasId, GetsId,
+  Ref, RefFailed, RefOpt, RefOptFailed, Id, Ids, refOps, lazily
+}
+import com.assessory.api.appbase._
 import Ref._
 import Ids._
 import critique._
 import due._
 
-import wiring.Lookups._
+case class IdSeq[T](seq:Seq[Id[T, String]]) extends Ids[T, String]:
+  def ids = seq.map(_.id)
+
+given GetsId[Course, CourseId] = autoGetsId[Course, CourseId]
+given GetsId[GroupSet, GroupSetId] = autoGetsId[GroupSet, GroupSetId]
+given GetsId[Group, GroupId] = autoGetsId[Group, GroupId]
+given GetsId[Task, TaskId] = autoGetsId[Task, TaskId]
+given GetsId[TaskOutput, TaskOutputId] = autoGetsId[TaskOutput, TaskOutputId]
+given GetsId[User, UserId] = autoGetsId[User, UserId]
+given GetsId[CritAllocation, CritAllocationId] = autoGetsId[CritAllocation, CritAllocationId]
+
 
 object Permissions {
+
+  import wiring.Lookups.{given, *}
 
   def requireLoggedIn(who:RefOpt[User]):Ref[User] = (who orElse RefOptFailed(Refused("You are not logged in"))).require
 
@@ -21,50 +36,50 @@ object Permissions {
     for (u <- requireLoggedIn(prior.who)) yield Approved("Anyone may create a course")
   }
 
-  val ViewCourse = Perm.onId[User, Course, String] { case (prior, course) =>
+  val ViewCourse = Perm.onId[User, Course, Id[Course, String]]({ case (prior, course) =>
     hasAnyRole(course, requireLoggedIn(prior.who), CourseRole.roles, prior.cache)
-  }
+  })
 
-  val EditCourse = Perm.onId[User, Course, String] { case (prior, rCourse) =>
+  val EditCourse = Perm.onId[User, Course, Id[Course, String]]({ case (prior, rCourse) =>
     hasRole(rCourse, requireLoggedIn(prior.who), CourseRole.staff, prior.cache)
-  }
+  })
 
-  val ViewGroupSet = Perm.onId[User, GroupSet, String] { case (prior, rGroupSet) =>
+  val ViewGroupSet = Perm.onId[User, GroupSet, Id[GroupSet, String]] { case (prior, rGroupSet) =>
     for {
       gs <- rGroupSet
       a <- prior ask ViewCourse(gs.course)
     } yield Approved("Course viewers can view group sets")
   }
 
-  val EditGroupSet = Perm.onId[User, GroupSet, String] { case (prior, rGroupSet) =>
+  val EditGroupSet = Perm.onId[User, GroupSet, Id[GroupSet, String]] { case (prior, rGroupSet) =>
     for {
       gs <- rGroupSet
       a <- prior ask EditCourse(gs.course)
     } yield Approved("Course editors can edit group sets")
   }
 
-  val ViewGroup = Perm.onId[User, Group, String] { case (prior, rGroup) =>
+  val ViewGroup = Perm.onId[User, Group, Id[Group, String]] { case (prior, rGroup) =>
     for {
       g <- rGroup
-      a <- prior ask ViewCourse(prior.cache(g.course.lookUp orFail new IllegalStateException(s"Group ${g.id} had no course")))
+      a <- prior ask ViewCourse(g.course).require
     } yield Approved("Course viewers can view groups")
   }
 
-  val EditGroup = Perm.onId[User, Group, String] { case (prior, rGroup) =>
+  val EditGroup = Perm.onId[User, Group, Id[Group, String]] { case (prior, rGroup) =>
     for {
       g <- rGroup
-      a <- prior ask EditCourse(prior.cache(g.course.lookUp orFail new IllegalStateException(s"Group ${g.id} had no course")))
+      a <- prior ask (EditCourse(g.course)).require
     } yield Approved("Course editors can edit groups")
   }
 
-  val ViewTask = Perm.onId[User, Task, String] { case (prior, task) =>
+  val ViewTask = Perm.onId[User, Task, Id[Task, String]] { case (prior, task) =>
     for (
         t <- task;
         a <- prior ask ViewCourse(t.course)
     ) yield a
   }
 
-  val EditTask = Perm.onId[User, Task, String] { case (prior, task) =>
+  val EditTask = Perm.onId[User, Task, Id[Task, String]] { case (prior, task) =>
     for (
         t <- task;
         a <- prior ask EditCourse(t.course)
@@ -82,7 +97,7 @@ object Permissions {
       }
       case TargetCourseReg(cregId) => 
         for { 
-          creg <- prior.cache(cregId.lazily) 
+          creg <- prior.cache(cregId)
           result <- if (creg.user == who.id) Approved("Own work").itself else RefFailed(Refused("You may only edit your own work"))
         } yield result
       case TargetGroup(gid) => (
@@ -93,11 +108,11 @@ object Permissions {
     }
   }
 
-  val EditOutput = Perm.onId[User, TaskOutput, String] { case (prior, to) =>
+  val EditOutput = Perm.onId[User, TaskOutput, Id[TaskOutput, String]] { case (prior, to) =>
     for {
-      who <- prior.cache(requireLoggedIn(prior.who))
+      who <- requireLoggedIn(prior.who)
       o <- to
-      task <- prior.cache(o.task.lazily)
+      task <- prior.cache(o.task)
       ownWork <- isOwn(prior, who, o.by) 
       open <- isOpen(prior, task)
       result <- if (open) Approved("You may edit this").itself else RefFailed(UserError("This task is closed"))
@@ -111,13 +126,14 @@ object Permissions {
     val now = System.currentTimeMillis()
 
     for {
-      uId <- requireLoggedIn(a.who).refId.require
+      u <- requireLoggedIn(a.who)
+      uId = u.id
       groupIds <- Lookups.groupRegistrationProvider.byUser(uId).map(_.target).collect
     } yield {
       // TODO: should we have a margin?
       val margin = 300000L
 
-      def after(d:Due) = d.due(groupIds.map(_.id).asIds) match {
+      def after(d:Due) = d.due(groupIds) match {
         case Some(l) => now - l
         case _ => 0L
       }
@@ -126,9 +142,9 @@ object Permissions {
     }
   }
 
-  val WriteCritique = Perm.onId[User, CritAllocation, String] { case (prior, gca) =>
+  val WriteCritique = Perm.onId[User, CritAllocation, Id[CritAllocation, String]] { case (prior, gca) =>
       for {
-        who <- prior.cache(requireLoggedIn(prior.who))
+        who <- requireLoggedIn(prior.who)
         g <- gca
         ownWork <- isOwn(prior, who, g.completeBy)
       } yield Approved("You may write critiques that are allocated to you")

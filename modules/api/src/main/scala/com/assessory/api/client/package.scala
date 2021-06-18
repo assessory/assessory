@@ -10,6 +10,7 @@ package object client {
    * @tparam T
    * @return
    */
-  def invalidId[T] = Id[T,String]("invalid")
+  object InvalidId extends Id[Nothing, String]:
+    def id = "invalid"
 
 }

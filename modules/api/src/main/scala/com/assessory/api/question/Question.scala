@@ -2,9 +2,9 @@ package com.assessory.api.question
 
 import com.assessory.api.video.{SmallFile, VideoResource}
 import com.assessory.api.{TaskOutputBody, TaskOutput, TaskBody}
-import com.wbillingsley.handy.{Id, HasStringId}
+import com.wbillingsley.handy.{Id, HasId}
 
-sealed trait Question extends HasStringId[Question] {
+sealed trait Question extends HasId[Id[Question, String]] {
 
   def prompt:String
 
@@ -13,6 +13,8 @@ sealed trait Question extends HasStringId[Question] {
   def blankAnswer:Answer
 
 }
+
+case class QuestionId(id:String) extends Id[Question, String]
 
 sealed trait Answer {
 

@@ -2,10 +2,12 @@
 // shadow sbt-scalajs' crossProject and CrossType from Scala.js 0.6.x
 import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 
-lazy val commonSettings = Seq(
-  // Gets snapshots from first resolver. TODO: Remove
-  //updateOptions := updateOptions.value.withLatestSnapshots(false),
+name := "assessory"
+scalaVersion := "3.0.0"
+organization := "org.assessory"
+version := "0.4.0-SNAPSHOT"
 
+lazy val commonSettings = Seq(
   scalaVersion := "3.0.0",
   organization := "org.assessory",
   version := "0.4-SNAPSHOT",
@@ -18,21 +20,14 @@ lazy val commonSettings = Seq(
   ),
   libraryDependencies ++= Seq(
     //Handy
-    "org.scalactic" %% "scalactic" % "3.1.0",
-    "org.scalatest" %% "scalatest" % "3.1.0" % "test",
-    "org.specs2" %% "specs2-core" % "4.8.3" % "test"
+    "org.scalactic" %% "scalactic" % "3.2.9",
+    "org.scalatest" %% "scalatest" % "3.2.9" % "test",
+    ("org.specs2" %% "specs2-core" % "4.8.3" % "test").cross(CrossVersion.for3Use2_13)
   )
 
 )
 
 
-name := "assessory"
-  
-organization := "org.assessory"
-  
-scalaVersion := "3.0.0"
-
-version := "1.0.0-SNAPSHOT"
 
 lazy val api = (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure) in file("modules/api"))
   .settings(commonSettings:_*)
@@ -46,11 +41,14 @@ lazy val api = (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure) 
 lazy val apiJS = api.js
 lazy val apiJVM = api.jvm
 
+/*
+
 // Mongo contains the database serialisation and deserialisation
 lazy val mongo = (project in file("modules/asyncmongo"))
   .dependsOn(apiJVM)
   .settings(commonSettings:_*)
   .settings(
+    useScala2,
     libraryDependencies ++= Seq(
       "org.mongodb.scala" %% "mongo-scala-driver" % "2.8.0",
       "com.github.wbillingsley.handy" %% "handy-user" % "v0.10-SNAPSHOT",
@@ -68,7 +66,7 @@ lazy val model = (project in file("modules/model"))
     )
   )
 
-val circeVersion = "0.13.0"
+val circeVersion = "0.14.1"
 lazy val clientPickle = (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure) in file("modules/clientPickle"))
   .settings(commonSettings:_*)
   .settings(
@@ -86,8 +84,9 @@ lazy val vclient = project.in(file("modules/vclient"))
   .settings(commonSettings:_*)
   .enablePlugins(ScalaJSPlugin, JSDependenciesPlugin)
   .settings(
+    useScala3,
     scalaJSUseMainModuleInitializer := true,
-    scalaJSUseMainModuleInitializer in Test := false,
+    Test / scalaJSUseMainModuleInitializer := false,
     libraryDependencies ++= Seq(
       "org.scala-js" %%% "scalajs-dom" % "1.0.0",
       "com.github.wbillingsley.veautiful" %%% "veautiful" % "master-SNAPSHOT",
@@ -104,10 +103,12 @@ lazy val play = (project in file("modules/play"))
   .settings(commonSettings:_*)
   .aggregate(sjsProjects.map(sbt.Project.projectToRef):_*)
   .settings(
-    // RPM settings
-    maintainer in Linux := "William Billingsley <wbillingsley@cantab.net>",
+    useScala2,
 
-    packageSummary in Linux := "Assessory",
+    // RPM settings
+    Linux / maintainer := "William Billingsley <wbillingsley@cantab.net>",
+
+    Linux / packageSummary  := "Assessory",
 
     packageDescription := "Social assessment",
 
@@ -129,10 +130,10 @@ lazy val play = (project in file("modules/play"))
     ),
 
     scalaJSProjects := sjsProjects,
-    pipelineStages in Assets := Seq(scalaJSPipeline),
+    Assets / pipelineStages := Seq(scalaJSPipeline),
     pipelineStages := Seq(scalaJSProd, gzip),
     // triggers scalaJSPipeline when using compile or continuous compilation
-    compile in Compile := ((compile in Compile) dependsOn scalaJSPipeline).value,
+    Compile / compile := ((compile in Compile) dependsOn scalaJSPipeline).value,
     libraryDependencies ++= Seq(
       "com.vmunier" %% "scalajs-scripts" % "1.1.4",
       guice
@@ -145,8 +146,11 @@ lazy val cheatScript = project.in(file("modules/cheatScript"))
   .settings(commonSettings:_*)
   .dependsOn(apiJVM, mongo, model, clientPickleJVM)
   .settings(
+    useScala2,
     libraryDependencies ++= Seq(
       "org.specs2" %% "specs2-core" % "4.3.4" % "test",
       "com.typesafe.play" %% "play-ahc-ws-standalone" % "2.1.0-M4"
     )
   )
+
+*/

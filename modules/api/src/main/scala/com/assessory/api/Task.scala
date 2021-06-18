@@ -1,8 +1,8 @@
 package com.assessory.api
 
 import com.assessory.api.due.{NoDue, Due}
-import com.wbillingsley.handy.{Ids, Id, HasStringId, HasKind}
-import com.wbillingsley.handy.appbase._
+import com.wbillingsley.handy.{Ids, Id, HasId, HasKind}
+import com.assessory.api.appbase._
 
 /**
   * There could be many different kinds of task -- questionnaires to fill, essays to write. We implement these
@@ -22,16 +22,17 @@ object EmptyTaskBody extends TaskBody
   */
 case class Task(
 
-  id: Id[Task,String],
+  id: TaskId,
 
-  course: Id[Course, String],
+  course: CourseId,
 
   details: TaskDetails = new TaskDetails(),
 
   body: TaskBody = EmptyTaskBody
 
-) extends HasStringId[Task]
+) extends HasId[TaskId]
 
+case class TaskId(id:String) extends Id[Task, String]
 
 case class TaskDetails (
 

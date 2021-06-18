@@ -1,9 +1,10 @@
 package com.assessory.api.critique
 
-import com.wbillingsley.handy._
+import com.wbillingsley.handy.{Id, HasId}
 import com.assessory.api._
-import com.assessory.api.Task
-import com.wbillingsley.handy.appbase.{Answer, Question, GroupSet}
+import com.assessory.api.{Task, TaskId}
+import com.assessory.api.question.{Answer, Question}
+import com.assessory.api.appbase.GroupSet
 
 /**
   * A critique is posted in response to something
@@ -63,12 +64,14 @@ case class AllocatedCrit(
 
 case class CritAllocation(
 
-  id: Id[CritAllocation,String],
+  id: CritAllocationId,
 
-  task: Id[Task, String],
+  task: TaskId,
 
   completeBy: Target,
 
   allocation: Seq[AllocatedCrit] = Seq.empty
 
-) extends HasStringId[CritAllocation]
+) extends HasId[CritAllocationId]
+
+case class CritAllocationId(id:String) extends Id[CritAllocation, String]

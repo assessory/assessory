@@ -1,8 +1,9 @@
 package com.assessory.api.video
 
 import com.assessory.api.{TaskOutputBody, TaskBody, Target}
-import com.wbillingsley.handy.appbase.{Course, Question, User}
-import com.wbillingsley.handy.{HasStringId, Id}
+import com.assessory.api.appbase.{Course, User}
+import com.assessory.api.question.Question
+import com.wbillingsley.handy.{HasId, Id}
 
 
 
@@ -26,7 +27,7 @@ case class MessageTaskOutput(text:String) extends TaskOutputBody {
   def kind = "Message"
 }
 
-sealed trait File extends HasStringId[File]
+sealed trait File
 
 case class SmallFileDetails(
     id:Id[SmallFile, String],
@@ -37,13 +38,13 @@ case class SmallFileDetails(
     mime:Option[String],
     created: Long,
     updated: Long
-) extends HasStringId[SmallFile] with File
+) extends HasId[Id[SmallFile, String]] with File
 
 case class SmallFile(
     id:Id[SmallFile, String],
     details: SmallFileDetails,
     data:Array[Byte]
-) extends HasStringId[SmallFile] with File
+) extends HasId[Id[SmallFile, String]] with File
 
 
 case class SmallFileTask() extends TaskBody
