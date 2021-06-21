@@ -7,8 +7,9 @@ scalaVersion := "3.0.0"
 organization := "org.assessory"
 version := "0.4.0-SNAPSHOT"
 
+def useScala3 = (scalaVersion := "3.0.0")
+
 lazy val commonSettings = Seq(
-  scalaVersion := "3.0.0",
   organization := "org.assessory",
   version := "0.4-SNAPSHOT",
   scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),
@@ -32,6 +33,7 @@ lazy val commonSettings = Seq(
 lazy val api = (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure) in file("modules/api"))
   .settings(commonSettings:_*)
   .settings(
+    useScala3,
     libraryDependencies ++= Seq(
       "com.github.wbillingsley.handy" %%% "handy" % "v0.11-SNAPSHOT",
 //      "com.github.wbillingsley.handy" %%% "handy-appbase" % "v0.10-SNAPSHOT"
@@ -46,6 +48,7 @@ lazy val mongo = (project in file("modules/asyncmongo"))
   .dependsOn(apiJVM)
   .settings(commonSettings:_*)
   .settings(
+    useScala3,
     libraryDependencies ++= Seq(
       ("org.mongodb.scala" %% "mongo-scala-driver" % "4.2.3").cross(CrossVersion.for3Use2_13),
       "org.mindrot" % "jbcrypt" % "0.3m"
@@ -57,17 +60,17 @@ lazy val model = (project in file("modules/model"))
   .dependsOn(apiJVM, mongo)
   .settings(commonSettings:_*)
   .settings(
+    useScala3,
     libraryDependencies ++= Seq(
       "net.sf.opencsv" % "opencsv" % "2.0"
     )
   )
 
-
-
 val circeVersion = "0.14.1"
 lazy val clientPickle = (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure) in file("modules/clientPickle"))
   .settings(commonSettings:_*)
   .settings(
+    useScala3,
     libraryDependencies ++= Seq(
       "io.circe" %%% "circe-core",
       "io.circe" %%% "circe-parser"
@@ -78,27 +81,29 @@ lazy val clientPickle = (crossProject(JSPlatform, JVMPlatform).crossType(CrossTy
 lazy val clientPickleJS = clientPickle.js
 lazy val clientPickleJVM = clientPickle.jvm
 
-
-/*
-
-
-
 lazy val vclient = project.in(file("modules/vclient"))
   .settings(commonSettings:_*)
-  .enablePlugins(ScalaJSPlugin, JSDependenciesPlugin)
   .settings(
     useScala3,
     scalaJSUseMainModuleInitializer := true,
     Test / scalaJSUseMainModuleInitializer := false,
     libraryDependencies ++= Seq(
-      "org.scala-js" %%% "scalajs-dom" % "1.0.0",
+//      ("org.scala-js" %%% "scalajs-dom" % "1.0.0",
       "com.github.wbillingsley.veautiful" %%% "veautiful" % "master-SNAPSHOT",
       "com.github.wbillingsley.veautiful" %%% "veautiful-templates" % "master-SNAPSHOT",
     )
   )
   .dependsOn(apiJS, clientPickleJS)
+  .enablePlugins(ScalaJSPlugin, JSDependenciesPlugin)
 
 lazy val sjsProjects = Seq(vclient)
+
+
+
+
+/*
+
+
 
 // The web layer
 lazy val play = (project in file("modules/play"))

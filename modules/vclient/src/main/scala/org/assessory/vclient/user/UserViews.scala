@@ -1,7 +1,7 @@
 package org.assessory.vclient.user
 
 import com.wbillingsley.handy.Ref
-import com.wbillingsley.handy.appbase.User
+import com.assessory.api.appbase.User
 import com.wbillingsley.veautiful.html.<
 import org.assessory.vclient.services.UserService
 

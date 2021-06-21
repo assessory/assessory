@@ -2,13 +2,12 @@ package org.assessory.vclient.task
 
 import com.assessory.api.question.{Answer, BooleanAnswer, Question, QuestionnaireTask, QuestionnaireTaskOutput, ShortTextAnswer, VideoAnswer}
 import com.assessory.api.video.{Kaltura, UnrecognisedVideoUrl, VideoResource, YouTube}
-import com.assessory.api.{TargetUser, Task, TaskOutput}
-import com.wbillingsley.handy.{Id, Latch}
-import com.wbillingsley.veautiful.html.{<, MarkupNode, VHtmlComponent, VHtmlNode, ^}
+import com.assessory.api._
+import com.assessory.api.appbase._
+import com.wbillingsley.handy.{Id, Latch, lazily}
+import com.wbillingsley.veautiful.html.{<, VHtmlComponent, VHtmlNode, ^}
 import org.assessory.vclient.common.Components.LatchRender
 import org.assessory.vclient.services.TaskOutputService
-import com.wbillingsley.handy.Id._
-import com.wbillingsley.handy.Ids._
 import org.assessory.vclient.services._
 import org.assessory.vclient.common.Markup
 import org.assessory.vclient.common.Components._
@@ -21,7 +20,7 @@ object QuestionnaireViews {
 
   def loadOrDefaultOutput(task:Task):Future[TaskOutput] = {
     for { outputs <- TaskOutputService.myOutputs(task.id) } yield {
-      outputs.headOption.getOrElse(TaskOutputService.blankOutputFor(task, TargetUser("self".asId)))
+      outputs.headOption.getOrElse(TaskOutputService.blankOutputFor(task, TargetUser(UserId("self"))))
     }
   }
 

@@ -1,16 +1,16 @@
 package org.assessory.vclient
 
 import com.wbillingsley.handy.Id
-import com.wbillingsley.handy.appbase.{Course, Group}
+import com.assessory.api.appbase._
 import com.wbillingsley.veautiful.PathDSL
-import com.wbillingsley.veautiful.PathDSL./#
+import com.wbillingsley.veautiful.PathDSL.Compose./#
 import com.wbillingsley.veautiful.html.{<, VHtmlNode}
 import com.wbillingsley.veautiful.templates.HistoryRouter
 import org.assessory.vclient.common.Front
 import org.assessory.vclient.course.CourseViews
 import org.assessory.vclient.user.LoginViews
 import Id._
-import com.assessory.api.{Task, TaskOutput}
+import com.assessory.api._
 import com.wbillingsley.veautiful.logging.Logger
 import org.assessory.vclient.task.TaskViews
 
@@ -54,7 +54,7 @@ object Routing {
   }
 
   object Router extends HistoryRouter[Route] {
-    override var route: Route = Home
+    var route: Route = Home
 
     override def render: VHtmlNode = {
       logger.info(s"Rendering route $route")
@@ -67,9 +67,9 @@ object Routing {
       logger.info("Getting route from location")
       PathDSL.hashPathArray() match {
         case Array("login") => Login
-        case Array("course", id) => CourseRoute(id.asId[Course])
-        case Array("task", id, "outputs") => TaskOutputRoute(id.asId[Task])
-        case Array("task", id) => TaskRoute(id.asId[Task])
+        case Array("course", id) => CourseRoute(CourseId(id))
+        case Array("task", id, "outputs") => TaskOutputRoute(TaskId(id))
+        case Array("task", id) => TaskRoute(TaskId(id))
         case _ => Home
       }
     }

@@ -1,7 +1,7 @@
 package org.assessory.vclient.common
 
 import com.wbillingsley.handy.Latch
-import com.wbillingsley.handy.appbase.User
+import com.assessory.api.appbase.User
 import com.wbillingsley.veautiful.html.{<, VHtmlNode, ^}
 import org.assessory.vclient.Routing
 import org.assessory.vclient.common.Components.LatchRender

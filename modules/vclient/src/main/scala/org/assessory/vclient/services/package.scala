@@ -1,7 +1,7 @@
 package org.assessory.vclient
 
 import com.wbillingsley.handy.Refused
-import com.wbillingsley.handy.appbase.UserError
+import com.assessory.api.appbase.UserError
 import org.scalajs.dom
 import org.scalajs.dom.ext.AjaxException
 

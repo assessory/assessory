@@ -5,21 +5,20 @@ import com.assessory.api.client.WithPerms
 import com.assessory.api.critique.{Critique, CritiqueTask}
 import com.assessory.api.due.Due
 import com.assessory.api.question.{QuestionnaireTask, QuestionnaireTaskOutput}
-import com.wbillingsley.handy.{Id, Latch}
-import com.wbillingsley.handy.appbase.{Course, Group}
+import com.wbillingsley.handy.{Id, Latch, lazily}
+import com.assessory.api.appbase._
 import com.wbillingsley.veautiful.html.{<, DElement, VHtmlComponent, VHtmlNode, ^}
 import org.assessory.vclient.Routing
 import org.assessory.vclient.common.Components.LatchRender
 import org.assessory.vclient.services.{GroupService, TaskOutputService, TaskService}
-import com.wbillingsley.handy.Ids._
 import org.assessory.vclient.common.{Components, Front}
 import org.assessory.vclient.course.CourseViews
 import org.scalajs.dom.{Element, Node, html}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.scalajs.js.Date
-import TaskService._
-import TaskOutputService._
+import TaskService.{given, _}
+import TaskOutputService.{given, _}
 import com.wbillingsley.veautiful.DiffNode
 
 import scala.util.{Failure, Success}
@@ -64,7 +63,7 @@ object TaskViews {
       for {
         groups <- GroupService.myGroups.request
       } yield {
-        groups.map(_.item.id.id).asIds[Group]
+        groups.map(_.item.id)
       }
     )
 
@@ -75,7 +74,7 @@ object TaskViews {
    * Text for a date in Unix epoch
    */
   def optDate(o:Option[Long]):DElement[html.Element] = <.span(
-    for { d <- o } yield new Date(d).toLocaleString()
+    for { d <- o } yield new Date(d.toDouble).toLocaleString()
   )
 
   /**
@@ -192,8 +191,8 @@ object TaskViews {
   case class Preview(to:Id[TaskOutput, String]) extends VHtmlComponent {
 
     val latches = Latch.lazily((for {
-      taskOutput <- to.lazily(TaskOutputService.lookup)
-      task <- taskOutput.task.lazily(TaskService.lookup)
+      taskOutput <- to.lazily
+      task <- taskOutput.task.lazily
     } yield (task, task.body, taskOutput, taskOutput.body)).toFuture)
 
     override protected def render: DiffNode[Element, Node] = <.div(LatchRender(latches) {

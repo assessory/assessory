@@ -2,33 +2,20 @@ package org.assessory.vclient.services
 
 import com.assessory.api.client.WithPerms
 import com.assessory.clientpickle.Pickles
-import com.assessory.clientpickle.Pickles._
-import com.wbillingsley.handy.Id._
-import com.wbillingsley.handy.Ids._
-import com.wbillingsley.handy.appbase.{Course, Group}
-import com.wbillingsley.handy.{Id, Ids, Latch, LookUp, Ref, RefMany}
+import com.assessory.clientpickle.Pickles.{given, _}
+import com.assessory.api.appbase._
+import com.wbillingsley.handy.{Id, Ids, Latch, EagerLookUpOne, Ref, RefMany, refOps}
 import org.scalajs.dom.ext.Ajax
 
 import scala.collection.mutable
 import scala.concurrent.{Future, Promise}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
-import Ref._
 
 object GroupService {
 
-  implicit val lookup = new LookUp[Group, String] {
-    override def one[KK <: String](r: Id[Group, KK]): Ref[Group] = {
-      latch(r.id).request.map(_.item).toRef
-    }
-
-    override def many[KK <: String](r: Ids[Group, KK]): RefMany[Group] = {
-      for {
-        gs <- loadIds(r).toRef
-        g <- gs.toRefMany
-      } yield g.item
-    }
-  }
+  given EagerLookUpOne[Id[Group, String], Group] = (r: Id[Group, String]) =>
+    latch(r.id).request.map(_.item).toRef
 
   val cache = mutable.Map.empty[String, Latch[WithPerms[Group]]]
 
@@ -45,7 +32,7 @@ object GroupService {
     Ajax.get(s"/api/group/${id.id}", headers=AJAX_HEADERS).responseText.flatMap(Pickles.readF[WithPerms[Group]])
   }
 
-  def latch(s:String):Latch[WithPerms[Group]] = latch(s.asId)
+  def latch(s:String):Latch[WithPerms[Group]] = latch(GroupId(s))
 
   def latch(id:Id[Group,String]):Latch[WithPerms[Group]] = cache.getOrElseUpdate(id.id, Latch.lazily(loadId(id)))
 
@@ -58,7 +45,7 @@ object GroupService {
       id -> p
     }).toMap
 
-    val loading = Ajax.post("/api/group/findMany", Pickles.write(missing.asIds[Group]), headers=AJAX_HEADERS)
+    val loading = Ajax.post("/api/group/findMany", Pickles.write(missing.map(GroupId.apply)), headers=AJAX_HEADERS)
       .responseText.flatMap(Pickles.readF[Seq[WithPerms[Group]]])
 
     loading.andThen {

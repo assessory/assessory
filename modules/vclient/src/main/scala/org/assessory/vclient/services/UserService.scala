@@ -3,9 +3,9 @@ package org.assessory.vclient.services
 import com.assessory.api.client.EmailAndPassword
 import com.assessory.clientpickle.Pickles
 import com.assessory.clientpickle.Pickles._
-import com.wbillingsley.handy.Ref._
-import com.wbillingsley.handy._
-import com.wbillingsley.handy.appbase.User
+import com.wbillingsley.handy.{Approval, Id, Latch, Ref, RefMany, refOps}
+import com.assessory.api.appbase.User
+import com.wbillingsley.handy.LookUp$package.EagerLookUpOne
 import org.assessory.vclient.Routing
 import org.scalajs.dom.ext.Ajax
 
@@ -25,7 +25,7 @@ object UserService {
   def approval:Ref[Approval[User]] = Approval(
     for {
       opt <- self.request.toRef
-      u <- opt.toRef
+      u <- opt.toRefOpt
     } yield u
   )
 
@@ -57,10 +57,8 @@ object UserService {
     Ajax.get(s"/api/user/${id.id}", headers=AJAX_HEADERS).responseText.flatMap(Pickles.readF[User])
   )
 
-  val lu = new LookUp[User, String] {
-    override def one[KK <: String](r: Id[User, KK]): Ref[User] = cache.getOrElseUpdate(r.id, loadId(r)).request.toRef
+  given EagerLookUpOne[Id[User, String], User] = (r:Id[User, String]) =>
+    cache.getOrElseUpdate(r.id, loadId(r)).request.toRef
 
-    override def many[KK <: String](r: Ids[User, KK]): RefMany[User] = ???
-  }
 
 }

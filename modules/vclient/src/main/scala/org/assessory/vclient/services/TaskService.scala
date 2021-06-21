@@ -1,12 +1,11 @@
 package org.assessory.vclient.services
 
-import com.assessory.api.{Task, TaskOutput}
+import com.assessory.api._
 import com.assessory.api.client.WithPerms
 import com.assessory.clientpickle.Pickles
-import com.assessory.clientpickle.Pickles._
-import com.wbillingsley.handy.Id._
-import com.wbillingsley.handy.appbase.Course
-import com.wbillingsley.handy.{Id, Ids, Latch, LookUp, Ref, RefMany}
+import com.assessory.clientpickle.Pickles.{given, _}
+import com.assessory.api.appbase._
+import com.wbillingsley.handy.{Id, Ids, Latch, EagerLookUpOne, Ref, RefMany, refOps, lazily}
 import org.scalajs.dom.ext.Ajax
 
 import scala.collection.mutable
@@ -16,14 +15,8 @@ import Ref._
 
 object TaskService {
 
-
-  implicit val lookup = new LookUp[Task, String] {
-    override def one[KK <: String](r: Id[Task, KK]): Ref[Task] = {
-      latch(r.id).request.map(_.item).toRef
-    }
-
-    override def many[KK <: String](r: Ids[Task, KK]): RefMany[Task] = ???
-  }
+  given EagerLookUpOne[Id[Task, String], Task] = (r:Id[Task, String]) =>
+    latch(r.id).request.map(_.item).toRef
 
   val cache = mutable.Map.empty[String, Latch[WithPerms[Task]]]
 
@@ -38,7 +31,7 @@ object TaskService {
     t.flatMap(Pickles.readF[WithPerms[Task]])
   }
 
-  def latch(s:String):Latch[WithPerms[Task]] = latch(s.asId)
+  def latch(s:String):Latch[WithPerms[Task]] = latch(TaskId(s))
 
   def latch(id:Id[Task,String]):Latch[WithPerms[Task]] = cache.getOrElseUpdate(id.id, Latch.lazily(loadId(id)))
 

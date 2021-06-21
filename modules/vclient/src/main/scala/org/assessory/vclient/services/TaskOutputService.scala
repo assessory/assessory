@@ -5,10 +5,9 @@ import com.assessory.api.client.WithPerms
 import com.assessory.api.question._
 import com.assessory.api.video._
 import com.assessory.clientpickle.Pickles
-import com.assessory.clientpickle.Pickles._
-import com.wbillingsley.handy.Id._
-import com.wbillingsley.handy.appbase.Course
-import com.wbillingsley.handy.{Id, Ids, Latch, LookUp, Ref, RefMany}
+import com.assessory.clientpickle.Pickles.{given, _}
+import com.assessory.api.appbase.Course
+import com.wbillingsley.handy.{Id, Latch, LookUp, Ref, RefMany, refOps, lazily, EagerLookUpOpt, EagerLookUpOne}
 import org.assessory.vclient.Routing
 import org.scalajs.dom.ext.Ajax
 
@@ -19,15 +18,10 @@ import Ref._
 
 object TaskOutputService {
 
-  implicit val lookup = new LookUp[TaskOutput, String] {
-    override def one[KK <: String](r: Id[TaskOutput, KK]): Ref[TaskOutput] = {
-      future(r.id.toString.asId[TaskOutput]).map(_.item).toRef
-    }
+  given EagerLookUpOne[Id[TaskOutput, String], TaskOutput] = (id:Id[TaskOutput, String]) =>
+    latch(id.id).request.map(_.item).toRef
 
-    override def many[KK <: String](r: Ids[TaskOutput, KK]): RefMany[TaskOutput] = ???
-  }
-
-  val invalidId:Id[TaskOutput, String] = "invalid".asId[TaskOutput]
+  val invalidId = TaskOutputId("invalid")
 
   val cache = mutable.Map.empty[String, Future[WithPerms[TaskOutput]]]
 
@@ -91,7 +85,7 @@ object TaskOutputService {
     fwp
   }
 
-  def latch(s:String):Latch[WithPerms[TaskOutput]] = latch(s.asId)
+  def latch(s:String):Latch[WithPerms[TaskOutput]] = latch(TaskOutputId(s))
 
   def latch(id:Id[TaskOutput,String]):Latch[WithPerms[TaskOutput]] = Latch.lazily(cache.getOrElseUpdate(id.id, loadId(id)))
 

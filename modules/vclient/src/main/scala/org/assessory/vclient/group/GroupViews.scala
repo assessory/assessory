@@ -2,7 +2,7 @@ package org.assessory.vclient.group
 
 import com.assessory.api.client.WithPerms
 import com.wbillingsley.handy.Id
-import com.wbillingsley.handy.appbase.{Course, Group, GroupSet}
+import com.assessory.api.appbase.{Course, Group, GroupSet}
 import com.wbillingsley.veautiful.html.{<, DElement, VHtmlNode, ^}
 import org.assessory.vclient.Routing
 import org.assessory.vclient.common.Components.LatchRender

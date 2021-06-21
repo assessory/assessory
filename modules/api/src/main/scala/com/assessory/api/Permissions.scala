@@ -6,8 +6,6 @@ import com.wbillingsley.handy.{
   Ref, RefFailed, RefOpt, RefOptFailed, Id, Ids, refOps, lazily
 }
 import com.assessory.api.appbase._
-import Ref._
-import Ids._
 import critique._
 import due._
 

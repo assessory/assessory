@@ -2,7 +2,7 @@ package org.assessory.vclient.course
 
 import com.assessory.api.client.WithPerms
 import com.wbillingsley.handy.Id
-import com.wbillingsley.handy.appbase.Course
+import com.assessory.api.appbase._
 import com.wbillingsley.veautiful.html.{<, DElement, VHtmlNode, ^}
 import org.assessory.vclient.Routing
 import org.assessory.vclient.common.Components.LatchRender

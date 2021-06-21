@@ -3,9 +3,8 @@ package org.assessory.vclient.services
 import com.assessory.api.client.WithPerms
 import com.assessory.clientpickle.Pickles
 import com.assessory.clientpickle.Pickles._
-import com.wbillingsley.handy.Id._
-import com.wbillingsley.handy._
-import com.wbillingsley.handy.appbase.Course
+import com.wbillingsley.handy.{Id, Latch, lazily}
+import com.assessory.api.appbase._
 import org.scalajs.dom.ext.Ajax
 
 import scala.collection.mutable
@@ -30,7 +29,7 @@ object CourseService {
     Ajax.get(s"/api/course/${id.id}", headers = Map("Accept" -> "application/json")).responseText.flatMap(Pickles.readF[WithPerms[Course]])
   }
 
-  def latch(s:String):Latch[WithPerms[Course]] = cache.getOrElseUpdate(s, Latch.lazily(loadId(s.asId[Course])))
+  def latch(s:String):Latch[WithPerms[Course]] = cache.getOrElseUpdate(s, Latch.lazily(loadId(CourseId(s))))
 
   def latch(id:Id[Course,String]):Latch[WithPerms[Course]] = cache.getOrElseUpdate(id.id, Latch.lazily(loadId(id)))
 }

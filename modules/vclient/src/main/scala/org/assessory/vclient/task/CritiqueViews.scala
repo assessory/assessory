@@ -2,13 +2,13 @@ package org.assessory.vclient.task
 
 import com.assessory.api.critique.{Critique, CritiqueTask}
 import com.assessory.api.{TargetGroup, Task, TaskBody, TaskOutput, TaskOutputBody}
-import com.wbillingsley.handy.{Id, Latch}
+import com.wbillingsley.handy.{Id, Latch, lazily}
 import com.wbillingsley.veautiful.DiffNode
 import com.wbillingsley.veautiful.html.{<, VHtmlComponent, VHtmlNode, ^}
 import org.assessory.vclient.common.Components.LatchRender
 import org.assessory.vclient.group.GroupViews
 import org.assessory.vclient.services.TaskOutputService
-import TaskOutputService.lookup
+import TaskOutputService.given
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

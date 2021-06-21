@@ -4,7 +4,7 @@ import com.assessory.api.client.WithPerms
 import com.assessory.clientpickle.Pickles
 import com.assessory.clientpickle.Pickles._
 import com.wbillingsley.handy.Id._
-import com.wbillingsley.handy.appbase.GroupSet
+import com.assessory.api.appbase.{GroupSet, GroupSetId}
 import com.wbillingsley.handy.{Id, Latch}
 import org.scalajs.dom.ext.Ajax
 
@@ -22,7 +22,7 @@ object GroupSetService {
     Ajax.get(s"/api/groupSet/${id.id}", headers = Map("Accept" -> "application/json")).responseText.flatMap(Pickles.readF[WithPerms[GroupSet]])
   }
 
-  def latch(s:String):Latch[WithPerms[GroupSet]] = cache.getOrElseUpdate(s, Latch.lazily(loadId(s.asId[GroupSet])))
+  def latch(s:String):Latch[WithPerms[GroupSet]] = cache.getOrElseUpdate(s, Latch.lazily(loadId(GroupSetId(s))))
 
   def latch(id:Id[GroupSet,String]):Latch[WithPerms[GroupSet]] = cache.getOrElseUpdate(id.id, Latch.lazily(loadId(id)))
 

@@ -2,7 +2,7 @@ package org.assessory.vclient.user
 
 import com.assessory.api.client.EmailAndPassword
 import com.wbillingsley.handy.Latch
-import com.wbillingsley.handy.appbase.UserError
+import com.assessory.api.appbase.UserError
 import com.wbillingsley.veautiful.DiffNode
 import com.wbillingsley.veautiful.html.{<, VHtmlComponent, VHtmlNode, ^}
 import org.assessory.vclient.Routing

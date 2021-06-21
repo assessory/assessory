@@ -3,7 +3,7 @@ package org.assessory.vclient.services
 import com.assessory.api.video.{SmallFile, SmallFileDetails}
 import com.assessory.clientpickle.Pickles
 import com.assessory.clientpickle.Pickles._
-import com.wbillingsley.handy.appbase.Course
+import com.assessory.api.appbase.Course
 import com.wbillingsley.handy.{Id, Latch}
 import org.scalajs.dom
 import org.scalajs.dom.ext.Ajax
@@ -28,7 +28,7 @@ object FileService {
     val detailsP:Promise[SmallFileDetails] = Promise.apply()
 
     xhr.upload.onprogress = (e:dom.ProgressEvent) => {
-      println(e.loaded, e.total)
+      println((e.loaded, e.total))
       onUpdateProgress(e.loaded, e.total)
     }
 
