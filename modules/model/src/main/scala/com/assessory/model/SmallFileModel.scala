@@ -1,7 +1,7 @@
 package com.assessory.model
 
 import com.wbillingsley.handy.{Ref, Approval}
-import com.wbillingsley.handy.appbase.{Course, User}
+import com.assessory.api.appbase.{Course, User}
 import Ref._
 
 /**

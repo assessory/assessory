@@ -1,10 +1,9 @@
 package com.assessory.model
 
-import com.assessory.api.wiring.Lookups._
+import com.assessory.api.wiring.Lookups.{given, _}
 import com.assessory.asyncmongo._
-import com.wbillingsley.handy.Ref._
-import com.wbillingsley.handy._
-import com.wbillingsley.handy.appbase.{Identity, User, ActiveSession, UserError}
+import com.wbillingsley.handy.{Ref, refOps, Approval, Id}
+import com.assessory.api.appbase.{Identity, User, ActiveSession, UserError}
 
 object UserModel {
 
@@ -13,8 +12,8 @@ object UserModel {
    */
   def signUp(oEmail:Option[String], oPassword:Option[String], session:ActiveSession) = {
     for (
-      email <- oEmail.toRef orFail UserError("Email must not be blank");
-      password <- oPassword.toRef orFail UserError("Password must not be blank");
+      email <- oEmail.toRefOpt orFail UserError("Email must not be blank");
+      password <- oPassword.toRefOpt orFail UserError("Password must not be blank");
       user <- {
         val u = UserDAO.unsaved
         val set = u.copy(
@@ -36,8 +35,8 @@ object UserModel {
    */
   def logIn(oEmail:Option[String], oPassword:Option[String], session:ActiveSession) = {
     for {
-      email <- oEmail.toRef orFail UserError("Email must not be blank")
-      password <- oPassword.toRef orFail UserError("Password must not be blank")
+      email <- oEmail.toRefOpt orFail UserError("Email must not be blank")
+      password <- oPassword.toRefOpt orFail UserError("Password must not be blank")
       user <- UserDAO.byEmailAndPassword(email, password)
       updated <- UserDAO.pushSession(user.itself, session)
     } yield updated
@@ -66,9 +65,7 @@ object UserModel {
     }
   }
 
-  def findMany(a:Approval[User], ids:Ids[User,String]) = {
-    ids.lookUp
-  }
+  def findMany(a:Approval[User], ids:Seq[Id[User,String]]) = ids.lookUp
 
   def displayName(u:User):String = {
     u.name.orElse(u.pwlogin.email.orElse(u.identities.find(_.username.nonEmpty).flatMap(_.username))).getOrElse("Unnamed user")

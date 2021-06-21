@@ -3,17 +3,15 @@ package com.assessory.model
 import java.io.StringWriter
 
 import au.com.bytecode.opencsv.CSVWriter
-import com.assessory.api._
+import com.assessory.api.{given, _}
 import com.assessory.api.client.WithPerms
 import com.assessory.api.critique._
 import com.assessory.api.question._
 import com.assessory.api.video.{VideoTask, VideoTaskOutput}
-import com.assessory.api.wiring.Lookups._
+import com.assessory.api.wiring.Lookups.{given, _}
 import com.assessory.asyncmongo._
-import com.wbillingsley.handy.Id._
-import com.wbillingsley.handy.Ref._
-import com.wbillingsley.handy._
-import com.wbillingsley.handy.appbase.{Group, User, UserError}
+import com.wbillingsley.handy.{Ref, RefOpt, RefSome, RefMany, RefFailed, refOps, Id, lazily, Approval}
+import com.assessory.api.appbase._
 
 import scala.util.Random
 
@@ -42,7 +40,7 @@ object CritModel {
     val reverseMap = (for (g <- groupIds) yield g -> mutable.Set.empty[Id[User,String]]).toMap
     val forwardMap = (for (r <- regs; u = r.user) yield u -> mutable.Set.empty[Id[Group,String]]).toMap
 
-    def pick(u:Id[User,String]) = {
+    def pick(u:UserId) = {
       val g = groupIds
       val filtered = groupIds.filterNot(g => memberMap(g).contains(u) || reverseMap(g).contains(u))
       try {
@@ -80,8 +78,8 @@ object CritModel {
       (u, gIds) <- critMap.iterator.toRefMany
 
       unsaved = CritAllocation(
-        id = CritAllocationDAO.allocateId.asId,
-        task = task,
+        id = CritAllocationId(CritAllocationDAO.allocateId),
+        task = TaskId(task.id),
         completeBy = TargetUser(u),
         allocation = for (g <- gIds.toSeq) yield AllocatedCrit(target=TargetGroup(g))
       )
@@ -91,7 +89,7 @@ object CritModel {
   }
 
 
-  def allocateTask(a:Approval[User], rTask:RefWithId[Task]):RefMany[CritAllocation] = {
+  def allocateTask(a:Approval[User], rTask:Ref[Task]):RefMany[CritAllocation] = {
     for {
       t <- rTask
       approved <- a ask Permissions.EditCourse(t.course)
@@ -106,7 +104,7 @@ object CritModel {
   }
 
 
-  def allocations(rTask:RefWithId[Task]) = {
+  def allocations(rTask:Ref[Task]) = {
     for (t <- CritAllocationDAO.byTask(rTask)) yield t
   }
 
@@ -122,14 +120,14 @@ object CritModel {
             } yield ac.target
           case TargetMyStrategy(inTask, what, num) =>
             for {
-              group <- GroupModel.myGroupsInCourse(a, a.cache(task.course.lazily)) if Some(group.set) == task.details.groupSet
+              group <- GroupModel.myGroupsInCourse(a, a.cache(task.course)) if Some(group.set) == task.details.groupSet
               to <- TaskOutputDAO.byTaskAndAttn(inTask.lazily, TargetGroup(group.id))
             } yield TargetTaskOutput(to.id)
         }
     }
   }
 
-  def myAllocations(a:Approval[User], rTask:RefWithId[Task]):RefMany[Target] = {
+  def myAllocations(a:Approval[User], rTask:Ref[Task]):RefMany[Target] = {
     for {
       u <- a.who
       t <- rTask
@@ -147,8 +145,8 @@ object CritModel {
     // Get the user's groups in the corresponding groupSet, if it's not an individual assignment
     val groups:RefMany[Group] = for {
       u <- a.who
-      gsId <- t.details.groupSet.toRef if !t.details.individual
-      gs <- a.cache(gsId.lazily)
+      gsId <- t.details.groupSet.toRefOpt if !t.details.individual
+      gs <- a.cache(gsId)
       g <- GroupModel.myGroupsInCourse(a, t.course.lazily) if g.set == gs.id
     } yield g
 
@@ -194,7 +192,7 @@ object CritModel {
     task.body match {
       case ct:CritiqueTask =>
         val unsaved = TaskOutput(
-          id = TaskOutputDAO.allocateId.asId,
+          id = TaskOutputId(TaskOutputDAO.allocateId),
           by = by,
           attn = Seq(target),
           task = task.id,
@@ -236,11 +234,15 @@ object CritModel {
     for {
       u <- a.who
       ca <- rca
-      alloc <- ca.allocation.find(_.target == target).toRef orFail UserError("This allocation doesn't include that target")
-      crit <- alloc.critique.lazily orElse (for {
-        wp <- findOrCreateCrit(a, a.cache.lookUp(ca.task), target)
-        updatedAlloc <- CritAllocationDAO.setOutput(ca.id, target, wp.item.id)
-      } yield wp.item)
+      alloc <- ca.allocation.find(_.target == target).toRefOpt orFail UserError("This allocation doesn't include that target")
+      crit <- {alloc.critique match {
+        case Some(critId) => critId.lazily
+        case None =>
+          for {
+            wp <- findOrCreateCrit(a, a.cache.lookUp(ca.task), target)
+            updatedAlloc <- CritAllocationDAO.setOutput(ca.id, target, wp.item.id).require
+          } yield wp.item
+      }}
     } yield crit
   }
 
@@ -328,7 +330,7 @@ object CritModel {
       parentMatch <- t match {
         case TargetUser(uId) => (for {
           u <- uId.lazily
-          gs <- gParent.set.lookUp 
+          gs <- gParent.set.lazily
           g <- GroupModel.myGroupInSet(u, gs) if g.id == gParent.id
         } yield true) orElse false.itself
         case TargetGroup(gId) => for {

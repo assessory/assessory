@@ -3,15 +3,12 @@ package com.assessory.model
 import java.io.{StringWriter, StringReader}
 
 import au.com.bytecode.opencsv.{CSVWriter, CSVReader}
-import com.assessory.api._
+import com.assessory.api.{given, _}
 import com.assessory.api.client.WithPerms
-import com.assessory.api.wiring.Lookups._
+import com.assessory.api.wiring.Lookups.{given, _}
 import com.assessory.asyncmongo._
-import com.wbillingsley.handy.Id._
-import com.wbillingsley.handy.Ids._
-import com.wbillingsley.handy.Ref._
-import com.wbillingsley.handy._
-import com.wbillingsley.handy.appbase._
+import com.wbillingsley.handy.{Ref, refOps, Approval, RefOpt, RefMany, HasKind, EmptyKind, Id, lazily}
+import com.assessory.api.appbase._
 
 import scala.collection.JavaConverters._
 
@@ -36,12 +33,12 @@ object CourseModel {
    */
   def create(a:Approval[User], clientCourse:Course):Ref[WithPerms[Course]] = {
     for {
-      approved <- a ask Permissions.CreateCourse
+      approved <- a ask Permissions.CreateCourse.itself
       u <- a.who.require
 
       // The client cannot set IDs, so we need to generate an ID for the course and the user's registration to it
-      cid = if (CourseDAO.validId(clientCourse.id.id)) clientCourse.id else CourseDAO.allocateId.asId[Course]
-      rid = RegistrationDAO.course.allocateId.asId[Course.Reg]
+      cid = if (CourseDAO.validId(clientCourse.id.id)) clientCourse.id else CourseId(CourseDAO.allocateId)
+      rid = RegistrationId[Course, CourseRole, HasKind](RegistrationDAO.course.allocateId)
 
       // Create the course and registration
       unsavedCourse = clientCourse.copy(id=cid, addedBy=rid)
@@ -59,7 +56,7 @@ object CourseModel {
    */
   def byId(a:Approval[User], id:Id[Course,String]) = {
     for {
-      c <- a.cache(id.lazily)
+      c <- a.cache(id)
       wp <- withPerms(a, c) // Ask for edit first, as it will default view
     } yield wp
   }
@@ -69,11 +66,7 @@ object CourseModel {
   /**
    * Retrieves a course
    */
-  def findMany(a:Approval[User], ids:Ids[Course,String]) = {
-    for {
-      course <- ids.lookUp
-    } yield course
-  }
+  def findMany(a:Approval[User], ids:Seq[Id[Course,String]]) = ids.lookUp
 
   /**
    * Fetches the courses this user is registered with.
@@ -81,7 +74,7 @@ object CourseModel {
   def myCourses(a:Approval[User]):RefMany[WithPerms[Course]] = {
     for {
       u <- a.who
-      courseIds <- RegistrationDAO.course.byUser(u.id).map(_.target).toIds
+      courseIds <- RegistrationDAO.course.byUser(u.id).map(_.target).collect
       c <- courseIds.lookUp
       wp <- withPerms(a, c)
     } yield wp
@@ -95,7 +88,7 @@ object CourseModel {
     for {
       approved <- a ask Permissions.EditCourse(courseId.lazily)
       userIds <- rUserIds
-      user <- userIds.map(_.id).asIds[User].lookUp
+      user <- userIds.lookUp
     } yield user
   }
 

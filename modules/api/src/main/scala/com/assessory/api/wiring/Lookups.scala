@@ -12,6 +12,7 @@ trait IdLookUp[T] extends LookUp[Id[T, String], T]:
 
 object Lookups {
 
+
   private def fails[T](msg:String):IdLookUp[T] = new IdLookUp[T] {
     override def eagerOne(id: Id[T, String]) = RefFailed(IllegalStateException(msg))
     override def eagerOpt(id: Id[T, String]) = RefOptFailed(IllegalStateException(msg))
@@ -22,6 +23,10 @@ object Lookups {
   type ELOpt[T] = EagerLookUpOpt[Id[T, String], T]
   type ELM[T] = EagerLookUpMany[Seq[Id[T, String]], T]
 
+  extension [T] (ids:Seq[Id[T, String]])(using lm:ELM[T]) {
+    def lookUp: RefMany[T] = lm.apply(ids)
+  }
+
   given one[T](using lu:IdLookUp[T]):ELO[T] = lu.eagerOne _
   def opt[T](using lu:IdLookUp[T]):ELOpt[T] = lu.eagerOpt _
   given many[T](using lu:IdLookUp[T]):ELM[T] = lu.many _
@@ -30,27 +35,27 @@ object Lookups {
     def lookUp:RefOpt[T] = RefOpt(opt).flatMap(id => lu.eagerOpt(id))
   }
 
-  given luUser:IdLookUp[User] = fails("User lookup has not been configured")
+  implicit var luUser:IdLookUp[User] = fails("User lookup has not been configured")
 
-  given luCReg:IdLookUp[Course.Reg] = fails("Course Registration lookup has not been configured")
+  implicit var luCReg:IdLookUp[Course.Reg] = fails("Course Registration lookup has not been configured")
 
-  given luGReg:IdLookUp[Group.Reg] = fails("Group Registration lookup has not been configured")
+  implicit var luGReg:IdLookUp[Group.Reg] = fails("Group Registration lookup has not been configured")
 
-  given luCourse:IdLookUp[Course] = fails("Course lookup has not been configured")
+  implicit var luCourse:IdLookUp[Course] = fails("Course lookup has not been configured")
 
-  given luPreenrol:IdLookUp[Course.Preenrol] = fails("Preenrol lookup has not been configured")
+  implicit var luPreenrol:IdLookUp[Course.Preenrol] = fails("Preenrol lookup has not been configured")
 
-  given luGroup:IdLookUp[Group] = fails("Group lookup has not been configured")
+  implicit var luGroup:IdLookUp[Group] = fails("Group lookup has not been configured")
 
-  given luGPreenrol:IdLookUp[Group.Preenrol] = fails("GPreenrol lookup has not been configured")
+  implicit var luGPreenrol:IdLookUp[Group.Preenrol] = fails("GPreenrol lookup has not been configured")
 
-  given luGroupSet:IdLookUp[GroupSet] = fails("GroupSet lookup has not been configured")
+  implicit var luGroupSet:IdLookUp[GroupSet] = fails("GroupSet lookup has not been configured")
 
-  given luTask:IdLookUp[Task] = fails("Task lookup has not been configured")
+  implicit var luTask:IdLookUp[Task] = fails("Task lookup has not been configured")
 
-  given luTaskOutput:IdLookUp[TaskOutput] = fails("TaskOutput lookup has not been configured")
+  implicit var luTaskOutput:IdLookUp[TaskOutput] = fails("TaskOutput lookup has not been configured")
 
-  given luCritAlloc:IdLookUp[CritAllocation] = fails("CritAllocation lookup has not been configured")
+  implicit var luCritAlloc:IdLookUp[CritAllocation] = fails("CritAllocation lookup has not been configured")
 
   var courseRegistrationProvider:RegistrationProvider[Course, CourseRole, HasKind] = new NullRegistrationProvider
 

@@ -3,17 +3,15 @@ package com.assessory.model
 import java.io.StringWriter
 
 import au.com.bytecode.opencsv.CSVWriter
-import com.assessory.api._
+import com.assessory.api.{given, _}
 import com.assessory.api.client.WithPerms
 import com.assessory.api.critique.{Critique, CritiqueTask}
-import com.assessory.api.question.{VideoAnswer, BooleanAnswer, ShortTextAnswer, QuestionnaireTaskOutput}
+import com.assessory.api.question.{VideoAnswer, BooleanQuestion, ShortTextQuestion, BooleanAnswer, ShortTextAnswer, QuestionnaireTaskOutput}
 import com.assessory.api.video._
 import com.assessory.asyncmongo._
-import com.assessory.api.wiring.Lookups._
-import com.wbillingsley.handy.Ref._
-import com.wbillingsley.handy.Id._
-import com.wbillingsley.handy._
-import com.wbillingsley.handy.appbase.{BooleanQuestion, ShortTextQuestion, UserError, User}
+import com.assessory.api.wiring.Lookups.{given, _}
+import com.wbillingsley.handy.{Ref, RefFailed, RefOpt, RefNone, RefMany, refOps, Id, lazily, Approval}
+import com.assessory.api.appbase.{UserError, User}
 
 object TaskOutputModel {
 
@@ -48,8 +46,8 @@ object TaskOutputModel {
       TargetUser(u.id).itself
     } else {
       for {
-        gsId <- task.details.groupSet.toRef orFail new IllegalStateException(s"task ${task.id} is a group task with no groupset")
-        gs <- gsId.lookUp
+        gsId <- task.details.groupSet.toRefOpt orFail new IllegalStateException(s"task ${task.id} is a group task with no groupset")
+        gs <- gsId.lazily
 
         g <- GroupModel.myGroupInSet(u, gs) orFail UserError("You are not in a group but this is a group task")
       } yield TargetGroup(g.id)
@@ -87,7 +85,7 @@ object TaskOutputModel {
       u <- a.who.require
       by <- byForTask(t, u)
       to = clientTaskOutput.copy(
-        id=TaskOutputDAO.allocateId.asId,
+        id=TaskOutputId(TaskOutputDAO.allocateId),
         task=t.id,
         by=by
       )
@@ -133,7 +131,7 @@ object TaskOutputModel {
       u.identities.find(_.service == I_STUDENT_NUMBER).flatMap(_.value)
         .orElse(u.identities.headOption.flatMap(_.username))
         .orElse(u.identities.headOption.flatMap(_.value))
-        .toRef
+        .toRefOpt
     }
 
     t match {
@@ -259,12 +257,12 @@ object TaskOutputModel {
       }
       (video, idx) <- getVideo(o.body).zipWithIndex.toRefMany
       url <- video match {
-        case YouTube(url) => Some(url).toRef
+        case YouTube(url) => Some(url).toRefOpt
         case Kaltura(url) => {
           val id =  extractKalturaId(url)
-          Some(s"https://cdnapisec.kaltura.com/p/424421/sp/42442100/embedIframeJs/uiconf_id/7033932/partner_id/424421?iframeembed=true&playerId=kaltura_player&entry_id=${id}").toRef
+          Some(s"https://cdnapisec.kaltura.com/p/424421/sp/42442100/embedIframeJs/uiconf_id/7033932/partner_id/424421?iframeembed=true&playerId=kaltura_player&entry_id=${id}").toRefOpt
         }
-        case UnrecognisedVideoUrl(url) => Some(url).toRef
+        case UnrecognisedVideoUrl(url) => Some(url).toRefOpt
         case _ => {
           println(s">> UNRECOGNISED VIDEO FOR ${o.id.id}")
           RefNone

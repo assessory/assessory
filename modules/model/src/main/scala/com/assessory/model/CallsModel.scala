@@ -2,11 +2,9 @@ package com.assessory.model
 
 import com.assessory.api.call._
 import com.assessory.asyncmongo.UserDAO
-import com.wbillingsley.handy.{Approval, Ref, RefFailed}
-import com.wbillingsley.handy.appbase.{ActiveSession, User}
-import com.wbillingsley.handy.Ref._
-import com.wbillingsley.handy.Ids._
-import com.assessory.api.wiring.Lookups._
+import com.wbillingsley.handy.{Approval, Ref, RefFailed, refOps, Id, lazily}
+import com.assessory.api.appbase.{ActiveSession, User}
+import com.assessory.api.wiring.Lookups.given
 
 object CallsModel {
 
@@ -38,7 +36,7 @@ object CallsModel {
         names <- {
           for {
             group <- gId.lazily
-            ids <- regs.map(_.user).toRefMany.toIds
+            ids <- regs.map(_.user).toRefMany.collect
             u <- UserModel.findMany(a, ids).map(UserModel.displayName).collect
           } yield (group, u)
         }

@@ -52,8 +52,6 @@ lazy val mongo = (project in file("modules/asyncmongo"))
     )
   )
 
-/*
-
 // Model relies on both the API and the database layer, just not the web layer
 lazy val model = (project in file("modules/model"))
   .dependsOn(apiJVM, mongo)
@@ -63,6 +61,10 @@ lazy val model = (project in file("modules/model"))
       "net.sf.opencsv" % "opencsv" % "2.0"
     )
   )
+
+/*
+
+
 
 val circeVersion = "0.14.1"
 lazy val clientPickle = (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure) in file("modules/clientPickle"))

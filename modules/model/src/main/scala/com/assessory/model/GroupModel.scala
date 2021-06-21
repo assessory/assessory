@@ -3,15 +3,12 @@ package com.assessory.model
 import java.io.StringReader
 
 import au.com.bytecode.opencsv.CSVReader
-import com.assessory.api._
+import com.assessory.api.{given, _}
 import com.assessory.api.client.WithPerms
 import com.assessory.asyncmongo._
-import com.assessory.api.wiring.Lookups._
-import com.wbillingsley.handy.Ref._
-import com.wbillingsley.handy.Id._
-import com.wbillingsley.handy.Ids._
-import com.wbillingsley.handy._
-import com.wbillingsley.handy.appbase._
+import com.assessory.api.wiring.Lookups.{given, _}
+import com.wbillingsley.handy.{Ref, RefOpt, RefNone, RefMany, RefFailed, RefManyFailed, refOps, Approval, Id, lazily, HasKind, EmptyKind}
+import com.assessory.api.appbase._
 
 import scala.collection.JavaConverters._
 
@@ -69,7 +66,7 @@ object GroupModel {
   def createGroupSet(a:Approval[User], clientGS:GroupSet) = {
     for {
       approved <- a ask Permissions.EditCourse(clientGS.course.lazily)
-      unsaved = clientGS.copy(id=GroupSetDAO.allocateId.asId)
+      unsaved = clientGS.copy(id=GroupSetId(GroupSetDAO.allocateId))
       saved <- GroupSetDAO.saveNew(unsaved)
 
       wp <- withPerms(a, saved)
@@ -112,7 +109,7 @@ object GroupModel {
 
       // Allocate the ID and last update
       unsaved = gr.copy(
-        id=RegistrationDAO.group.allocateId.asId[Group.Reg],
+        id=RegistrationId(RegistrationDAO.group.allocateId),
         updated=System.currentTimeMillis(),
         created=System.currentTimeMillis()
       )
@@ -155,7 +152,7 @@ object GroupModel {
       u <- a.who
       course <- rCourse
       groupRegs <- RegistrationDAO.group.byUser(u.id).collect
-      groupIds = groupRegs.map(_.target.id).asIds[Group]
+      groupIds = groupRegs.map(_.target)
       group <- groupIds.lookUp if group.course == Some(course.id)
     } yield group
   }
@@ -171,19 +168,19 @@ object GroupModel {
     for {
       u <- a.who
       groupRegs <- RegistrationDAO.group.byUser(u.id).collect
-      groupIds = groupRegs.map(_.target.id).asIds[Group]
+      groupIds = groupRegs.map(_.target)
       group <- groupIds.lookUp
     } yield group
   }
 
-  def findMany(a:Approval[User], oIds:Ids[Group,String]) = {
+  def findMany(a:Approval[User], oIds:Seq[Id[Group,String]]) = {
     oIds.lookUp
   }
 
   /**
    * Searches for course pre-enrolments, and performs them
    */
-  def doPreenrolments(course:RefWithId[Course], user:Ref[User]):RefMany[Group.Reg]= {
+  def doPreenrolments(course:Ref[Course], user:Ref[User]):RefMany[Group.Reg]= {
     for {
       u <- user
       gs <- GroupSetDAO.byCourse(course)
@@ -248,7 +245,7 @@ object GroupModel {
 
       u <- ensureUser(
         User(
-          id = "invalid".asId,
+          id = UserId("invalid"),
           name = name(line)
         ),
         identities = identities.toSeq
@@ -260,7 +257,7 @@ object GroupModel {
     val rPairs:RefMany[(String, User)] = (for {
       user <- rUsers
       identity <- user.identities.toRefMany if identity.service == I_STUDENT_NUMBER
-      value <- identity.value.toRef
+      value <- identity.value.toRefOpt
     } yield value -> user)
 
     val rStudentMap = rPairs.collect.map(_.toMap)
@@ -281,7 +278,7 @@ object GroupModel {
           // Create the parent groups if needed
           parentMap <- ensureGroups(parentGS, parentGroupNames, None)
           (optP, childLines) <- groupedByParent.iterator.toRefMany
-          p <- optP.toRef
+          p <- optP.toRefOpt
 
           // Get the group names
           groupNames = (for {
@@ -291,9 +288,9 @@ object GroupModel {
 
           groupMap <- ensureGroups(set, groupNames, Some(parentMap(p).id))
           l <- childLines.toRefMany
-          sNum <- studentNum(l).toRef
-          u <- studentMap.get(sNum).toRef
-          gn <- groupName(l).toRef
+          sNum <- studentNum(l).toRefOpt
+          u <- studentMap.get(sNum).toRefOpt
+          gn <- groupName(l).toRefOpt
           g = groupMap(gn)
           reg <- RegistrationDAO.group.register(u.id, parentMap(p).id,roles, EmptyKind)
           reg <- RegistrationDAO.group.register(u.id, g.id,roles, EmptyKind)
@@ -310,9 +307,9 @@ object GroupModel {
 
         groupMap <- ensureGroups(set, groupNames, None)
         l <- bodyLines.toRefMany
-        gn <- groupName(l).toRef
-        sNum <- studentNum(l).toRef
-        u <- studentMap.get(sNum).toRef
+        gn <- groupName(l).toRefOpt
+        sNum <- studentNum(l).toRefOpt
+        u <- studentMap.get(sNum).toRefOpt
         g = groupMap(gn)
         reg <- RegistrationDAO.group.register(u.id, g.id,roles, EmptyKind)
       } yield reg
@@ -334,7 +331,7 @@ object GroupModel {
   }
 
   // Map names to groups, making new groups as necessary
-  private def ensureGroups(gs:GroupSet, names:Set[String], parent:Option[Id[Group,String]]):Ref[Map[String,Group]] = for {
+  private def ensureGroups(gs:GroupSet, names:Set[String], parent:Option[GroupId]):Ref[Map[String,Group]] = for {
   // Get the existing groups' names, and find which are missing
     existing <- GroupDAO.byNames(gs.id, names).collect
     existingNames = for (g <- existing; n <- g.name) yield n
@@ -343,7 +340,7 @@ object GroupModel {
     // Create groups for the missing names
     created <- (for {
       name <- missing.toRefMany
-      unsaved = new Group(id=GroupDAO.allocateId.asId, set=gs.id, course=Some(gs.course), parent=parent, name=Some(name))
+      unsaved = new Group(id=GroupId(GroupDAO.allocateId), set=gs.id, course=Some(gs.course), parent=parent, name=Some(name))
       saved <- GroupDAO.saveNew(unsaved)
     } yield saved).collect
 
@@ -362,7 +359,7 @@ object GroupModel {
       ru orElse UserDAO.bySocialIdOrUsername(i.service, i.username, i.value)
     }).flatMap(identity)
 
-    val ensured = found orElse UserDAO.saveNew(template.copy(id=UserDAO.allocateId.asId, identities = identities))
+    val ensured = found orElse UserDAO.saveNew(template.copy(id=UserId(UserDAO.allocateId), identities = identities))
 
     // Add any missing identities
     val updates = for {
@@ -401,7 +398,7 @@ object GroupModel {
       created <- (for {
         num <- missing.toRefMany
         unsaved = new User(
-          id=UserDAO.allocateId.asId,
+          id=UserId(UserDAO.allocateId),
           name=studentNumNames.get(num),
           nickname=studentNumNames.get(num),
           identities=Seq(Identity(service=I_STUDENT_NUMBER, value=Some(num), username=Some(num)))
@@ -447,7 +444,7 @@ object GroupModel {
             } yield gm).foldLeft[Map[String,Group]](Map.empty)(_ ++ _)
 
             unsaved = new Group.Preenrol(
-              id = PreenrolmentDAO.course.allocateId.asId,
+              id = PreenrolmentId(PreenrolmentDAO.course.allocateId),
               name = Some(name),
               rows = for {
                 l <- lines
@@ -464,7 +461,7 @@ object GroupModel {
             groupMap <- ensureGroups(gs, lines.map(_(2).trim).toSet, None)
 
             unsaved = new Group.Preenrol(
-              id = PreenrolmentDAO.course.allocateId.asId,
+              id = PreenrolmentId(PreenrolmentDAO.course.allocateId),
               name = Some(name),
               rows = for {
                 l <- lines

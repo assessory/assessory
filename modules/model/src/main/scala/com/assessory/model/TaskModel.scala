@@ -1,14 +1,11 @@
 package com.assessory.model
 
-import com.assessory.api._
+import com.assessory.api.{given, _}
 import com.assessory.api.client.WithPerms
-import com.assessory.api.wiring.Lookups
-import Lookups._
-import com.wbillingsley.handy.Ref._
-import com.wbillingsley.handy.Id._
-import com.wbillingsley.handy._
+import com.assessory.api.wiring.Lookups.{given, _}
+import com.wbillingsley.handy.{Approval, Approved, Id, Ref, RefFailed, lazily, refOps, Perm, Refused}
 import com.assessory.asyncmongo._
-import com.wbillingsley.handy.appbase.{UserError, GroupSet, User, Course}
+import com.assessory.api.appbase.{Course, GroupSet, User, UserError}
 
 object TaskModel {
 
@@ -30,11 +27,11 @@ object TaskModel {
     }
   }
 
-  val CompleteTask = Perm.onId[User, Task, String] { case (prior, task) =>
+  val CompleteTask = Perm.onId[User, Task, Id[Task, String]] { case (prior, task) =>
     for (
       t <- task;
       a <- prior ask Permissions.ViewTask(t.itself);
-      due <- Permissions.isOpen(prior, t).withFilter({b:Boolean => b}) orFail UserError("This task is closed");
+      due <- Permissions.isOpen(prior, t).withFilter(identity) recoverWith { case _ => RefFailed(UserError("This task is closed")) };
       restrictions <- checkRestrictions(prior, t)
     ) yield a
   }
@@ -63,7 +60,7 @@ object TaskModel {
     for {
       approved <- a ask Permissions.EditCourse(clientTask.course.lazily)
       unsaved = clientTask.copy(
-        id = TaskDAO.allocateId.asId
+        id = TaskId(TaskDAO.allocateId)
       )
       saved <- TaskDAO.saveSafe(unsaved)
       wp <- withPerms(a, saved)
