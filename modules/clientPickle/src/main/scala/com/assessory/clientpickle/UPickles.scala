@@ -4,7 +4,6 @@ import com.assessory.api.critique._
 import com.assessory.api._
 import com.assessory.api.video._
 import question._
-import com.wbillingsley.handy.appbase.{Used, IdentityLookup, CourseRole, Course}
 import com.wbillingsley.handy.{Ids, Id}
 import com.wbillingsley.handy.Id._
 import com.wbillingsley.handy.Ids._

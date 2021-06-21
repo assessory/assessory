@@ -3,7 +3,7 @@ package com.assessory.clientpickle
 import com.assessory.api.Task
 import com.assessory.api.call._
 import com.wbillingsley.handy.{Id, Ref}
-import com.wbillingsley.handy.appbase.{ActiveSession, Course, Group, GroupSet, User}
+import com.assessory.api.appbase._
 import io.circe._
 import io.circe.syntax._
 import io.circe.parser.decode
@@ -13,7 +13,7 @@ import scala.util.Try
 
 object CallPickles {
 
-  import Pickles._
+  import Pickles.{given, _}
 
   val k = "kind"
   val b = "body"
@@ -47,27 +47,27 @@ object CallPickles {
   } yield Login(email, pw, session)
 
   implicit val createCourseEnc: Encoder[CreateCourse] = (c:CreateCourse) => Json.obj("course" -> c.c.asJson)
-  implicit val createCourseDec: Decoder[CreateCourse] = (c:HCursor) => c.downField("course").as[Course].map(CreateCourse)
+  implicit val createCourseDec: Decoder[CreateCourse] = (c:HCursor) => c.downField("course").as[Course].map(CreateCourse.apply)
 
   implicit val createGroupSetEnc: Encoder[CreateGroupSet] = (c:CreateGroupSet) => Json.obj("groupSet" -> c.gs.asJson)
-  implicit val createGroupSetDec: Decoder[CreateGroupSet] = (c:HCursor) => c.downField("groupSet").as[GroupSet].map(CreateGroupSet)
+  implicit val createGroupSetDec: Decoder[CreateGroupSet] = (c:HCursor) => c.downField("groupSet").as[GroupSet].map(CreateGroupSet.apply)
 
   implicit val createTaskEnc: Encoder[CreateTask] = (c:CreateTask) => Json.obj("task" -> c.t.asJson)
-  implicit val createTaskDec: Decoder[CreateTask] = (c:HCursor) => c.downField("task").as[Task].map(CreateTask)
+  implicit val createTaskDec: Decoder[CreateTask] = (c:HCursor) => c.downField("task").as[Task].map(CreateTask.apply)
 
   implicit val createGroupsFromCsvEnc: Encoder[CreateGroupsFromCsv] = (c:CreateGroupsFromCsv) => Json.obj(
     "set" -> c.setId.asJson, "csv" -> c.csv.asJson
   )
   implicit val createGroupsFromCsvDec: Decoder[CreateGroupsFromCsv] = (c:HCursor) => for {
-    set <- c.downField("set").as[Id[GroupSet, String]]
+    set <- c.downField("set").as[GroupSetId]
     csv <- c.downField("csv").as[String]
   } yield CreateGroupsFromCsv(set, csv)
 
   implicit val createGroupEnc: Encoder[CreateGroup] = (c:CreateGroup) => Json.obj("group" -> c.g.asJson)
-  implicit val createGroupDec: Decoder[CreateGroup] = (c:HCursor) => c.downField("group").as[Group].map(CreateGroup)
+  implicit val createGroupDec: Decoder[CreateGroup] = (c:HCursor) => c.downField("group").as[Group].map(CreateGroup.apply)
 
   implicit val addGroupRegEnc: Encoder[AddGroupReg] = (a:AddGroupReg) => Json.obj("groupReg" -> a.gr.asJson)
-  implicit val addGroupRegDec: Decoder[AddGroupReg] = (c:HCursor) => c.downField("groupReg").as[Group.Reg].map(AddGroupReg)
+  implicit val addGroupRegDec: Decoder[AddGroupReg] = (c:HCursor) => c.downField("groupReg").as[Group.Reg].map(AddGroupReg.apply)
 
   implicit val callEncoder: Encoder[Call] = {
     case GetSession => Json.obj(k -> Json.fromString("GetSession"))
@@ -112,25 +112,25 @@ object CallPickles {
 
 
   implicit val returnSessionEnc: Encoder[ReturnSession] = (r:ReturnSession) => Json.obj("session" -> r.a.asJson)
-  implicit val returnSessionDec: Decoder[ReturnSession] = (c:HCursor) => c.downField("session").as[ActiveSession].map(ReturnSession)
+  implicit val returnSessionDec: Decoder[ReturnSession] = (c:HCursor) => c.downField("session").as[ActiveSession].map(ReturnSession.apply)
 
   implicit val returnUserEnc: Encoder[ReturnUser] = (r:ReturnUser) => Json.obj("user" -> r.u.asJson)
-  implicit val returnUserDec: Decoder[ReturnUser] = (c:HCursor) => c.downField("user").as[User].map(ReturnUser)
+  implicit val returnUserDec: Decoder[ReturnUser] = (c:HCursor) => c.downField("user").as[User].map(ReturnUser.apply)
 
   implicit val returnCourseEnc: Encoder[ReturnCourse] = (r:ReturnCourse) => Json.obj("course" -> r.c.asJson)
-  implicit val returnCourseDec: Decoder[ReturnCourse] = (c:HCursor) => c.downField("course").as[Course].map(ReturnCourse)
+  implicit val returnCourseDec: Decoder[ReturnCourse] = (c:HCursor) => c.downField("course").as[Course].map(ReturnCourse.apply)
 
   implicit val returnTaskEnc: Encoder[ReturnTask] = (r:ReturnTask) => Json.obj("task" -> r.t.asJson)
-  implicit val returnTaskDec: Decoder[ReturnTask] = (c:HCursor) => c.downField("task").as[Task].map(ReturnTask)
+  implicit val returnTaskDec: Decoder[ReturnTask] = (c:HCursor) => c.downField("task").as[Task].map(ReturnTask.apply)
 
   implicit val returnGroupSetEnc: Encoder[ReturnGroupSet] = (r:ReturnGroupSet) => Json.obj("groupSet" -> r.gs.asJson)
-  implicit val returnGroupSetDec: Decoder[ReturnGroupSet] = (c:HCursor) => c.downField("groupSet").as[GroupSet].map(ReturnGroupSet)
+  implicit val returnGroupSetDec: Decoder[ReturnGroupSet] = (c:HCursor) => c.downField("groupSet").as[GroupSet].map(ReturnGroupSet.apply)
 
   implicit val returnGroupRegEnc: Encoder[ReturnGroupReg] = (r:ReturnGroupReg) => Json.obj("reg" -> r.gr.asJson)
-  implicit val returnGroupRegDec: Decoder[ReturnGroupReg] = (c:HCursor) => c.downField("reg").as[Group.Reg].map(ReturnGroupReg)
+  implicit val returnGroupRegDec: Decoder[ReturnGroupReg] = (c:HCursor) => c.downField("reg").as[Group.Reg].map(ReturnGroupReg.apply)
 
   implicit val returnGroupsDataEnc: Encoder[ReturnGroupsData] = (r:ReturnGroupsData) => Json.obj("groups" -> r.data.asJson)
-  implicit val returnGroupsDataDec: Decoder[ReturnGroupsData] = (c:HCursor) => c.downField("groups").as[Seq[(Group, Seq[String])]].map(ReturnGroupsData)
+  implicit val returnGroupsDataDec: Decoder[ReturnGroupsData] = (c:HCursor) => c.downField("groups").as[Seq[(Group, Seq[String])]].map(ReturnGroupsData.apply)
 
 
   implicit val returnEncoder: Encoder[Return] = {

@@ -25,7 +25,7 @@ case class Preenrolment[W, T, R, RT] (
 
   name: Option[String] = None,
 
-  rows: Seq[Preenrolment.Row[T, R, RT]] = Seq.empty,
+  rows: Seq[Preenrolment.Row[T, R, RT]] = Seq.empty[Preenrolment.Row[T, R, RT]],
 
   created: Long = System.currentTimeMillis,
 

@@ -12,33 +12,34 @@ import com.assessory.api.client.{EmailAndPassword, WithPerms}
 import com.assessory.api.due.{Due, DueDate, DuePerGroup, NoDue}
 import com.assessory.api.video._
 import question._
-import com.wbillingsley.handy.appbase.{ActiveSession, Course, CourseRole, Group, GroupRole, GroupSet, Identity, IdentityLookup, LTIConsumer, PasswordLogin, Preenrolment, Used, User}
-import com.wbillingsley.handy.{EmptyKind, Id, Ids, Ref}
-import com.wbillingsley.handy.Id._
-import com.wbillingsley.handy.Ids._
+import com.assessory.api.appbase._
+import com.wbillingsley.handy.{HasKind, EmptyKind, Id, Ids, Ref}
 
 import scala.concurrent.Future
 
 object Pickles {
 
-  implicit def stringIdDecoder[T]: Decoder[Id[T, String]] = (c: HCursor) => {
-    for {
-      foo <- c.downField("id").as[String]
-    } yield {
-      foo.asId[T]
-    }
+  private def stringIdDecoder[T](constr:String => T):Decoder[T] = (c: HCursor) => {
+    c.downField("id").as[String].map(constr)
   }
+  given userIdDecoder:Decoder[UserId] = stringIdDecoder(UserId.apply)
+  given courseIdDecoder:Decoder[CourseId] = stringIdDecoder(CourseId.apply)
+  given taskIdDecoder:Decoder[TaskId] = stringIdDecoder(TaskId.apply)
+  given taskOutputIdDecoder:Decoder[TaskOutputId] = stringIdDecoder(TaskOutputId.apply)
+  given groupIdDecoder:Decoder[GroupId] = stringIdDecoder(GroupId.apply)
+  given groupSetIdDecoder:Decoder[GroupSetId] = stringIdDecoder(GroupSetId.apply)
+  given questionIdDecoder:Decoder[QuestionId] = stringIdDecoder(QuestionId.apply)
+  given critAllocationIdDecoder:Decoder[CritAllocationId] = stringIdDecoder(CritAllocationId.apply)
+  given smallFileIdDecoder:Decoder[SmallFileId] = stringIdDecoder(SmallFileId.apply)
+  given registrationIdDecoder[T, R, K <: HasKind]:Decoder[RegistrationId[T, R, K]] = stringIdDecoder(RegistrationId.apply[T, R, K])
+  given [W, T, R, RT]:Decoder[PreenrolmentId[W, T, R, RT]] = stringIdDecoder(PreenrolmentId[W, T, R, RT])
 
-  implicit def stringIdEncoder[T]: Encoder[Id[T, String]] = (id: Id[T, String]) => Json.obj(
-    "id" -> Json.fromString(id.id)
-  )
+  given stringIdEncoder[TT, T <: Id[TT, String]]: Encoder[T] = (id: T) => Json.obj("id" -> Json.fromString(id.id))
 
-  implicit def idKeyEncoder[T]: KeyEncoder[Id[T, String]] = (id: Id[T, String]) => id.id
-  implicit def idKeyDecoder[T]: KeyDecoder[Id[T, String]] = (id: String) => Some(id.asId[T])
+  given idKeyEncoder[TT, T <: Id[TT, String]]: KeyEncoder[T] = (id: T) => id.id
 
-  implicit def stringIdsEncoder[T]: Encoder[Ids[T, String]] = (ids:Ids[T, String]) => Json.obj("ids" -> ids.ids.asJson)
-  implicit def stringIdsDecoder[T]: Decoder[Ids[T, String]] = (c: HCursor) => c.downField("ids").as[Seq[String]].map({ ids => Ids(ids)})
-
+  private def idKeyDecoder[TT, T <: Id[TT, String]](cons: String => T):KeyDecoder[T] = (id:String) => Some(cons(id))
+  given KeyDecoder[Id[Group, String]] = idKeyDecoder(GroupId.apply)
 
   val shortTextQuestionEncoder: Encoder[ShortTextQuestion] = (q:ShortTextQuestion) => Json.obj(
     "kind" -> "shortText".asJson,
@@ -49,7 +50,7 @@ object Pickles {
   )
 
   val shortTextQuestionDecoder: Decoder[ShortTextQuestion] = (c:HCursor) => for {
-    id <- c.downField("id").as[Id[Question, String]]
+    id <- c.downField("id").as[QuestionId]
     prompt <- c.downField("prompt").as[String]
     hideInCrit <- c.downField("hideInCrit").as[Boolean]
     maxLength <- c.downField("maxLength").as[Option[Int]]
@@ -63,7 +64,7 @@ object Pickles {
   )
 
   val booleanQuestionDecoder: Decoder[BooleanQuestion] = (c:HCursor) => for {
-    id <- c.downField("id").as[Id[Question, String]]
+    id <- c.downField("id").as[QuestionId]
     prompt <- c.downField("prompt").as[String]
     hideInCrit <- c.downField("hideInCrit").as[Boolean]
   } yield BooleanQuestion(id, prompt, hideInCrit)
@@ -76,7 +77,7 @@ object Pickles {
   )
 
   val videoQuestionDecoder: Decoder[VideoQuestion] = (c:HCursor) => for {
-    id <- c.downField("id").as[Id[Question, String]]
+    id <- c.downField("id").as[QuestionId]
     prompt <- c.downField("prompt").as[String]
     hideInCrit <- c.downField("hideInCrit").as[Boolean]
   } yield VideoQuestion(id, prompt, hideInCrit)
@@ -110,8 +111,8 @@ object Pickles {
     "created" -> c.created.asJson, "ltis" -> c.ltis.asJson, "secret" -> c.secret.asJson, "website" -> c.website.asJson
   )
   implicit val courseDecoder: Decoder[Course] = (c:HCursor) => for {
-    id <- c.downField("id").as[Id[Course, String]]
-    addedBy <- c.downField("addedBy").as[Id[Course.Reg, String]]
+    id <- c.downField("id").as[CourseId]
+    addedBy <- c.downField("addedBy").as[RegistrationId[Course, CourseRole, HasKind]]
     coverImage <- c.downField("coverImage").as[Option[String]]
     shortName <- c.downField("shortName").as[Option[String]]
     shortDesc <- c.downField("shortDescription").as[Option[String]]
@@ -148,9 +149,9 @@ object Pickles {
 
   implicit val courseRegDecoder: Decoder[Course.Reg] = (c: HCursor) => {
     for {
-      id <- c.downField("id").as[Id[Course.Reg, String]]
-      user <- c.downField("user").as[Id[User, String]]
-      target <- c.downField("target").as[Id[Course,String]]
+      id <- c.downField("id").as[RegistrationId[Course, CourseRole, HasKind]]
+      user <- c.downField("user").as[UserId]
+      target <- c.downField("target").as[CourseId]
       roles <- c.downField("roles").as[Set[CourseRole]]
       updated <- c.downField("updated").as[Long]
       created <- c.downField("created").as[Long]
@@ -173,9 +174,9 @@ object Pickles {
 
   implicit val groupRegDecoder: Decoder[Group.Reg] = (c: HCursor) => {
     for {
-      id <- c.downField("id").as[Id[Group.Reg, String]]
-      user <- c.downField("user").as[Id[User, String]]
-      target <- c.downField("target").as[Id[Group,String]]
+      id <- c.downField("id").as[RegistrationId[Group, GroupRole, HasKind]]
+      user <- c.downField("user").as[UserId]
+      target <- c.downField("target").as[GroupId]
       roles <- c.downField("roles").as[Set[GroupRole]]
       updated <- c.downField("updated").as[Long]
       created <- c.downField("created").as[Long]
@@ -191,15 +192,15 @@ object Pickles {
     service <- c.downField("service").as[String]
     username <- c.downField("username").as[Option[String]]
     value <- c.downField("value").as[Option[String]]
-  } yield IdentityLookup(service, username, value)
+  } yield IdentityLookup(service, value, username)
 
   implicit def usedEncoder[T]: Encoder[Used[T]] = (u:Used[T]) => Json.obj(
     "target" -> u.target.asJson, "time" -> u.time.asJson
   )
 
-  implicit def usedDecoder[T]: Decoder[Used[T]] = (c: HCursor) => {
+  implicit def usedDecoder[T](using idConstr: String => Id[T, String]): Decoder[Used[T]] = (c: HCursor) => {
     for {
-      target <- c.downField("target").as[Id[T, String]]
+      target <- c.downField("target").downField("id").as[String].map(idConstr)
       time <- c.downField("time").as[Long]
     } yield Used(target, time)
   }
@@ -211,22 +212,26 @@ object Pickles {
     "used" -> r.used.asJson
   )
 
-  implicit val coursePreenrolRowDecoder: Decoder[Course.PreenrolRow] = (c:HCursor) => for {
-    target <- c.downField("target").as[Id[Course, String]]
-    identity <- c.downField("identity").as[IdentityLookup]
-    roles <- c.downField("roles").as[Set[CourseRole]]
-    used <- c.downField("used").as[Option[Used[Course.Reg]]]
-  } yield Preenrolment.Row[Course, CourseRole, Course.Reg](target=target, identity=identity, roles=roles, used=used)
+  implicit val coursePreenrolRowDecoder: Decoder[Course.PreenrolRow] = (c:HCursor) => {
+    given Decoder[Used[Course.Reg]] = usedDecoder(using RegistrationId[Course, CourseRole, HasKind].apply)
+
+    for {
+      target <- c.downField("target").as[CourseId]
+      identity <- c.downField("identity").as[IdentityLookup]
+      roles <- c.downField("roles").as[Set[CourseRole]]
+      used <- c.downField("used").as[Option[Used[Course.Reg]]]
+    } yield Preenrolment.Row[Course, CourseRole, Course.Reg](target=target, identity=identity, roles=roles, used=used)
+  }
 
   implicit val coursePreenrolEncoder: Encoder[Course.Preenrol] = (p:Course.Preenrol) => Json.obj(
     "id" -> p.id.asJson, "name" -> p.name.asJson, "rows" -> p.rows.asJson, "within" -> p.within.asJson,
     "created" -> p.created.asJson, "modified" -> p.modified.asJson
   )
   implicit val coursePreenrolDecoder: Decoder[Course.Preenrol] = (c:HCursor) => for {
-    id <- c.downField("id").as[Id[Course.Preenrol, String]]
+    id <- c.downField("id").as[PreenrolmentId[Course, Course, CourseRole, Course.Reg]]
     name <- c.downField("name").as[Option[String]]
     rows <- c.downField("rows").as[Seq[Course.PreenrolRow]]
-    within <- c.downField("within").as[Option[Id[Course, String]]]
+    within <- c.downField("within").as[Option[CourseId]]
     created <- c.downField("created").as[Long]
     modified <- c.downField("modified").as[Long]
   } yield Preenrolment(id=id, name=name, rows=rows, within=within, created=created, modified=modified)
@@ -236,10 +241,10 @@ object Pickles {
     "description" -> gs.description.asJson, "created" -> gs.created.asJson
   )
   implicit val groupSetDecoder: Decoder[GroupSet] = (c:HCursor) => for {
-    id <- c.downField("id").as[Id[GroupSet, String]]
+    id <- c.downField("id").as[GroupSetId]
     name <- c.downField("name").as[Option[String]]
-    parent <- c.downField("parent").as[Option[Id[GroupSet, String]]]
-    course <- c.downField("course").as[Id[Course, String]]
+    parent <- c.downField("parent").as[Option[GroupSetId]]
+    course <- c.downField("course").as[CourseId]
     desc <- c.downField("description").as[Option[String]]
     created <- c.downField("created").as[Long]
   } yield GroupSet(id=id, name=name, parent=parent, course=course, description=desc, created=created)
@@ -250,12 +255,12 @@ object Pickles {
     "created" -> g.created.asJson
   )
   implicit val groupDecoder: Decoder[Group] = (c:HCursor) => for {
-    id <- c.downField("id").as[Id[Group, String]]
+    id <- c.downField("id").as[GroupId]
     name <- c.downField("name").as[Option[String]]
-    set <- c.downField("set").as[Id[GroupSet, String]]
-    course <- c.downField("course").as[Option[Id[Course, String]]]
-    parent <- c.downField("parent").as[Option[Id[Group, String]]]
-    members <- c.downField("members").as[Ids[Group.Reg, String]]
+    set <- c.downField("set").as[GroupSetId]
+    course <- c.downField("course").as[Option[CourseId]]
+    parent <- c.downField("parent").as[Option[GroupId]]
+    members <- c.downField("members").as[Seq[RegistrationId[Group, GroupRole, HasKind]]]
     provenance <- c.downField("provenance").as[Option[String]]
     created <- c.downField("created").as[Long]
   } yield Group(
@@ -274,9 +279,9 @@ object Pickles {
   val TTSelfEncoder: Encoder[TTSelf.type] = (_) => Json.obj("kind" -> "self".asJson)
   val TTSelfDecoder: Decoder[TTSelf.type] = (c:HCursor) => c.downField("kind").as[String].map(_ => TTSelf)
   val TTGroupsEncoder: Encoder[TTGroups] = (t:TTGroups) => Json.obj("kind" -> "groups".asJson, "set" -> t.set.asJson)
-  val TTGroupsDecoder: Decoder[TTGroups] = (c:HCursor) => c.downField("set").as[Id[GroupSet, String]].map(TTGroups.apply)
+  val TTGroupsDecoder: Decoder[TTGroups] = (c:HCursor) => c.downField("set").as[GroupSetId].map(TTGroups.apply)
   val TTOutputsEncoder: Encoder[TTOutputs] = (t:TTOutputs) => Json.obj("kind" -> "outputs".asJson, "task" -> t.task.asJson)
-  val TTOutputsDecoder: Decoder[TTOutputs] = (c:HCursor) => c.downField("task").as[Id[Task, String]].map(TTOutputs.apply)
+  val TTOutputsDecoder: Decoder[TTOutputs] = (c:HCursor) => c.downField("task").as[TaskId].map(TTOutputs.apply)
 
   implicit val targetTypeEncoder: Encoder[TargetType] = {
     case TTSelf => TTSelfEncoder(TTSelf)
@@ -293,7 +298,7 @@ object Pickles {
     "kind" -> "my".asJson, "task" -> t.task.asJson, "what" -> t.what.asJson ,"number" -> t.number.asJson
   )
   val targetMyStrategyDecoder: Decoder[TargetMyStrategy] = (c:HCursor) => for {
-    task <- c.downField("task").as[Id[Task, String]]
+    task <- c.downField("task").as[TaskId]
     what <- c.downField("what").as[TargetType]
     number <- c.downField("number").as[Option[Int]]
   } yield TargetMyStrategy(task=task, what=what, number=number)
@@ -358,7 +363,7 @@ object Pickles {
   val mustHaveFinishedEncoder: Encoder[MustHaveFinished] = (m:MustHaveFinished) => Json.obj(
     "kind" -> "Must have finished".asJson, "task" -> m.task.asJson
   )
-  val mustHaveFinishedDecoder: Decoder[MustHaveFinished] = (c:HCursor) => c.downField("task").as[Id[Task, String]].map(MustHaveFinished.apply)
+  val mustHaveFinishedDecoder: Decoder[MustHaveFinished] = (c:HCursor) => c.downField("task").as[TaskId].map(MustHaveFinished.apply)
 
   implicit val taskRulesEncoder: Encoder[TaskRule] = {
     case m:MustHaveFinished => mustHaveFinishedEncoder(m)
@@ -368,22 +373,23 @@ object Pickles {
   }
 
   implicit val taskDetailsEncoder: Encoder[TaskDetails] = (t:TaskDetails) => Json.obj(
-    "name" -> t.name.asJson, "description" -> t.description.asJson,
+    "name" -> t.name.asJson, "description" -> t.description.asJson, "created" -> t.created.asJson,
     "individual" -> t.individual.asJson, "groupSet" -> t.groupSet.asJson, "restrictions" -> t.restrictions.asJson,
     "open" -> t.open.asJson, "due" -> t.due.asJson, "closed" -> t.closed.asJson, "published" -> t.published.asJson
   )
   implicit val taskDetailsDecoder: Decoder[TaskDetails] = (c:HCursor) => for {
     name <- c.downField("name").as[Option[String]]
     desc <- c.downField("description").as[Option[String]]
+    created <- c.downField("created").as[Long]
     individual <- c.downField("individual").as[Boolean]
-    groupSet <- c.downField("groupSet").as[Option[Id[GroupSet, String]]]
+    groupSet <- c.downField("groupSet").as[Option[GroupSetId]]
     restrictions <- c.downField("restrictions").as[Seq[TaskRule]]
     open <- c.downField("open").as[Due]
     due <- c.downField("due").as[Due]
     closed <- c.downField("closed").as[Due]
     published <- c.downField("published").as[Due]
   } yield TaskDetails(
-    name=name, description=desc, individual=individual, groupSet=groupSet, restrictions=restrictions,
+    name=name, description=desc, created=created, individual=individual, groupSet=groupSet, restrictions=restrictions,
     open=open, due=due, closed=closed, published=published
   )
 
@@ -408,20 +414,20 @@ object Pickles {
     "body" -> t.body.asJson
   )
   implicit val taskDecoder: Decoder[Task] = (c:HCursor) => for {
-    id <- c.downField("id").as[Id[Task, String]]
-    course <- c.downField("course").as[Id[Course, String]]
+    id <- c.downField("id").as[TaskId]
+    course <- c.downField("course").as[CourseId]
     details <- c.downField("details").as[TaskDetails]
     body <- c.downField("body").as[TaskBody]
   } yield Task(id=id, course=course, details=details, body=body)
 
   val targetUserEncoder: Encoder[TargetUser] = (t:TargetUser) => Json.obj("kind" -> "user".asJson, "id" -> t.id.asJson)
-  val targetUserDecoder: Decoder[TargetUser] = (c:HCursor) => c.downField("id").as[Id[User, String]].map(TargetUser.apply)
+  val targetUserDecoder: Decoder[TargetUser] = (c:HCursor) => c.downField("id").as[UserId].map(TargetUser.apply)
   val targetCourseRegEncoder: Encoder[TargetCourseReg] = (t:TargetCourseReg) => Json.obj("kind" -> "courseReg".asJson, "id" -> t.id.asJson)
-  val targetCourseRegDecoder: Decoder[TargetCourseReg] = (c:HCursor) => c.downField("id").as[Id[Course.Reg, String]].map(TargetCourseReg.apply)
+  val targetCourseRegDecoder: Decoder[TargetCourseReg] = (c:HCursor) => c.downField("id").as[RegistrationId[Course, CourseRole, HasKind]].map(TargetCourseReg.apply)
   val targetGroupEncoder: Encoder[TargetGroup] = (t:TargetGroup) => Json.obj("kind" -> "group".asJson, "id" -> t.id.asJson)
-  val targetGroupDecoder: Decoder[TargetGroup] = (c:HCursor) => c.downField("id").as[Id[Group, String]].map(TargetGroup.apply)
+  val targetGroupDecoder: Decoder[TargetGroup] = (c:HCursor) => c.downField("id").as[GroupId].map(TargetGroup.apply)
   val targetTaskOutputEncoder: Encoder[TargetTaskOutput] = (t:TargetTaskOutput) => Json.obj("kind" -> "output".asJson, "id" -> t.id.asJson)
-  val targetTaskOutputDecoder: Decoder[TargetTaskOutput] = (c:HCursor) => c.downField("id").as[Id[TaskOutput, String]].map(TargetTaskOutput.apply)
+  val targetTaskOutputDecoder: Decoder[TargetTaskOutput] = (c:HCursor) => c.downField("id").as[TaskOutputId].map(TargetTaskOutput.apply)
 
   implicit val targetEncoder: Encoder[Target] = {
     case t:TargetUser => targetUserEncoder(t)
@@ -464,17 +470,17 @@ object Pickles {
 
   val shortTextAnswerEncoder: Encoder[ShortTextAnswer] = (a:ShortTextAnswer) => Json.obj("kind" -> "shortText".asJson, "question" -> a.question.asJson, "answer" -> a.answer.asJson)
   val shortTextAnswerDecoder: Decoder[ShortTextAnswer] = (c:HCursor) => for {
-    question <- c.downField("question").as[Id[Question, String]]
+    question <- c.downField("question").as[QuestionId]
     answer <- c.downField("answer").as[Option[String]]
   } yield ShortTextAnswer(question=question, answer=answer)
   val booleanAnswerEncoder: Encoder[BooleanAnswer] = (a:BooleanAnswer) => Json.obj("kind" -> "boolean".asJson, "question" -> a.question.asJson, "answer" -> a.answer.asJson)
   val booleanAnswerDecoder: Decoder[BooleanAnswer] = (c:HCursor) => for {
-    question <- c.downField("question").as[Id[Question, String]]
+    question <- c.downField("question").as[QuestionId]
     answer <- c.downField("answer").as[Option[Boolean]]
   } yield BooleanAnswer(question=question, answer=answer)
   val videoAnswerEncoder: Encoder[VideoAnswer] = (a:VideoAnswer) => Json.obj("kind" -> "video".asJson, "question" -> a.question.asJson, "answer" -> a.answer.asJson)
   val videoAnswerDecoder: Decoder[VideoAnswer] = (c:HCursor) => for {
-    question <- c.downField("question").as[Id[Question, String]]
+    question <- c.downField("question").as[QuestionId]
     answer <- c.downField("answer").as[Option[VideoResource]]
   } yield VideoAnswer(question=question, answer=answer)
 
@@ -512,10 +518,10 @@ object Pickles {
     "body" -> t.body.asJson
   )
   implicit val taskOutputDecoder: Decoder[TaskOutput] = (c:HCursor) => for {
-    id <- c.downField("id").as[Id[TaskOutput, String]]
+    id <- c.downField("id").as[TaskOutputId]
     attn <- c.downField("attn").as[Seq[Target]]
     by <- c.downField("by").as[Target]
-    task <- c.downField("task").as[Id[Task, String]]
+    task <- c.downField("task").as[TaskId]
     created <- c.downField("created").as[Long]
     updated <- c.downField("updated").as[Long]
     finalised <- c.downField("finalised").as[Option[Long]]
@@ -554,7 +560,7 @@ object Pickles {
     "pwlogin" -> u.pwlogin.asJson, "secret" -> u.secret.asJson
   )
   implicit val userDecoder: Decoder[User] = (c:HCursor) => for {
-    id <- c.downField("id").as[Id[User, String]]
+    id <- c.downField("id").as[UserId]
     activeSessions <- c.downField("activeSessions").as[Seq[ActiveSession]]
     avatar <- c.downField("avatar").as[Option[String]]
     identities <- c.downField("identities").as[Seq[Identity]]
@@ -577,9 +583,9 @@ object Pickles {
     "name" -> f.name.asJson, "size" -> f.size.asJson, "created" -> f.created.asJson, "updated" -> f.updated.asJson
   )
   implicit val smallFileDetailsDecoder: Decoder[SmallFileDetails] = (c:HCursor) => for {
-    id <- c.downField("id").as[Id[SmallFile, String]]
-    course <- c.downField("course").as[Id[Course, String]]
-    owner <- c.downField("owner").as[Id[Course.Reg, String]]
+    id <- c.downField("id").as[SmallFileId]
+    course <- c.downField("course").as[CourseId]
+    owner <- c.downField("owner").as[RegistrationId[Course, CourseRole, HasKind]]
     name <- c.downField("name").as[String]
     size <- c.downField("size").as[Option[Long]]
     mime <- c.downField("mime").as[Option[String]]
@@ -593,15 +599,15 @@ object Pickles {
   )
   implicit val allocatedCritDecoder: Decoder[AllocatedCrit] = (c:HCursor) => for {
     target <- c.downField("target").as[Target]
-    critique <- c.downField("critique").as[Option[Id[TaskOutput, String]]]
+    critique <- c.downField("critique").as[Option[TaskOutputId]]
   } yield AllocatedCrit(target=target, critique=critique)
 
   implicit val critAllocationEncoder: Encoder[CritAllocation] = (c:CritAllocation) => Json.obj(
     "id" -> c.id.asJson, "task" -> c.task.asJson, "allocation" -> c.allocation.asJson, "completedBy" -> c.completeBy.asJson
   )
   implicit val critAllocationDecoder: Decoder[CritAllocation] = (c:HCursor) => for {
-    id <- c.downField("id").as[Id[CritAllocation, String]]
-    task <- c.downField("task").as[Id[Task, String]]
+    id <- c.downField("id").as[CritAllocationId]
+    task <- c.downField("task").as[TaskId]
     completedBy <- c.downField("completedBy").as[Target]
     allocation <- c.downField("allocation").as[Seq[AllocatedCrit]]
   } yield CritAllocation(id=id, task=task, completeBy = completedBy, allocation=allocation)

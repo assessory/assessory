@@ -1,13 +1,15 @@
 package com.assessory.clientpickle
 
 import com.assessory.api.call._
-import com.wbillingsley.handy.appbase.{ActiveSession, Course, Group, GroupSet}
-import org.scalatest.{FlatSpec, Matchers}
+import com.assessory.api.appbase._
+import org.scalatest._
+import flatspec._
+import matchers._
 import com.wbillingsley.handy.Id._
 
 import scala.util.Success
 
-class CallPicklesSpec extends FlatSpec with Matchers {
+class CallPicklesSpec extends AnyFlatSpec with should.Matchers {
 
   import CallPickles._
 
@@ -24,8 +26,8 @@ class CallPicklesSpec extends FlatSpec with Matchers {
 
   it should "Pickle and unpickle CreateCourse" in {
     val c = Course(
-      id = "1234".asId,
-      addedBy = "me".asId,
+      id = CourseId("1234"),
+      addedBy = RegistrationId("me"),
       title = Some("My great course")
     )
 
@@ -33,7 +35,7 @@ class CallPicklesSpec extends FlatSpec with Matchers {
   }
 
   it should "Pickle and unpickle CreateGroupSetCSV" in {
-    val setId="gs1".asId[GroupSet]
+    val setId=GroupSetId("gs1")
     val csv =
       """
         |student number,name,group name,parent name,social id
@@ -46,11 +48,11 @@ class CallPicklesSpec extends FlatSpec with Matchers {
 
   it should "Pickle and unpickle ReturnGroupsData" in {
     val rgd= ReturnGroupsData(Seq(
-      Group(id="1".asId, set="set1".asId, name=Some("g1")) -> Seq("a@example.com", "b@example.com"),
-      Group(id="2".asId, set="set1".asId, name=Some("g2")) -> Seq("c@example.com", "d@example.com")
+      Group(GroupId(id="1"), set=GroupSetId("set1"), name=Some("g1")) -> Seq("a@example.com", "b@example.com"),
+      Group(GroupId(id="2"), set=GroupSetId("set1"), name=Some("g2")) -> Seq("c@example.com", "d@example.com")
     ))
 
-    val setId="gs1".asId[GroupSet]
+    val setId=GroupSetId("gs1")
     val csv =
       """
         |student number,name,group name,parent name,social id

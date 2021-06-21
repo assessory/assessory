@@ -2,34 +2,35 @@ package com.assessory.clientpickle
 
 import com.assessory.api.critique._
 import com.assessory.api.due.DueDate
-import com.assessory.api.question.{BooleanQuestion, ShortTextQuestion, Question, QuestionnaireTask}
+import com.assessory.api.question._
 import com.assessory.api.video.VideoTask
-import com.assessory.api.{TaskDetails, Task}
+import com.assessory.api._
 import com.wbillingsley.handy.Id
 import com.wbillingsley.handy.Id._
 import com.wbillingsley.handy.Ids._
-import com.wbillingsley.handy.appbase._
+import com.assessory.api.appbase._
 
-import Pickles._
-import com.assessory.api.client.invalidId
-import org.scalatest.{Matchers, FlatSpec}
+import Pickles.{given, _}
+import org.scalatest._
+import flatspec._
+import matchers._
 
 import scala.util.Success
 
-class PickleSpec extends FlatSpec with Matchers {
+class PickleSpec extends AnyFlatSpec with should.Matchers {
 
   "Pickles" should "Pickle and unpickle Id" in  {
-    val id = "myTest".asId[User]
+    val id = UserId("myTest")
     val pickled = write(id)
-    val unpickled = read[Id[User,String]](pickled)
+    val unpickled = read[UserId](pickled)
 
     unpickled should be (Success(id))
   }
 
   it should "Pickle and unpickle Question" in  {
     val made:Seq[Question] = Seq(
-      ShortTextQuestion(id=invalidId, prompt="Hello world"),
-      BooleanQuestion(id=invalidId, prompt="Hello world")
+      ShortTextQuestion(id=QuestionId("invalid"), prompt="Hello world"),
+      BooleanQuestion(id=QuestionId("invalid"), prompt="Hello world")
     )
     val pickled = write(made)
     val unpickled = read[Seq[Question]](pickled)
@@ -39,8 +40,8 @@ class PickleSpec extends FlatSpec with Matchers {
 
   it should "Pickle and unpickle Course" in  {
     val made = Course(
-      id = invalidId,
-      addedBy = invalidId,
+      id = CourseId("invalid"),
+      addedBy = RegistrationId("invalid"),
       title = Some("test course")
     )
     val pickled = write(made)
@@ -59,7 +60,7 @@ class PickleSpec extends FlatSpec with Matchers {
 
   it should "Pickle and unpickle Course Preenrolment Row" in  {
     val made = new Course.PreenrolRow(
-      target = invalidId,
+      target = CourseId("invalid"),
       roles = CourseRole.roles,
       identity = IdentityLookup("foo", Some("bar"), Some("baz"))
     )
@@ -72,7 +73,7 @@ class PickleSpec extends FlatSpec with Matchers {
 
   it should "Pickle and unpickle Course Preenrolment" in  {
     val made = new Course.Preenrol(
-      id = invalidId
+      id = PreenrolmentId("invalid")
     )
     val pickled = write(made)
     val unpickled = read[Course.Preenrol](pickled)
@@ -84,8 +85,8 @@ class PickleSpec extends FlatSpec with Matchers {
 
   it should "Pickle and unpickle GroupSet" in  {
     val made = GroupSet(
-      id = invalidId,
-      course = invalidId,
+      id = GroupSetId("invalid"),
+      course = CourseId("invalid"),
       name = Some("test group")
     )
     val pickled = write(made)
@@ -95,10 +96,10 @@ class PickleSpec extends FlatSpec with Matchers {
 
   it should "Pickle and unpickle Group" in  {
     val made = Group(
-      id = invalidId,
-      set = invalidId,
+      id = GroupId("invalid"),
+      set = GroupSetId("invalid"),
       name = Some("test group"),
-      members = Seq("1", "2", "3").asIds
+      members = Seq("1", "2", "3").map(RegistrationId.apply)
     )
     val pickled = write(made)
     val unpickled = read[Group](pickled)
@@ -107,8 +108,8 @@ class PickleSpec extends FlatSpec with Matchers {
 
   it should "Pickle and unpickle Task" in  {
     val made = Task(
-      id = invalidId,
-      course = invalidId,
+      id = TaskId("invalid"),
+      course = CourseId("invalid"),
       details = TaskDetails(
         name = Some("test crit"),
         description = Some("This is to test critiques can be sent between server and client"),
@@ -116,13 +117,13 @@ class PickleSpec extends FlatSpec with Matchers {
       ),
       body = CritiqueTask(
         strategy = AllocateStrategy(
-          what = TTOutputs("invalid".asId),
+          what = TTOutputs(TaskId("invalid")),
           5
         ),
         task = QuestionnaireTask(
           questionnaire = Seq(
-            ShortTextQuestion(id=invalidId, prompt="Hello world"),
-            BooleanQuestion(id=invalidId, prompt="Hello world")
+            ShortTextQuestion(id=QuestionId("invalid"), prompt="Hello world"),
+            BooleanQuestion(id=QuestionId("invalid"), prompt="Hello world")
           )
         )
       )
@@ -136,8 +137,8 @@ class PickleSpec extends FlatSpec with Matchers {
 
   it should "Pickle and unpickle Preallocated Crit Task" in  {
     val made = Task(
-      id = invalidId,
-      course = invalidId,
+      id = TaskId("invalid"),
+      course = CourseId("invalid"),
       details = TaskDetails(
         name = Some("test crit"),
         description = Some("This is to test critiques can be sent between server and client"),
@@ -146,12 +147,12 @@ class PickleSpec extends FlatSpec with Matchers {
       body = CritiqueTask(
         task = QuestionnaireTask(
           questionnaire = Seq(
-            ShortTextQuestion(id=invalidId, prompt="Hello world"),
-            BooleanQuestion(id=invalidId, prompt="Hello world")
+            ShortTextQuestion(id=QuestionId("invalid"), prompt="Hello world"),
+            BooleanQuestion(id=QuestionId("invalid"), prompt="Hello world")
           )
         ),
         strategy = AllocateStrategy(
-          what = TTGroups(set=invalidId), number = 3
+          what = TTGroups(set=GroupSetId("invalid")), number = 3
         )
       )
     )

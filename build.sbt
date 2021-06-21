@@ -62,8 +62,6 @@ lazy val model = (project in file("modules/model"))
     )
   )
 
-/*
-
 
 
 val circeVersion = "0.14.1"
@@ -79,6 +77,11 @@ lazy val clientPickle = (crossProject(JSPlatform, JVMPlatform).crossType(CrossTy
 
 lazy val clientPickleJS = clientPickle.js
 lazy val clientPickleJVM = clientPickle.jvm
+
+
+/*
+
+
 
 lazy val vclient = project.in(file("modules/vclient"))
   .settings(commonSettings:_*)
