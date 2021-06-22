@@ -8,6 +8,7 @@ organization := "org.assessory"
 version := "0.4.0-SNAPSHOT"
 
 def useScala3 = (scalaVersion := "3.0.0")
+def useScala2 = (scalaVersion := "2.13.6")
 
 lazy val commonSettings = Seq(
   organization := "org.assessory",
@@ -100,11 +101,6 @@ lazy val sjsProjects = Seq(vclient)
 
 
 
-
-/*
-
-
-
 // The web layer
 lazy val play = (project in file("modules/play"))
   .dependsOn(apiJVM, mongo, model, clientPickleJVM)
@@ -112,6 +108,8 @@ lazy val play = (project in file("modules/play"))
   .aggregate(sjsProjects.map(sbt.Project.projectToRef):_*)
   .settings(
     useScala2,
+    scalacOptions += "-Ytasty-reader", // Compatibility between Scala 2 and 3
+
 
     // RPM settings
     Linux / maintainer := "William Billingsley <wbillingsley@cantab.net>",
@@ -148,6 +146,11 @@ lazy val play = (project in file("modules/play"))
     )
   )
   .enablePlugins(PlayScala)
+
+
+/*
+
+
 
 // A sneaky backdoor way of getting stuff into the database
 lazy val cheatScript = project.in(file("modules/cheatScript"))
