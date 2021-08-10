@@ -95,13 +95,46 @@ lazy val vclient = project.in(file("modules/vclient"))
     )
   )
   .dependsOn(apiJS, clientPickleJS)
-  .enablePlugins(ScalaJSPlugin, JSDependenciesPlugin)
+  .enablePlugins(ScalaJSPlugin, JSDependenciesPlugin, ScalaJSWeb)
 
 lazy val sjsProjects = Seq(vclient)
 
 
 
 // The web layer
+val AkkaVersion = "2.6.8"
+val AkkaHttpVersion = "10.2.4"
+
+lazy val akkahttp = (project in file("modules/akkaHttp"))
+  .dependsOn(apiJVM, mongo, model, clientPickleJVM)
+  .settings(commonSettings:_*)
+  .aggregate(sjsProjects.map(sbt.Project.projectToRef):_*)
+  .settings(
+    useScala3,
+
+    libraryDependencies ++= Seq(
+      // JavaScript
+      "org.webjars" % "bootstrap" % "4.4.1-1",
+      "org.webjars" % "font-awesome" % "4.5.0",
+      "org.webjars" % "marked" % "0.3.2-1"
+    ),
+
+    scalaJSProjects := sjsProjects,
+    Assets / pipelineStages := Seq(scalaJSPipeline),
+    pipelineStages := Seq(scalaJSPipeline),
+    // triggers scalaJSPipeline when using compile or continuous compilation
+    Compile / compile := ((Compile / compile) dependsOn scalaJSPipeline).value,
+    libraryDependencies ++= Seq(
+      ("com.typesafe.akka" %% "akka-actor-typed" % AkkaVersion).cross(CrossVersion.for3Use2_13),
+      ("com.typesafe.akka" %% "akka-stream" % AkkaVersion).cross(CrossVersion.for3Use2_13),
+      ("com.typesafe.akka" %% "akka-http" % AkkaHttpVersion).cross(CrossVersion.for3Use2_13),
+    ),
+    Assets / WebKeys.packagePrefix := "public/",
+    Runtime / managedClasspath += (Assets / packageBin).value,
+    (Compile / resources) += (vclient / Compile / fastOptJS).value.data
+  ).enablePlugins(SbtWeb, JavaAppPackaging)
+
+/*
 lazy val play = (project in file("modules/play"))
   .dependsOn(apiJVM, mongo, model, clientPickleJVM)
   .settings(commonSettings:_*)
@@ -148,7 +181,7 @@ lazy val play = (project in file("modules/play"))
   .enablePlugins(PlayScala)
 
 
-/*
+
 
 
 

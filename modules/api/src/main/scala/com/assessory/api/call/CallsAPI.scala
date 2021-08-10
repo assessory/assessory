@@ -8,7 +8,6 @@ class CallsAPI {
 
 }
 
-
 trait Call
 case object GetSession extends Call  // TODO: replace with JWT
 case class WithSession(a:ActiveSession, c:Call) extends Call
