@@ -5,21 +5,22 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshalling.{Marshaller, ToEntityMarshaller}
 import akka.http.scaladsl.model.*
+import akka.http.scaladsl.model.StatusCodes.{InternalServerError, NotFound}
 import akka.http.scaladsl.model.headers.HttpCookie
 import akka.http.scaladsl.server.Directives.*
+import akka.http.scaladsl.server.{ExceptionHandler, Route}
 import akka.http.scaladsl.unmarshalling.{FromRequestUnmarshaller, Unmarshaller}
 import com.assessory.api.appbase.ActiveSession
 
 import scala.io.StdIn
-
 import com.wbillingsley.handy.Approval
-
-import com.assessory.api.call.{Call, Return}
+import com.assessory.api.call.{Call, Return, ReturnSession, SessionCall}
 import com.assessory.asyncmongo.UserDAO
 import com.assessory.clientpickle.CallPickles
 import com.assessory.model.CallsModel
 
 import scala.concurrent.ExecutionContext
+import scala.util.control.NonFatal
 
 private val random = new java.security.SecureRandom()
 private def randomSessionId() = {
@@ -41,13 +42,23 @@ given ToEntityMarshaller[Return] =
     HttpEntity(MediaTypes.`application/json`, CallPickles.write(a))
   }
 
+given ExceptionHandler = ExceptionHandler {
+  case _:NoSuchElementException =>
+    complete(HttpResponse(NotFound))
+  case NonFatal(e) =>
+    complete(HttpResponse(InternalServerError, entity =
+      s"""ERROR: ${e.getMessage}
+         |
+         |${e.getStackTrace.map(_.toString).mkString("\n")}
+         |""".stripMargin))
+}
 
 
 @main def startServer() = {
   given system:ActorSystem[Any] = ActorSystem(Behaviors.empty, "assessory-system")
   given ec:ExecutionContext = system.executionContext
 
-  val route = concat(
+  val route = Route.seal(concat(
     path("ping") {
       get {
         complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, "pong"))
@@ -81,15 +92,22 @@ given ToEntityMarshaller[Return] =
               optionalCookie("assessorySession") {
                 case Some(sessionCookie) =>
                   complete {
-                    CallsModel.call(Approval(UserDAO.bySessionKey(sessionCookie.value)), call).toFuture
+                    call match {
+                      case SessionCall.GetSession => ReturnSession(ActiveSession(sessionCookie.value, ip.value))
+                      case _ => CallsModel.call(Approval(UserDAO.bySessionKey(sessionCookie.value)), call).toFuture
+                    }
                   }
 
                 case None =>
                   val cookie = randomSessionCookie()
                   val session = ActiveSession(cookie.value(), ip.value)
+
                   setCookie(cookie) {
                     complete {
-                      CallsModel.call(Approval(UserDAO.bySessionKey(session.key)), call).toFuture
+                      call match {
+                        case SessionCall.GetSession => ReturnSession(session)
+                        case _ => CallsModel.call(Approval(UserDAO.bySessionKey(session.key)), call).toFuture
+                      }
                     }
                   }
               }
@@ -126,7 +144,7 @@ given ToEntityMarshaller[Return] =
       }
     }
 
-  )
+  ))
 
   val bindingFuture = Http().newServerAt("localhost", 8080).bind(route)
 

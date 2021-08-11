@@ -1,62 +1,67 @@
 package org.assessory.play.cheatscript
 
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import com.assessory.api.call.{Call, GetSession, Return, ReturnSession, WithSession}
-import com.wbillingsley.handy.Ref
-import play.api.libs.ws.ahc._
-import Ref._
-import com.wbillingsley.handy.appbase.ActiveSession
-import com.assessory.clientpickle.CallPickles._
-import play.api.libs.ws.DefaultBodyReadables._
-import play.api.libs.ws.DefaultBodyWritables._
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.scaladsl.Behaviors
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.marshalling.{Marshaller, ToEntityMarshaller}
+import akka.http.scaladsl.model.*
+import akka.http.scaladsl.unmarshalling.{FromRequestUnmarshaller, FromResponseUnmarshaller, Unmarshal, Unmarshaller}
+import com.assessory.api.call.{Call, Return, ReturnSession, UserCall}
+import com.wbillingsley.handy.{Ref, Refused, refOps}
+import com.assessory.api.appbase.{ActiveSession, UserError}
+import com.assessory.clientpickle.CallPickles
+import com.assessory.clientpickle.CallPickles.*
 
-import scala.concurrent.ExecutionContext.Implicits._
+import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext.Implicits.*
+import akka.http.scaladsl.client.RequestBuilding.Post
 
-object CommandClient {
 
-  implicit val system = ActorSystem()
-  system.registerOnTermination {
+class NetworkService(url:String) {
+
+  given FromResponseUnmarshaller[Return] = Unmarshaller.messageUnmarshallerFromEntityUnmarshaller(
+    Unmarshaller.stringUnmarshaller
+      .forContentTypes(MediaTypes.`application/json`)
+      .flatMap(
+        ctx => mat => json => CallPickles.readReturnF(json)
+      )
+  )
+
+  given ToEntityMarshaller[Call] =
+    Marshaller.withFixedContentType(MediaTypes.`application/json`) { a =>
+      HttpEntity(MediaTypes.`application/json`, CallPickles.write(a))
+    }
+
+  given system:ActorSystem[Behaviors.type] = ActorSystem(Behaviors.empty, "NetworkClientActor")
+  system.whenTerminated.foreach { _ =>
     System.exit(0)
   }
-  implicit val materializer = ActorMaterializer()
 
-  val wsClient = StandaloneAhcWSClient()
+  given ec:ExecutionContext = system.executionContext
 
   def close() = {
-    wsClient.close()
     system.terminate()
   }
 
-  def open(url:String):Ref[CommandClient] = {
+  given networkCall:(Call => Future[Return]) = { call =>
 
-    (for {
-      response <- wsClient.url(url).post(write(GetSession)).toRef
-      body = response.body
-      ReturnSession(s) <- readReturn(body).toRef
-    } yield {
-      println("Created new session")
-      println(s)
-      new CommandClient(url, s)
-    }).require
-
-  }
-
-}
-
-class CommandClient(url:String, val session:ActiveSession) {
-
-  def call(c:Call):Ref[Return] = {
+    println(s"Making call $call")
     for {
-      response <- CommandClient.wsClient.url(url).post(write(WithSession(session, c))).toRef
-      body = response.body
-      r <- readReturn(body).toRef
-    } yield r
-  }
-
-  def close() = {
-    println("Terminating connection")
-    CommandClient.close()
+      resp <- Http().singleRequest(Post(url, call))
+      data <- resp match {
+        case HttpResponse(StatusCodes.OK, headers, entity, _) =>
+          Unmarshal(resp).to[Return]
+        case HttpResponse(StatusCodes.NotFound, _, _, _) =>
+          Future.failed(new NoSuchElementException)
+        case HttpResponse(StatusCodes.Forbidden, _, entity, _) =>
+          Unmarshal(entity).to[String].flatMap(err => Future.failed(Refused(err)))
+        case HttpResponse(StatusCodes.BadRequest, _, entity, _) =>
+          Unmarshal(entity).to[String].flatMap(err => Future.failed(UserError(err)))
+        case HttpResponse(_, _, entity, _) =>
+          Unmarshal(entity).to[String].flatMap(err => Future.failed(IllegalStateException(err)))
+      }
+    } yield data
   }
 
 }
+

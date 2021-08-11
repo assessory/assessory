@@ -103,7 +103,7 @@ lazy val sjsProjects = Seq(vclient)
 
 // The web layer
 val AkkaVersion = "2.6.8"
-val AkkaHttpVersion = "10.2.4"
+val AkkaHttpVersion = "10.2.6"
 
 lazy val akkahttp = (project in file("modules/akkaHttp"))
   .dependsOn(apiJVM, mongo, model, clientPickleJVM)
@@ -133,6 +133,23 @@ lazy val akkahttp = (project in file("modules/akkaHttp"))
     Runtime / managedClasspath += (Assets / packageBin).value,
     (Compile / resources) += (vclient / Compile / fastOptJS).value.data
   ).enablePlugins(SbtWeb, JavaAppPackaging)
+
+
+// A sneaky backdoor way of getting stuff into the database
+lazy val cheatScript = project.in(file("modules/cheatScript"))
+  .settings(commonSettings:_*)
+  .dependsOn(apiJVM, mongo, model, clientPickleJVM)
+  .settings(
+    useScala3,
+
+    libraryDependencies ++= Seq(
+      ("org.specs2" %% "specs2-core" % "4.3.4" % "test").cross(CrossVersion.for3Use2_13),
+      ("com.typesafe.akka" %% "akka-actor-typed" % AkkaVersion).cross(CrossVersion.for3Use2_13),
+      ("com.typesafe.akka" %% "akka-stream" % AkkaVersion).cross(CrossVersion.for3Use2_13),
+      ("com.typesafe.akka" %% "akka-http" % AkkaHttpVersion).cross(CrossVersion.for3Use2_13),
+    )
+  )
+
 
 /*
 lazy val play = (project in file("modules/play"))
@@ -184,17 +201,5 @@ lazy val play = (project in file("modules/play"))
 
 
 
-
-// A sneaky backdoor way of getting stuff into the database
-lazy val cheatScript = project.in(file("modules/cheatScript"))
-  .settings(commonSettings:_*)
-  .dependsOn(apiJVM, mongo, model, clientPickleJVM)
-  .settings(
-    useScala2,
-    libraryDependencies ++= Seq(
-      "org.specs2" %% "specs2-core" % "4.3.4" % "test",
-      "com.typesafe.play" %% "play-ahc-ws-standalone" % "2.1.0-M4"
-    )
-  )
 
 */

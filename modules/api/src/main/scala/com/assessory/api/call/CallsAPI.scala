@@ -8,11 +8,23 @@ class CallsAPI {
 
 }
 
-trait Call
-case object GetSession extends Call  // TODO: replace with JWT
-case class WithSession(a:ActiveSession, c:Call) extends Call
-case class Register(email:String, password:String, session:ActiveSession) extends Call
-case class Login(email:String, password:String, session:ActiveSession) extends Call
+sealed trait Call
+
+/**
+ * Session calls are the only ones that work directly with sessions. They are handled directly in the call client,
+ * to prevent hijacking of the session key
+ */
+enum SessionCall extends Call {
+  case GetSession
+  case WithSession(a:ActiveSession, c:Call)
+  case Register(email:String, password:String, session:ActiveSession)
+  case Login(email:String, password:String, session:ActiveSession)
+  case Logout(session:ActiveSession)
+}
+
+enum UserCall extends Call {
+  case WhoAmI
+}
 
 case class CreateCourse(c:Course) extends Call
 case class CreateTask(t:Task) extends Call

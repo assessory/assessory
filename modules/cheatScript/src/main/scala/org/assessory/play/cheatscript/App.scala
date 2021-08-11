@@ -1,18 +1,29 @@
 package org.assessory.play.cheatscript
 
-import com.assessory.api.call.GetSession
+import com.assessory.api.call.*
+import com.assessory.clientpickle.CallClient
 
+import scala.concurrent.Future
 
 object App {
 
   def main(args:Array[String]): Unit = {
 
-    for {
-      c <- CommandClient.open("http://localhost:9000/api/call")
+    println("Starting...")
+    val networkService = NetworkService("http://localhost:8080/api/call")
+    import networkService.given
+    val client = CallClient()
+    println("Created client...")
 
-    } {
-      c.close()
+    (for 
+      ReturnSession(u) <- client.register()
+    yield 
+      println(s)
+    ) recoverWith { case ex =>
+      ex.printStackTrace
+      Future.failed(ex)
     }
+
   }
 
 }

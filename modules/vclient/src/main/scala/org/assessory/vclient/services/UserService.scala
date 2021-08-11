@@ -2,9 +2,10 @@ package org.assessory.vclient.services
 
 import com.assessory.api.client.EmailAndPassword
 import com.assessory.clientpickle.Pickles
-import com.assessory.clientpickle.Pickles._
+import com.assessory.clientpickle.Pickles.*
 import com.wbillingsley.handy.{Approval, Id, Latch, Ref, RefMany, refOps}
 import com.assessory.api.appbase.User
+import com.assessory.api.call.{ReturnUser, UserCall}
 import com.wbillingsley.handy.LookUp$package.EagerLookUpOne
 import org.assessory.vclient.Routing
 import org.scalajs.dom.ext.Ajax
@@ -19,7 +20,7 @@ object UserService {
   val cache = mutable.Map.empty[String, Latch[User]]
 
   val self:Latch[Option[User]] = Latch.lazily(
-    Ajax.post("/api/self", headers=AJAX_HEADERS).responseText.flatMap(Pickles.readF[User]).optional404
+    (for ReturnUser(u) <- CallService.makeCall(UserCall.WhoAmI) yield u).optional404
   )
 
   def approval:Ref[Approval[User]] = Approval(

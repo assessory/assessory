@@ -12,14 +12,15 @@ import scala.util.Success
 class CallPicklesSpec extends AnyFlatSpec with should.Matchers {
 
   import CallPickles._
+  import UserCall._
 
   "CallPickles" should "Pickle and unpickle GetSession" in {
-    readCall(write(GetSession)) should be (Success(GetSession))
+    readCall(write(SessionCall.GetSession)) should be (Success(SessionCall.GetSession))
   }
 
   it should "Pickle and unpickle within WithSession" in {
     val a = ActiveSession("k", "ip")
-    val w = WithSession(a, Register("e", "p", a))
+    val w = SessionCall.WithSession(a, SessionCall.Register("e", "p", a))
 
     readCall(write(w)) should be (Success(w))
   }

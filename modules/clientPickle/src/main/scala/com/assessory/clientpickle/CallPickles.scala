@@ -14,37 +14,10 @@ import scala.util.Try
 object CallPickles {
 
   import Pickles.{given, _}
+  import UserCall._
 
   val k = "kind"
   val b = "body"
-
-  implicit val registerEncoder: Encoder[Register] = (r:Register) => Json.obj(
-    "email" -> r.email.asJson, "password" -> r.password.asJson, "session" -> r.session.asJson
-  )
-  implicit val registerDecoder: Decoder[Register] = (c:HCursor) => for {
-    email <- c.downField("email").as[String]
-    pw <- c.downField("password").as[String]
-    session <- c.downField("session").as[ActiveSession]
-  } yield Register(email, pw, session)
-
-  implicit val withSessionEncoder: Encoder[WithSession] = (ws:WithSession) => Json.obj(
-    "session" -> ws.a.asJson, "call" -> ws.c.asJson
-  )
-  implicit val withSessionDecoder: Decoder[WithSession] = (c:HCursor) => for {
-    session <- c.downField("session").as[ActiveSession]
-    call <- c.downField("call").as[Call]
-  } yield WithSession(session, call)
-
-  implicit val loginEncoder: Encoder[Login] = (l:Login) => Json.obj(
-    "email" -> l.email.asJson,
-    "password" -> l.password.asJson,
-    "session" -> l.session.asJson
-  )
-  implicit val loginDecoder: Decoder[Login] = (c:HCursor) => for {
-    email <- c.downField("email").as[String]
-    pw <- c.downField("password").as[String]
-    session <- c.downField("session").as[ActiveSession]
-  } yield Login(email, pw, session)
 
   implicit val createCourseEnc: Encoder[CreateCourse] = (c:CreateCourse) => Json.obj("course" -> c.c.asJson)
   implicit val createCourseDec: Decoder[CreateCourse] = (c:HCursor) => c.downField("course").as[Course].map(CreateCourse.apply)
@@ -69,11 +42,12 @@ object CallPickles {
   implicit val addGroupRegEnc: Encoder[AddGroupReg] = (a:AddGroupReg) => Json.obj("groupReg" -> a.gr.asJson)
   implicit val addGroupRegDec: Decoder[AddGroupReg] = (c:HCursor) => c.downField("groupReg").as[Group.Reg].map(AddGroupReg.apply)
 
+  given Codec.AsObject[UserCall] = Codec.AsObject.derived
+  given Codec.AsObject[SessionCall] = Codec.AsObject.derived
+
   implicit val callEncoder: Encoder[Call] = {
-    case GetSession => Json.obj(k -> Json.fromString("GetSession"))
-    case w:WithSession => Json.obj(k -> Json.fromString("WithSession"), b -> w.asJson)
-    case r:Register => Json.obj(k -> Json.fromString("Register"), b -> r.asJson)
-    case l:Login => Json.obj(k -> Json.fromString("Login"), b -> l.asJson)
+    case uc:UserCall => Json.obj(k -> Json.fromString("UserCall"), b -> uc.asJson)
+    case sc:SessionCall => Json.obj(k -> Json.fromString("SessionCall"), b -> sc.asJson)
 
     case c:CreateCourse => Json.obj(k -> Json.fromString("CreateCourse"), b -> c.asJson)
     case c:CreateTask => Json.obj(k -> Json.fromString("CreateTask"), b -> c.asJson)
@@ -86,10 +60,8 @@ object CallPickles {
 
   implicit val callDecoder: Decoder[Call] = (c: HCursor) => {
     c.downField(k).as[String].flatMap {
-      case "GetSession" => Right(GetSession)
-      case "WithSession" => c.downField(b).as[WithSession]
-      case "Register" => c.downField(b).as[Register]
-      case "Login" => c.downField(b).as[Login]
+      case "UserCall" => c.downField(b).as[UserCall]
+      case "SessionCall" => c.downField(b).as[SessionCall]
 
       case "CreateCourse" => c.downField(b).as[CreateCourse]
       case "CreateTask" => c.downField(b).as[CreateTask]
