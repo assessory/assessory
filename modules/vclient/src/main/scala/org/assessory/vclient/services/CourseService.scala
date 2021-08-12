@@ -3,8 +3,10 @@ package org.assessory.vclient.services
 import com.assessory.api.client.WithPerms
 import com.assessory.clientpickle.Pickles
 import com.assessory.clientpickle.Pickles._
+import com.assessory.clientpickle.CallPickles._
 import com.wbillingsley.handy.{Id, Latch, lazily}
 import com.assessory.api.appbase._
+import com.assessory.api.call._
 import org.scalajs.dom.ext.Ajax
 
 import scala.collection.mutable
@@ -17,19 +19,29 @@ object CourseService {
   val cache = mutable.Map.empty[String, Latch[WithPerms[Course]]]
 
   val myCourses:Latch[Seq[WithPerms[Course]]] = Latch.lazily(
-    Ajax.post("/api/course/my", headers = Map("Accept" -> "application/json")).responseText.flatMap(Pickles.readF[Seq[WithPerms[Course]]])
+    for
+      StandardReturn.ReturnMany(entries) <- callClient.makeCall(CourseCall.MyCourses)
+    yield
+      for StandardReturn.ReturnWithPermissions(ReturnCourse(c), perms) <- entries yield WithPerms(perms, c)
   )
+
   UserService.self.addListener { _ => myCourses.clear(); cache.clear() }
 
   def createCourse(c:Course):Future[WithPerms[Course]] = {
-    Ajax.post("/api/course/create", data = Pickles.write(c), headers = Map("Accept" -> "application/json")).responseText.flatMap(Pickles.readF[WithPerms[Course]])
+    for
+      StandardReturn.ReturnWithPermissions(ReturnCourse(c), perms) <- callClient.makeCall(CourseCall.CreateCourse(c))
+    yield
+      WithPerms(perms, c)
   }
 
-  def loadId[KK <: String](id:Id[Course,KK]):Future[WithPerms[Course]] = {
-    Ajax.get(s"/api/course/${id.id}", headers = Map("Accept" -> "application/json")).responseText.flatMap(Pickles.readF[WithPerms[Course]])
+  def loadId(id:CourseId):Future[WithPerms[Course]] = {
+    for
+      StandardReturn.ReturnWithPermissions(ReturnCourse(c), perms) <- callClient.makeCall(CourseCall.GetCourse(id))
+    yield
+      WithPerms(perms, c)
   }
 
   def latch(s:String):Latch[WithPerms[Course]] = cache.getOrElseUpdate(s, Latch.lazily(loadId(CourseId(s))))
 
-  def latch(id:Id[Course,String]):Latch[WithPerms[Course]] = cache.getOrElseUpdate(id.id, Latch.lazily(loadId(id)))
+  def latch(id:Id[Course,String]):Latch[WithPerms[Course]] = cache.getOrElseUpdate(id.id, Latch.lazily(loadId(CourseId(id.id))))
 }

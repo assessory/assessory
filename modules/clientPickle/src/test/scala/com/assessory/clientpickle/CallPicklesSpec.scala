@@ -13,6 +13,7 @@ class CallPicklesSpec extends AnyFlatSpec with should.Matchers {
 
   import CallPickles._
   import UserCall._
+  import CourseCall._
 
   "CallPickles" should "Pickle and unpickle GetSession" in {
     readCall(write(SessionCall.GetSession)) should be (Success(SessionCall.GetSession))

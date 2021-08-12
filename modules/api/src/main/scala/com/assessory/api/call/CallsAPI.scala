@@ -2,7 +2,8 @@ package com.assessory.api.call
 
 import com.assessory.api.Task
 import com.wbillingsley.handy.Id
-import com.assessory.api.appbase.{ActiveSession, Course, Group, GroupRole, GroupSet, User}
+import com.assessory.api.appbase.{ActiveSession, Course, CourseId, Group, GroupRole, GroupSet, User, UserId}
+import com.assessory.api.client.WithPerms
 
 class CallsAPI {
 
@@ -24,9 +25,15 @@ enum SessionCall extends Call {
 
 enum UserCall extends Call {
   case WhoAmI
+  case GetUser(id:UserId)
 }
 
-case class CreateCourse(c:Course) extends Call
+enum CourseCall extends Call {
+  case GetCourse(id:CourseId)
+  case CreateCourse(c:Course)
+  case MyCourses
+}
+
 case class CreateTask(t:Task) extends Call
 
 case class CreateGroupSet(gs:GroupSet) extends Call
@@ -44,3 +51,8 @@ case class ReturnGroupSet(gs:GroupSet) extends Return
 case class ReturnGroupReg(gr:Group.Reg) extends Return
 case class ReturnGroupsData(data:Seq[(Group, Seq[String])]) extends Return
 
+enum StandardReturn extends Return {
+  case ReturnNone
+  case ReturnWithPermissions(r: Return, perms: Map[String, Boolean]) // TODO: Remove. Just use "ask" at the client
+  case ReturnMany(r:Seq[Return])
+}

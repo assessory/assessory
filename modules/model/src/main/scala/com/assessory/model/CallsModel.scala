@@ -4,6 +4,7 @@ import com.assessory.api.call._
 import com.assessory.asyncmongo.UserDAO
 import com.wbillingsley.handy.{Approval, Ref, RefFailed, refOps, Id, lazily}
 import com.assessory.api.appbase.{ActiveSession, User}
+import com.assessory.api.client.WithPerms
 import com.assessory.api.wiring.Lookups.given
 
 object CallsModel {
@@ -16,9 +17,21 @@ object CallsModel {
     case SessionCall.Login(email, password, session) => UserModel.logIn(Some(email), Some(password), session).map(ReturnUser.apply).require
     case SessionCall.Logout(session) => UserModel.logOut(a.who.require, session).map(ReturnUser.apply)
 
-    case UserCall.WhoAmI => for u <- a.who.require yield ReturnUser(u)
+    case UserCall.WhoAmI => (for u <- a.who yield ReturnUser(u)).orElse(StandardReturn.ReturnNone.itself)
+    case UserCall.GetUser(id) => (for u <- id.lazily yield ReturnUser(u)) // TODO: Expurgated users
 
-    case CreateCourse(c) => CourseModel.create(a, c).map { wp => ReturnCourse(wp.item) }
+    case CourseCall.CreateCourse(c) => CourseModel.create(a, c).map {
+      wp => StandardReturn.ReturnWithPermissions(ReturnCourse(wp.item), wp.perms)
+    }
+
+    case CourseCall.GetCourse(id) => CourseModel.byId(a, id).map {
+      wp => StandardReturn.ReturnWithPermissions(ReturnCourse(wp.item), wp.perms)
+    }
+
+    case CourseCall.MyCourses => CourseModel.myCourses(a).map(wp =>
+      StandardReturn.ReturnWithPermissions(ReturnCourse(wp.item), wp.perms)
+    ).collect.map(s => StandardReturn.ReturnMany(s))
+
     case CreateTask(t) => TaskModel.create(a, t).map { wp => ReturnTask(wp.item) }
 
     case CreateGroupSet(gs) => GroupModel.createGroupSet(a, gs).map { wp => ReturnGroupSet(wp.item) }

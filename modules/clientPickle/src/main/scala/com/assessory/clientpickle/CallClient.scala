@@ -31,15 +31,14 @@ class CallClient(using networkService: Call => Future[Return], ec:ExecutionConte
   def logout():Future[User] = {
     for
       s <- session.request
-      _ <- makeCall(SessionCall.Logout(s))
-    do 
-      
+      ReturnUser(u) <- makeCall(SessionCall.Logout(s))
+    yield u
   }
 
   def register(email:String, password:String):Future[User] = {
     for
       s <- session.request
-      ReturnUser(u) <- makeCall(SessionCall.Login(email, password, s))
+      ReturnUser(u) <- makeCall(SessionCall.Register(email, password, s))
     yield u
   }
 

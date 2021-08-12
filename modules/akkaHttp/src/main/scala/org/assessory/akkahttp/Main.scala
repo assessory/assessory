@@ -13,11 +13,11 @@ import akka.http.scaladsl.unmarshalling.{FromRequestUnmarshaller, Unmarshaller}
 import com.assessory.api.appbase.ActiveSession
 
 import scala.io.StdIn
-import com.wbillingsley.handy.Approval
+import com.wbillingsley.handy.{Approval, RefFuture}
 import com.assessory.api.call.{Call, Return, ReturnSession, SessionCall}
-import com.assessory.asyncmongo.UserDAO
+import com.assessory.asyncmongo.{DB, UserDAO}
 import com.assessory.clientpickle.CallPickles
-import com.assessory.model.CallsModel
+import com.assessory.model.{CallsModel, DoWiring}
 
 import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
@@ -57,6 +57,14 @@ given ExceptionHandler = ExceptionHandler {
 @main def startServer() = {
   given system:ActorSystem[Any] = ActorSystem(Behaviors.empty, "assessory-system")
   given ec:ExecutionContext = system.executionContext
+
+  /* Start-up config */
+
+  // TODO: DB.dbName = "assessory_2019_1"
+  // Set the execution context (ie the thread pool) that RefFuture work should happen on
+  RefFuture.executionContext = ec
+  // Wire up the lookups
+  DoWiring.doWiring
 
   val route = Route.seal(concat(
     path("ping") {

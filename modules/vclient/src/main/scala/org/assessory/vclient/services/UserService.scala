@@ -4,8 +4,8 @@ import com.assessory.api.client.EmailAndPassword
 import com.assessory.clientpickle.Pickles
 import com.assessory.clientpickle.Pickles.*
 import com.wbillingsley.handy.{Approval, Id, Latch, Ref, RefMany, refOps}
-import com.assessory.api.appbase.User
-import com.assessory.api.call.{ReturnUser, UserCall}
+import com.assessory.api.appbase.{UserId, User}
+import com.assessory.api.call.{ReturnUser, UserCall, StandardReturn}
 import com.wbillingsley.handy.LookUp$package.EagerLookUpOne
 import org.assessory.vclient.Routing
 import org.scalajs.dom.ext.Ajax
@@ -20,7 +20,10 @@ object UserService {
   val cache = mutable.Map.empty[String, Latch[User]]
 
   val self:Latch[Option[User]] = Latch.lazily(
-    (for ReturnUser(u) <- CallService.makeCall(UserCall.WhoAmI) yield u).optional404
+    callClient.makeCall(UserCall.WhoAmI) map {
+      case ReturnUser(u) => Some(u)
+      case StandardReturn.ReturnNone => None
+    }
   )
 
   def approval:Ref[Approval[User]] = Approval(
@@ -31,7 +34,7 @@ object UserService {
   )
 
   def logOut():Unit = {
-    Ajax.post("/api/logOut", headers=AJAX_HEADERS).andThen{
+    callClient.logout().andThen{
       case _ =>
         self.fill(None)
         Routing.Router.routeTo(Routing.Home)
@@ -39,7 +42,7 @@ object UserService {
   }
 
   def logIn(ep:EmailAndPassword):Future[User] = {
-    Ajax.post("/api/logIn", Pickles.write(ep), headers=AJAX_HEADERS).responseText.flatMap(Pickles.readF[User]).andThen {
+    callClient.login(ep.email, ep.password).andThen {
       case Success(u) =>
         self.fill(Some(u))
         Routing.Router.routeTo(Routing.Home)
@@ -47,7 +50,7 @@ object UserService {
   }
 
   def signUp(ep:EmailAndPassword):Future[User] = {
-    Ajax.post("/api/signUp", Pickles.write(ep), headers=AJAX_HEADERS).responseText.flatMap(Pickles.readF[User]).andThen{
+    callClient.register(ep.email, ep.password).andThen{
       case Success(u) =>
         self.fill(Some(u))
         Routing.Router.routeTo(Routing.Home)
@@ -55,7 +58,7 @@ object UserService {
   }
 
   def loadId[KK <: String](id:Id[User,KK]):Latch[User] = Latch.lazily(
-    Ajax.get(s"/api/user/${id.id}", headers=AJAX_HEADERS).responseText.flatMap(Pickles.readF[User])
+    for ReturnUser(u) <- callClient.makeCall(UserCall.GetUser(UserId(id.id))) yield u
   )
 
   given EagerLookUpOne[Id[User, String], User] = (r:Id[User, String]) =>

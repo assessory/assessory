@@ -19,9 +19,6 @@ object CallPickles {
   val k = "kind"
   val b = "body"
 
-  implicit val createCourseEnc: Encoder[CreateCourse] = (c:CreateCourse) => Json.obj("course" -> c.c.asJson)
-  implicit val createCourseDec: Decoder[CreateCourse] = (c:HCursor) => c.downField("course").as[Course].map(CreateCourse.apply)
-
   implicit val createGroupSetEnc: Encoder[CreateGroupSet] = (c:CreateGroupSet) => Json.obj("groupSet" -> c.gs.asJson)
   implicit val createGroupSetDec: Decoder[CreateGroupSet] = (c:HCursor) => c.downField("groupSet").as[GroupSet].map(CreateGroupSet.apply)
 
@@ -44,12 +41,14 @@ object CallPickles {
 
   given Codec.AsObject[UserCall] = Codec.AsObject.derived
   given Codec.AsObject[SessionCall] = Codec.AsObject.derived
+  given Codec.AsObject[CourseCall] = Codec.AsObject.derived
+  given Codec.AsObject[StandardReturn] = Codec.AsObject.derived
 
   implicit val callEncoder: Encoder[Call] = {
     case uc:UserCall => Json.obj(k -> Json.fromString("UserCall"), b -> uc.asJson)
     case sc:SessionCall => Json.obj(k -> Json.fromString("SessionCall"), b -> sc.asJson)
+    case cc:CourseCall => Json.obj(k -> Json.fromString("CourseCall"), b -> cc.asJson)
 
-    case c:CreateCourse => Json.obj(k -> Json.fromString("CreateCourse"), b -> c.asJson)
     case c:CreateTask => Json.obj(k -> Json.fromString("CreateTask"), b -> c.asJson)
 
     case c:CreateGroupSet => Json.obj(k -> Json.fromString("CreateGroupSet"), b -> c.asJson)
@@ -62,8 +61,8 @@ object CallPickles {
     c.downField(k).as[String].flatMap {
       case "UserCall" => c.downField(b).as[UserCall]
       case "SessionCall" => c.downField(b).as[SessionCall]
+      case "CourseCall" => c.downField(b).as[CourseCall]
 
-      case "CreateCourse" => c.downField(b).as[CreateCourse]
       case "CreateTask" => c.downField(b).as[CreateTask]
 
       case "CreateGroupSet" => c.downField(b).as[CreateGroupSet]
@@ -106,6 +105,8 @@ object CallPickles {
 
 
   implicit val returnEncoder: Encoder[Return] = {
+    case s:StandardReturn => Json.obj(k -> Json.fromString("StandardReturn"), b -> s.asJson)
+
     case r:ReturnSession => Json.obj(k -> Json.fromString("ReturnSession"), b -> r.asJson)
     case r:ReturnUser => Json.obj(k -> Json.fromString("ReturnUser"), b -> r.asJson)
     case r:ReturnCourse => Json.obj(k -> Json.fromString("ReturnCourse"), b -> r.asJson)
@@ -117,6 +118,8 @@ object CallPickles {
 
   implicit val returnDecoder: Decoder[Return] = (c: HCursor) => {
     c.downField(k).as[String].flatMap {
+      case "StandardReturn" => c.downField(b).as[StandardReturn]
+
       case "ReturnSession" => c.downField(b).as[ReturnSession]
       case "ReturnUser" => c.downField(b).as[ReturnUser]
       case "ReturnCourse" => c.downField(b).as[ReturnCourse]
