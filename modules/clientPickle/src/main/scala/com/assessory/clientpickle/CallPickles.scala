@@ -19,42 +19,24 @@ object CallPickles {
   val k = "kind"
   val b = "body"
 
-  implicit val createGroupSetEnc: Encoder[CreateGroupSet] = (c:CreateGroupSet) => Json.obj("groupSet" -> c.gs.asJson)
-  implicit val createGroupSetDec: Decoder[CreateGroupSet] = (c:HCursor) => c.downField("groupSet").as[GroupSet].map(CreateGroupSet.apply)
 
-  implicit val createTaskEnc: Encoder[CreateTask] = (c:CreateTask) => Json.obj("task" -> c.t.asJson)
-  implicit val createTaskDec: Decoder[CreateTask] = (c:HCursor) => c.downField("task").as[Task].map(CreateTask.apply)
-
-  implicit val createGroupsFromCsvEnc: Encoder[CreateGroupsFromCsv] = (c:CreateGroupsFromCsv) => Json.obj(
-    "set" -> c.setId.asJson, "csv" -> c.csv.asJson
-  )
-  implicit val createGroupsFromCsvDec: Decoder[CreateGroupsFromCsv] = (c:HCursor) => for {
-    set <- c.downField("set").as[GroupSetId]
-    csv <- c.downField("csv").as[String]
-  } yield CreateGroupsFromCsv(set, csv)
-
-  implicit val createGroupEnc: Encoder[CreateGroup] = (c:CreateGroup) => Json.obj("group" -> c.g.asJson)
-  implicit val createGroupDec: Decoder[CreateGroup] = (c:HCursor) => c.downField("group").as[Group].map(CreateGroup.apply)
-
-  implicit val addGroupRegEnc: Encoder[AddGroupReg] = (a:AddGroupReg) => Json.obj("groupReg" -> a.gr.asJson)
-  implicit val addGroupRegDec: Decoder[AddGroupReg] = (c:HCursor) => c.downField("groupReg").as[Group.Reg].map(AddGroupReg.apply)
+  //
 
   given Codec.AsObject[UserCall] = Codec.AsObject.derived
   given Codec.AsObject[SessionCall] = Codec.AsObject.derived
   given Codec.AsObject[CourseCall] = Codec.AsObject.derived
+  given Codec.AsObject[TaskCall] = Codec.AsObject.derived
+  given Codec.AsObject[GroupSetCall] = Codec.AsObject.derived
+  given Codec.AsObject[GroupCall] = Codec.AsObject.derived
   given Codec.AsObject[StandardReturn] = Codec.AsObject.derived
 
   implicit val callEncoder: Encoder[Call] = {
     case uc:UserCall => Json.obj(k -> Json.fromString("UserCall"), b -> uc.asJson)
     case sc:SessionCall => Json.obj(k -> Json.fromString("SessionCall"), b -> sc.asJson)
     case cc:CourseCall => Json.obj(k -> Json.fromString("CourseCall"), b -> cc.asJson)
-
-    case c:CreateTask => Json.obj(k -> Json.fromString("CreateTask"), b -> c.asJson)
-
-    case c:CreateGroupSet => Json.obj(k -> Json.fromString("CreateGroupSet"), b -> c.asJson)
-    case c:CreateGroup => Json.obj(k -> Json.fromString("CreateGroup"), b -> c.asJson)
-    case c:AddGroupReg => Json.obj(k -> Json.fromString("AddGroupReg"), b -> c.asJson)
-    case c:CreateGroupsFromCsv => Json.obj(k -> Json.fromString("CreateGroupsFromCsv"), b -> c.asJson)
+    case tc:TaskCall => Json.obj(k -> Json.fromString("TaskCall"), b -> tc.asJson)
+    case gsc:GroupSetCall => Json.obj(k -> Json.fromString("GroupSetCall"), b -> gsc.asJson)
+    case gc:GroupCall => Json.obj(k -> Json.fromString("GroupCall"), b -> gc.asJson)
   }
 
   implicit val callDecoder: Decoder[Call] = (c: HCursor) => {
@@ -62,13 +44,9 @@ object CallPickles {
       case "UserCall" => c.downField(b).as[UserCall]
       case "SessionCall" => c.downField(b).as[SessionCall]
       case "CourseCall" => c.downField(b).as[CourseCall]
-
-      case "CreateTask" => c.downField(b).as[CreateTask]
-
-      case "CreateGroupSet" => c.downField(b).as[CreateGroupSet]
-      case "CreateGroup" => c.downField(b).as[CreateGroup]
-      case "AddGroupReg" => c.downField(b).as[AddGroupReg]
-      case "CreateGroupsFromCsv" => c.downField(b).as[CreateGroupsFromCsv]
+      case "TaskCall" => c.downField(b).as[TaskCall]
+      case "GroupSetCall" => c.downField(b).as[GroupSetCall]
+      case "GroupCall" => c.downField(b).as[GroupCall]
     }
   }
 
@@ -104,6 +82,8 @@ object CallPickles {
   implicit val returnGroupsDataDec: Decoder[ReturnGroupsData] = (c:HCursor) => c.downField("groups").as[Seq[(Group, Seq[String])]].map(ReturnGroupsData.apply)
 
 
+  given Codec.AsObject[ReturnGroup] = Codec.AsObject.derived
+
   implicit val returnEncoder: Encoder[Return] = {
     case s:StandardReturn => Json.obj(k -> Json.fromString("StandardReturn"), b -> s.asJson)
 
@@ -111,6 +91,7 @@ object CallPickles {
     case r:ReturnUser => Json.obj(k -> Json.fromString("ReturnUser"), b -> r.asJson)
     case r:ReturnCourse => Json.obj(k -> Json.fromString("ReturnCourse"), b -> r.asJson)
     case r:ReturnTask => Json.obj(k -> Json.fromString("ReturnTask"), b -> r.asJson)
+    case r:ReturnGroup => Json.obj(k -> Json.fromString("ReturnGroup"), b -> r.asJson)
     case r:ReturnGroupSet => Json.obj(k -> Json.fromString("ReturnGroupSet"), b -> r.asJson)
     case r:ReturnGroupReg => Json.obj(k -> Json.fromString("ReturnGroupReg"), b -> r.asJson)
     case r:ReturnGroupsData => Json.obj(k -> Json.fromString("ReturnGroupsData"), b -> r.asJson)
@@ -125,6 +106,7 @@ object CallPickles {
       case "ReturnCourse" => c.downField(b).as[ReturnCourse]
       case "ReturnTask" => c.downField(b).as[ReturnTask]
       case "ReturnGroupSet" => c.downField(b).as[ReturnGroupSet]
+      case "ReturnGroup" => c.downField(b).as[ReturnGroup]
       case "ReturnGroupReg" => c.downField(b).as[ReturnGroupReg]
       case "ReturnGroupsData" => c.downField(b).as[ReturnGroupsData]
     }

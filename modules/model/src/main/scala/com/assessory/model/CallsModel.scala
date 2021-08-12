@@ -32,34 +32,9 @@ object CallsModel {
       StandardReturn.ReturnWithPermissions(ReturnCourse(wp.item), wp.perms)
     ).collect.map(s => StandardReturn.ReturnMany(s))
 
-    case CreateTask(t) => TaskModel.create(a, t).map { wp => ReturnTask(wp.item) }
-
-    case CreateGroupSet(gs) => GroupModel.createGroupSet(a, gs).map { wp => ReturnGroupSet(wp.item) }
-    case AddGroupReg(gr) => GroupModel.addUserToGroup(a, gr).map(ReturnGroupReg.apply)
-
-    case CreateGroupsFromCsv(set, csv) => {
-      // Do the import
-      val rm = GroupModel.importFromCsv(a, set, csv)
-
-      // Pull the group data back out to verify the import
-      val data = for {
-        // Group the registrations by group (Group.reg.target)
-        registrations <- rm.collect
-        (gId, regs) <- registrations.groupBy(_.target).toSeq.toRefMany
-
-        // Look up the users' display names and put them with the group
-        names <- {
-          for {
-            group <- gId.lazily
-            ids <- regs.map(_.user).toRefMany.collect
-            u <- UserModel.findMany(a, ids).map(UserModel.displayName).collect
-          } yield (group, u)
-        }
-      } yield names
-
-      data.collect.map(ReturnGroupsData.apply)
-    }
-
+    case tc:TaskCall => TaskModel.handleCall(a, tc)
+    case gc:GroupSetCall => GroupModel.handleGroupSetCall(a, gc)
+    case gc:GroupCall => GroupModel.handleGroupCall(a, gc)
   }
 
 }

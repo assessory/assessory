@@ -4,6 +4,7 @@ import java.io.StringReader
 
 import au.com.bytecode.opencsv.CSVReader
 import com.assessory.api.{given, _}
+import call._
 import com.assessory.api.client.WithPerms
 import com.assessory.asyncmongo._
 import com.assessory.api.wiring.Lookups.{given, _}
@@ -473,6 +474,67 @@ object GroupModel {
           } yield saved
       }
     } yield p
+  }
+
+  /**
+   * Handles calls relating to GroupSets
+   * @param a
+   * @param call
+   * @return
+   */
+  def handleGroupSetCall(a:Approval[User], call:GroupSetCall):Ref[Return] = call match {
+    case GroupSetCall.GetGroupSet(id) =>
+      for WithPerms(perms, g) <- groupSet(a, id) yield StandardReturn.ReturnWithPermissions(ReturnGroupSet(g), perms)
+    case GroupSetCall.CreateGroupSet(gs) =>
+      for WithPerms(perms, g) <- createGroupSet(a, gs) yield StandardReturn.ReturnWithPermissions(ReturnGroupSet(g), perms)
+  }
+
+  def handleGroupCall(a:Approval[User], call:GroupCall):Ref[Return] = call match {
+    //case GroupCall.CreateGroup(g) =>
+    //  for WithPerms(perms, g) <- crea(a, id) yield StandardReturn.ReturnWithPermissions(ReturnGroupSet(g), perms)
+
+    case GroupCall.GetGroup(id) =>
+      for WithPerms(perms, g) <- group(a, id) yield StandardReturn.ReturnWithPermissions(ReturnGroup(g), perms)
+
+    case GroupCall.GetManyGroups(ids) =>
+      val rm = for
+        g <- findMany(a, ids)
+        WithPerms(perms, _) <- withPerms(a, g)
+      yield StandardReturn.ReturnWithPermissions(ReturnGroup(g), perms)
+      for list <- rm.collect yield StandardReturn.ReturnMany(list)
+
+    case GroupCall.MyGroups =>
+      val rm = for WithPerms(perms, g) <- myGroupsWP(a) yield StandardReturn.ReturnWithPermissions(ReturnGroup(g), perms)
+      for list <- rm.collect yield StandardReturn.ReturnMany(list)
+
+    case GroupCall.MyGroupsInCourse(courseId) =>
+      val rm = for WithPerms(perms, g) <- myGroupsInCourseWP(a, courseId.lazily) yield StandardReturn.ReturnWithPermissions(ReturnGroup(g), perms)
+      for list <- rm.collect yield StandardReturn.ReturnMany(list)
+
+    case GroupCall.AddGroupReg(gr) => GroupModel.addUserToGroup(a, gr).map(ReturnGroupReg.apply)
+    case GroupCall.CreateGroupsFromCsv(set, csv) => {
+      // Do the import
+      val rm = GroupModel.importFromCsv(a, set, csv)
+
+      // Pull the group data back out to verify the import
+      val data = for {
+        // Group the registrations by group (Group.reg.target)
+        registrations <- rm.collect
+        (gId, regs) <- registrations.groupBy(_.target).toSeq.toRefMany
+
+        // Look up the users' display names and put them with the group
+        names <- {
+          for {
+            group <- gId.lazily
+            ids <- regs.map(_.user).toRefMany.collect
+            u <- UserModel.findMany(a, ids).map(UserModel.displayName).collect
+          } yield (group, u)
+        }
+      } yield names
+
+      data.collect.map(ReturnGroupsData.apply)
+    }
+
   }
 
 }

@@ -1,8 +1,8 @@
 package com.assessory.api.call
 
-import com.assessory.api.Task
+import com.assessory.api.{Task, TaskId}
 import com.wbillingsley.handy.Id
-import com.assessory.api.appbase.{ActiveSession, Course, CourseId, Group, GroupRole, GroupSet, User, UserId}
+import com.assessory.api.appbase.{ActiveSession, Course, CourseId, Group, GroupId, GroupRole, GroupSet, GroupSetId, User, UserId}
 import com.assessory.api.client.WithPerms
 
 class CallsAPI {
@@ -34,13 +34,26 @@ enum CourseCall extends Call {
   case MyCourses
 }
 
-case class CreateTask(t:Task) extends Call
+enum TaskCall extends Call {
+  case GetTask(id:TaskId)
+  case CreateTask(t:Task)
+  case CourseTasks(cid:CourseId)
+}
 
-case class CreateGroupSet(gs:GroupSet) extends Call
-case class CreateGroupsFromCsv(setId: Id[GroupSet, String], csv: String) extends Call
+enum GroupSetCall extends Call {
+  case GetGroupSet(id:GroupSetId)
+  case CreateGroupSet(gs:GroupSet)
+}
 
-case class CreateGroup(g:Group) extends Call
-case class AddGroupReg(gr:Group.Reg) extends Call
+enum GroupCall extends Call {
+  case GetGroup(id:GroupId)
+  case GetManyGroups(ids:Seq[GroupId])
+  case MyGroups
+  case MyGroupsInCourse(courseId:CourseId)
+  case CreateGroupsFromCsv(setId: GroupSetId, csv: String)
+  case CreateGroup(g:Group)
+  case AddGroupReg(gr:Group.Reg)
+}
 
 trait Return
 case class ReturnSession(a:ActiveSession) extends Return
@@ -48,6 +61,7 @@ case class ReturnUser(u:User) extends Return
 case class ReturnCourse(c:Course) extends Return
 case class ReturnTask(t:Task) extends Return
 case class ReturnGroupSet(gs:GroupSet) extends Return
+case class ReturnGroup(g:Group) extends Return
 case class ReturnGroupReg(gr:Group.Reg) extends Return
 case class ReturnGroupsData(data:Seq[(Group, Seq[String])]) extends Return
 

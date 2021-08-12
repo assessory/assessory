@@ -3,9 +3,10 @@ package com.assessory.model
 import com.assessory.api.{given, _}
 import com.assessory.api.client.WithPerms
 import com.assessory.api.wiring.Lookups.{given, _}
-import com.wbillingsley.handy.{Approval, Approved, Id, Ref, RefFailed, lazily, refOps, Perm, Refused}
-import com.assessory.asyncmongo._
+import com.wbillingsley.handy.{Approval, Approved, Id, Perm, Ref, RefFailed, Refused, lazily, refOps}
+import com.assessory.asyncmongo.*
 import com.assessory.api.appbase.{Course, GroupSet, User, UserError}
+import com.assessory.api.call.{Return, ReturnTask, StandardReturn, TaskCall}
 
 object TaskModel {
 
@@ -90,6 +91,24 @@ object TaskModel {
       wp <- withPerms(a, task); // Do this first so we cache the permissions
       approved <- a ask Permissions.ViewTask(task.itself)
     ) yield wp
+  }
+
+  /**
+   * Handles task calls, for the Calls API
+   * @param call
+   * @return
+   */
+  def handleCall(a:Approval[User], call:TaskCall):Ref[Return] = call match {
+    case TaskCall.GetTask(id) =>
+      for wp <- byId(a, id) yield StandardReturn.ReturnWithPermissions(ReturnTask(wp.item), wp.perms)
+    case TaskCall.CreateTask(t) =>
+      for wp <- create(a, t) yield StandardReturn.ReturnWithPermissions(ReturnTask(wp.item), wp.perms)
+    case TaskCall.CourseTasks(cid) =>
+      val rm = for
+        wp <- courseTasks(a, cid.lazily)
+      yield StandardReturn.ReturnWithPermissions(ReturnTask(wp.item), wp.perms)
+      for list <- rm.collect yield StandardReturn.ReturnMany(list)
+
   }
 
 }

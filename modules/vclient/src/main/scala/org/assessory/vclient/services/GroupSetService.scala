@@ -2,9 +2,10 @@ package org.assessory.vclient.services
 
 import com.assessory.api.client.WithPerms
 import com.assessory.clientpickle.Pickles
-import com.assessory.clientpickle.Pickles._
-import com.wbillingsley.handy.Id._
+import com.assessory.clientpickle.Pickles.*
+import com.wbillingsley.handy.Id.*
 import com.assessory.api.appbase.{GroupSet, GroupSetId}
+import com.assessory.api.call.{StandardReturn, GroupSetCall, ReturnGroupSet}
 import com.wbillingsley.handy.{Id, Latch}
 import org.scalajs.dom.ext.Ajax
 
@@ -18,13 +19,15 @@ object GroupSetService {
 
   UserService.self.addListener { _ => cache.clear() }
 
-  def loadId[KK <: String](id:Id[GroupSet,KK]):Future[WithPerms[GroupSet]] = {
-    Ajax.get(s"/api/groupSet/${id.id}", headers = Map("Accept" -> "application/json")).responseText.flatMap(Pickles.readF[WithPerms[GroupSet]])
+  def loadId(id:GroupSetId):Future[WithPerms[GroupSet]] = {
+    for
+      StandardReturn.ReturnWithPermissions(ReturnGroupSet(gs), perms) <- callClient.makeCall(GroupSetCall.GetGroupSet(id))
+    yield
+      WithPerms(perms, gs)
   }
 
   def latch(s:String):Latch[WithPerms[GroupSet]] = cache.getOrElseUpdate(s, Latch.lazily(loadId(GroupSetId(s))))
 
-  def latch(id:Id[GroupSet,String]):Latch[WithPerms[GroupSet]] = cache.getOrElseUpdate(id.id, Latch.lazily(loadId(id)))
-
+  def latch(id:Id[GroupSet,String]):Latch[WithPerms[GroupSet]] = cache.getOrElseUpdate(id.id, Latch.lazily(loadId(GroupSetId(id.id))))
 
 }
