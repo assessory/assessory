@@ -33,8 +33,10 @@ object CallsModel {
     ).collect.map(s => StandardReturn.ReturnMany(s))
 
     case tc:TaskCall => TaskModel.handleCall(a, tc)
+    case toc:TaskOutputCall => TaskOutputModel.handleCall(a, toc)
     case gc:GroupSetCall => GroupModel.handleGroupSetCall(a, gc)
     case gc:GroupCall => GroupModel.handleGroupCall(a, gc)
+    case cc:CritiqueCall => CritModel.handleCall(a, cc)
   }
 
 }

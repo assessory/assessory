@@ -1,17 +1,17 @@
 package com.assessory.model
 
 import java.io.StringWriter
-
 import au.com.bytecode.opencsv.CSVWriter
 import com.assessory.api.{given, _}
 import com.assessory.api.client.WithPerms
 import com.assessory.api.critique.{Critique, CritiqueTask}
-import com.assessory.api.question.{VideoAnswer, BooleanQuestion, ShortTextQuestion, BooleanAnswer, ShortTextAnswer, QuestionnaireTaskOutput}
-import com.assessory.api.video._
-import com.assessory.asyncmongo._
+import com.assessory.api.question.{BooleanAnswer, BooleanQuestion, QuestionnaireTaskOutput, ShortTextAnswer, ShortTextQuestion, VideoAnswer}
+import com.assessory.api.video.*
+import com.assessory.asyncmongo.*
 import com.assessory.api.wiring.Lookups.{given, _}
-import com.wbillingsley.handy.{Ref, RefFailed, RefOpt, RefNone, RefMany, refOps, Id, lazily, Approval}
-import com.assessory.api.appbase.{UserError, User}
+import com.wbillingsley.handy.{Approval, Id, Ref, RefFailed, RefMany, RefNone, RefOpt, lazily, refOps}
+import com.assessory.api.appbase.{User, UserError}
+import com.assessory.api.call.{Return, TaskOutputCall, ReturnTaskOutput, StandardReturn}
 
 object TaskOutputModel {
 
@@ -283,5 +283,37 @@ object TaskOutputModel {
 
     r
   }
+
+  def handleCall(a:Approval[User], call:TaskOutputCall):Ref[Return] = call match {
+    case TaskOutputCall.GetTaskOutput(id) =>
+      for wp <- get(a, id) yield StandardReturn.ReturnWithPermissions(ReturnTaskOutput(wp.item), wp.perms)
+
+    case TaskOutputCall.CreateTaskOutput(clientTO) =>
+      for
+        WithPerms(perms, to) <- create(
+          a = a,
+          task = clientTO.task.lazily,
+          clientTaskOutput = clientTO,
+          finalise = false // TODO: allow finalising of tasks
+        )
+      yield StandardReturn.ReturnWithPermissions(ReturnTaskOutput(to), perms)
+
+    case TaskOutputCall.MyOutputs(taskId) =>
+      val rm = for t <- myOutputs(a, taskId.lazily) yield ReturnTaskOutput(t)
+      for list <- rm.collect yield StandardReturn.ReturnMany(list)
+
+    case TaskOutputCall.AllOutputs(taskId) =>
+      val rm = for t <- allOutputs(a, taskId.lazily) yield ReturnTaskOutput(t)
+      for list <- rm.collect yield StandardReturn.ReturnMany(list)
+
+    case TaskOutputCall.UpdateBody(to) =>
+      (for
+        wp <- updateBody(a, to, false)
+      yield StandardReturn.ReturnWithPermissions(ReturnTaskOutput(wp.item), wp.perms)) orElse StandardReturn.ReturnNone.itself
+
+    case TaskOutputCall.Finalise(to) =>
+      for wp <- finalise(a, to.itself) yield StandardReturn.ReturnWithPermissions(ReturnTaskOutput(wp.item), wp.perms)
+  }
+
 
 }

@@ -1,17 +1,17 @@
 package com.assessory.model
 
 import java.io.StringWriter
-
 import au.com.bytecode.opencsv.CSVWriter
-import com.assessory.api.{given, _}
+import com.assessory.api.{given, *}
 import com.assessory.api.client.WithPerms
-import com.assessory.api.critique._
-import com.assessory.api.question._
+import com.assessory.api.critique.*
+import com.assessory.api.question.*
 import com.assessory.api.video.{VideoTask, VideoTaskOutput}
-import com.assessory.api.wiring.Lookups.{given, _}
-import com.assessory.asyncmongo._
-import com.wbillingsley.handy.{Ref, RefOpt, RefSome, RefMany, RefFailed, refOps, Id, lazily, Approval}
-import com.assessory.api.appbase._
+import com.assessory.api.wiring.Lookups.{given, *}
+import com.assessory.asyncmongo.*
+import com.wbillingsley.handy.{Approval, Id, Ref, RefFailed, RefMany, RefOpt, RefSome, lazily, refOps}
+import com.assessory.api.appbase.*
+import com.assessory.api.call.{CritiqueCall, Return, ReturnTarget, ReturnTaskOutput, StandardReturn}
 
 import scala.util.Random
 
@@ -444,7 +444,8 @@ object CritModel {
     }
   }
 
-  def makeTos(approval:Approval[User], task:Task):RefMany[TaskOutput] = task match {
+  /** Called by the client view to create blank task outputs as necessary */
+  def fillMyTaskOutputs(approval:Approval[User], task:Task):RefMany[TaskOutput] = task match {
     case Task(_, _, _, CritiqueTask(AllocateStrategy(TTOutputs(id), num), critTask)) =>
       for {
         u <- approval.who
@@ -467,4 +468,22 @@ object CritModel {
         to.item
       }
   }
+
+
+  def handleCall(a:Approval[User], call:CritiqueCall):Ref[Return] = call match {
+    case CritiqueCall.MyAllocations(taskId) =>
+      val rm = for target <- myAllocations(a, taskId.lazily) yield ReturnTarget(target)
+      for list <- rm.collect yield StandardReturn.ReturnMany(list)
+
+    case CritiqueCall.FindOrCreateCritique(taskId, target) =>
+      for wp <- findOrCreateCrit(a, taskId.lazily, target) yield StandardReturn.ReturnWithPermissions(ReturnTaskOutput(wp.item), wp.perms)
+
+    case CritiqueCall.FillMyTaskOutputs(taskId) =>
+      val rm = for
+        task <- taskId.lazily
+        to <- fillMyTaskOutputs(a, task)
+      yield ReturnTaskOutput(to)
+      for list <- rm.collect yield StandardReturn.ReturnMany(list)
+  }
+
 }

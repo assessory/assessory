@@ -1,8 +1,9 @@
 package com.assessory.api.call
 
-import com.assessory.api.{Task, TaskId}
+import com.assessory.api.{Task, TaskId, TaskOutput, TaskOutputId}
 import com.wbillingsley.handy.Id
 import com.assessory.api.appbase.{ActiveSession, Course, CourseId, Group, GroupId, GroupRole, GroupSet, GroupSetId, User, UserId}
+import com.assessory.api.Target
 import com.assessory.api.client.WithPerms
 
 class CallsAPI {
@@ -55,11 +56,28 @@ enum GroupCall extends Call {
   case AddGroupReg(gr:Group.Reg)
 }
 
+enum TaskOutputCall extends Call {
+  case GetTaskOutput(id:TaskOutputId)
+  case CreateTaskOutput(to:TaskOutput)
+  case MyOutputs(task:TaskId)
+  case AllOutputs(task:TaskId)
+  case UpdateBody(taskOutput: TaskOutput)
+  case Finalise(taskOutput: TaskOutput)
+}
+
+enum CritiqueCall extends Call {
+  case MyAllocations(taskId: TaskId)
+  case FillMyTaskOutputs(taskId: TaskId)
+  case FindOrCreateCritique(taskId: TaskId, target:Target)
+}
+
 trait Return
 case class ReturnSession(a:ActiveSession) extends Return
 case class ReturnUser(u:User) extends Return
 case class ReturnCourse(c:Course) extends Return
 case class ReturnTask(t:Task) extends Return
+case class ReturnTarget(t:Target) extends Return
+case class ReturnTaskOutput(t:TaskOutput) extends Return
 case class ReturnGroupSet(gs:GroupSet) extends Return
 case class ReturnGroup(g:Group) extends Return
 case class ReturnGroupReg(gr:Group.Reg) extends Return

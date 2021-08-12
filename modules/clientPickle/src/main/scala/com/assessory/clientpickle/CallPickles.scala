@@ -26,6 +26,8 @@ object CallPickles {
   given Codec.AsObject[SessionCall] = Codec.AsObject.derived
   given Codec.AsObject[CourseCall] = Codec.AsObject.derived
   given Codec.AsObject[TaskCall] = Codec.AsObject.derived
+  given Codec.AsObject[TaskOutputCall] = Codec.AsObject.derived
+  given Codec.AsObject[CritiqueCall] = Codec.AsObject.derived
   given Codec.AsObject[GroupSetCall] = Codec.AsObject.derived
   given Codec.AsObject[GroupCall] = Codec.AsObject.derived
   given Codec.AsObject[StandardReturn] = Codec.AsObject.derived
@@ -35,6 +37,8 @@ object CallPickles {
     case sc:SessionCall => Json.obj(k -> Json.fromString("SessionCall"), b -> sc.asJson)
     case cc:CourseCall => Json.obj(k -> Json.fromString("CourseCall"), b -> cc.asJson)
     case tc:TaskCall => Json.obj(k -> Json.fromString("TaskCall"), b -> tc.asJson)
+    case toc:TaskOutputCall => Json.obj(k -> Json.fromString("TaskOutputCall"), b -> toc.asJson)
+    case cc:CritiqueCall => Json.obj(k -> Json.fromString("CritiqueCall"), b -> cc.asJson)
     case gsc:GroupSetCall => Json.obj(k -> Json.fromString("GroupSetCall"), b -> gsc.asJson)
     case gc:GroupCall => Json.obj(k -> Json.fromString("GroupCall"), b -> gc.asJson)
   }
@@ -45,6 +49,8 @@ object CallPickles {
       case "SessionCall" => c.downField(b).as[SessionCall]
       case "CourseCall" => c.downField(b).as[CourseCall]
       case "TaskCall" => c.downField(b).as[TaskCall]
+      case "TaskOutputCall" => c.downField(b).as[TaskOutputCall]
+      case "CritiqueCall" => c.downField(b).as[CritiqueCall]
       case "GroupSetCall" => c.downField(b).as[GroupSetCall]
       case "GroupCall" => c.downField(b).as[GroupCall]
     }
@@ -83,6 +89,8 @@ object CallPickles {
 
 
   given Codec.AsObject[ReturnGroup] = Codec.AsObject.derived
+  given Codec.AsObject[ReturnTaskOutput] = Codec.AsObject.derived
+  given Codec.AsObject[ReturnTarget] = Codec.AsObject.derived
 
   implicit val returnEncoder: Encoder[Return] = {
     case s:StandardReturn => Json.obj(k -> Json.fromString("StandardReturn"), b -> s.asJson)
@@ -91,6 +99,7 @@ object CallPickles {
     case r:ReturnUser => Json.obj(k -> Json.fromString("ReturnUser"), b -> r.asJson)
     case r:ReturnCourse => Json.obj(k -> Json.fromString("ReturnCourse"), b -> r.asJson)
     case r:ReturnTask => Json.obj(k -> Json.fromString("ReturnTask"), b -> r.asJson)
+    case r:ReturnTaskOutput => Json.obj(k -> Json.fromString("ReturnTaskOutput"), b -> r.asJson)
     case r:ReturnGroup => Json.obj(k -> Json.fromString("ReturnGroup"), b -> r.asJson)
     case r:ReturnGroupSet => Json.obj(k -> Json.fromString("ReturnGroupSet"), b -> r.asJson)
     case r:ReturnGroupReg => Json.obj(k -> Json.fromString("ReturnGroupReg"), b -> r.asJson)
@@ -105,6 +114,7 @@ object CallPickles {
       case "ReturnUser" => c.downField(b).as[ReturnUser]
       case "ReturnCourse" => c.downField(b).as[ReturnCourse]
       case "ReturnTask" => c.downField(b).as[ReturnTask]
+      case "ReturnTaskOutput" => c.downField(b).as[ReturnTask]
       case "ReturnGroupSet" => c.downField(b).as[ReturnGroupSet]
       case "ReturnGroup" => c.downField(b).as[ReturnGroup]
       case "ReturnGroupReg" => c.downField(b).as[ReturnGroupReg]

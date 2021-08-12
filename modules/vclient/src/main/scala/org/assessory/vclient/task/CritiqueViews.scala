@@ -21,7 +21,7 @@ object CritiqueViews {
   case class EditOutputView(task:Task) extends VHtmlComponent {
 
     // These are the original (unedited) allocations
-    private val allocations = TaskOutputService.taskOutputsFor(task.id)
+    private val allocations = TaskOutputService.fillAllocations(task.id)
 
     private def taskOutputs:Future[Seq[Id[TaskOutput, String]]] = for {
       alloc <- allocations
