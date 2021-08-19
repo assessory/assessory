@@ -1,9 +1,9 @@
 package com.assessory.model
 
-import com.assessory.api.wiring.Lookups.{given, _}
-import com.assessory.asyncmongo._
-import com.wbillingsley.handy.{Ref, refOps, Approval, Id}
-import com.assessory.api.appbase.{Identity, User, ActiveSession, UserError}
+import com.assessory.api.wiring.Lookups.{given, *}
+import com.assessory.asyncmongo.*
+import com.wbillingsley.handy.{Approval, EmptyKind, Id, Ref, Refused, lazily, refOps}
+import com.assessory.api.appbase.{ActiveSession, Course, CourseId, CourseRole, Identity, User, UserError, UserId}
 
 object UserModel {
 
@@ -70,5 +70,39 @@ object UserModel {
   def displayName(u:User):String = {
     u.name.orElse(u.pwlogin.email.orElse(u.identities.find(_.username.nonEmpty).flatMap(_.username))).getOrElse("Unnamed user")
   }
+
+  /** Perform an LTI 1.1 login to a course */
+  def lti11Login(courseId:CourseId, consumerKey:String, session:String, ip:String, email:String, name:String):Ref[Course.Reg] = {
+    val service = "LTI" + consumerKey
+    def courseContainsLti(c:Course, ck:String) = {
+      c.ltis.exists(_.clientKey == ck)
+    }
+
+    for
+      prevUser <- {
+        for
+          u <- UserDAO.bySessionKey(session)
+          out <- UserModel.logOut(u.itself, ActiveSession(session, ip=ip))
+        yield out
+      }.option
+
+      course <- (for c <- courseId.lazily.toRefOpt if courseContainsLti(c, consumerKey) yield c) orFail Refused("Client key did not match")
+
+      user <- {
+        UserDAO.bySocialIdOrUsername(service=service, optId=Some(email), optUserName=Some(email)) orElse {
+          UserDAO.saveNew(User(
+            id = UserId(UserDAO.allocateId),
+            name = Some(name),
+            identities = Seq(Identity(service=service, value=Some(email), username=Some(email)))
+          ))
+        }
+      }
+
+      loggedIn <- UserDAO.pushSession(user.itself, ActiveSession(key=session, ip=ip))
+
+      reg <- RegistrationDAO.course.register(user.id, course.id, Set(CourseRole.student), EmptyKind)
+    yield reg
+  }
+
 
 }

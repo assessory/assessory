@@ -5,19 +5,20 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshalling.{Marshaller, ToEntityMarshaller}
 import akka.http.scaladsl.model.*
-import akka.http.scaladsl.model.StatusCodes.{InternalServerError, NotFound}
-import akka.http.scaladsl.model.headers.HttpCookie
+import akka.http.scaladsl.model.StatusCodes.{Forbidden, InternalServerError, NotFound}
+import akka.http.scaladsl.model.headers.{HttpCookie, SameSite}
 import akka.http.scaladsl.server.Directives.*
 import akka.http.scaladsl.server.{ExceptionHandler, Route}
 import akka.http.scaladsl.unmarshalling.{FromRequestUnmarshaller, Unmarshaller}
-import com.assessory.api.appbase.ActiveSession
+import com.assessory.api.appbase.{ActiveSession, Course, CourseId, CourseRole, Identity, User, UserId}
 
 import scala.io.StdIn
-import com.wbillingsley.handy.{Approval, RefFuture}
+import com.wbillingsley.handy.{Approval, EmptyKind, RefFuture, RefFailed, Refused, refOps, lazily}
 import com.assessory.api.call.{Call, Return, ReturnSession, SessionCall}
-import com.assessory.asyncmongo.{DB, UserDAO}
+import com.assessory.asyncmongo.{DB, RegistrationDAO, UserDAO}
 import com.assessory.clientpickle.CallPickles
-import com.assessory.model.{CallsModel, DoWiring}
+import com.assessory.model.{CallsModel, DoWiring, UserModel}
+import com.assessory.api.wiring.Lookups.{given, _}
 
 import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
@@ -26,8 +27,11 @@ private val random = new java.security.SecureRandom()
 private def randomSessionId() = {
   new java.math.BigInteger(120, random).toString(32)
 }
-private def randomSessionCookie() = HttpCookie("assessorySession", randomSessionId())
-
+private def randomSessionCookie() = HttpCookie.apply(
+  name="assessorySession",
+  value=randomSessionId(),
+  path=Some("/")
+).withSameSite(SameSite.Lax)
 
 given FromRequestUnmarshaller[Call] = Unmarshaller.messageUnmarshallerFromEntityUnmarshaller(
     Unmarshaller.stringUnmarshaller
@@ -45,6 +49,8 @@ given ToEntityMarshaller[Return] =
 given ExceptionHandler = ExceptionHandler {
   case _:NoSuchElementException =>
     complete(HttpResponse(NotFound))
+  case Refused(msg) =>
+    complete(HttpResponse(Forbidden, entity=msg))
   case NonFatal(e) =>
     complete(HttpResponse(InternalServerError, entity =
       s"""ERROR: ${e.getMessage}
@@ -52,6 +58,7 @@ given ExceptionHandler = ExceptionHandler {
          |${e.getStackTrace.map(_.toString).mkString("\n")}
          |""".stripMargin))
 }
+
 
 
 @main def startServer() = {
@@ -128,6 +135,69 @@ given ExceptionHandler = ExceptionHandler {
       }
     },
 
+    pathPrefix("lti1.1" / "course" / Segment / Remaining) { (courseId, remaining) =>
+      post {
+
+        println("LTI post")
+
+        extractUri { uri =>
+
+          println(uri)
+
+          formFieldMap { fieldMap =>
+            extractClientIP { ip =>
+
+              val consumerKey = fieldMap.getOrElse("oauth_consumer_key", "")
+              val email = fieldMap.getOrElse("lis_person_contact_email_primary", "")
+              val name = fieldMap.getOrElse("lis_person_name_full", "")
+
+              val path = uri.path.toString()
+              val authority = uri.authority.host.toString()
+              val port = uri.authority.port.toString()
+              val scheme = uri.scheme
+              val params = fieldMap.toSeq
+
+              val signature = fieldMap.getOrElse("oauth_signature", "")
+
+              val redir = HttpResponse(
+                status = StatusCodes.SeeOther,
+                headers = Seq(headers.Location("/#/" + remaining)),
+                entity = HttpEntity.Empty
+              )
+
+              optionalCookie("assessorySession") {
+                case Some(sessionCookie) =>
+                  println(s"Logging you in with existing session cookie ${sessionCookie.value}")
+                  complete {
+                    for
+                      reg <- UserModel.lti11Login(CourseId(courseId), consumerKey, sessionCookie.value, ip.value, email, name).toFuture
+                    yield redir
+                  }
+
+                case None =>
+                  val cookie = randomSessionCookie()
+                  setCookie(cookie) {
+                    complete {
+                      (for
+                        course <- CourseId(courseId).lazily
+                        secret <- course.ltis.find(_.clientKey == consumerKey).map(_.secret).toRefOpt orFail Refused("Consumer key not found")
+
+                        generatedSignature = Lti11Verifier.signature(
+                          method="POST", scheme=scheme, authority=authority, port=port, path=path, parameters=params, secret
+                        )
+                        _ <- if signature == generatedSignature then true.itself else RefFailed(Refused(s"Generated signature $generatedSignature did not match request signature $signature"))
+
+                        reg <- UserModel.lti11Login(CourseId(courseId), consumerKey, cookie.value(), ip.value, email, name)
+                      yield redir).toFuture
+                    }
+                  }
+              }
+            }
+          }
+        }
+      }
+    },
+
     pathPrefix("assets" / Remaining) { file =>
       // optionally compresses the response with Gzip or Deflate
       // if the client accepts compressed responses
@@ -149,6 +219,17 @@ given ExceptionHandler = ExceptionHandler {
       // if the client accepts compressed responses
       encodeResponse {
         getFromResource("public/" + file)
+      }
+    },
+
+    path("newcookie") {
+      get {
+        val cookie = randomSessionCookie()
+        setCookie(cookie) {
+          complete {
+            s"New cookie is ${cookie.value()}"
+          }
+        }
       }
     }
 

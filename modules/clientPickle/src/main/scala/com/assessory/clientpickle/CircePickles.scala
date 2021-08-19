@@ -96,14 +96,7 @@ object Pickles {
   implicit val courseRoleEncoder: Encoder[CourseRole] = (r:CourseRole) => Json.obj("role" -> r.r.asJson)
   implicit val courseRoleDecoder: Decoder[CourseRole] = (c:HCursor) => c.downField("role").as[String].map(CourseRole.apply)
 
-  implicit val ltiConsumerEncoder: Encoder[LTIConsumer] = (lti:LTIConsumer) => Json.obj(
-    "clientKey" -> lti.clientKey.asJson, "comment" -> lti.comment.asJson, "secret" -> lti.secret.asJson
-  )
-  implicit val ltiConsumerDecoder: Decoder[LTIConsumer] =(c:HCursor) => for {
-    clientKey <- c.downField("clientKey").as[String]
-    comment <- c.downField("comment").as[Option[String]].map(_.getOrElse("")) // FIXME: this is null in the database for some courses
-    secret <- c.downField("secret").as[Option[String]]
-  } yield LTIConsumer(clientKey, comment, secret)
+  given Codec.AsObject[LTIConsumer] = Codec.AsObject.derived
 
   implicit val courseEncoder: Encoder[Course] = (c:Course) => Json.obj(
     "id" -> c.id.asJson, "addedBy" -> c.addedBy.asJson, "coverImage" -> c.coverImage.asJson,

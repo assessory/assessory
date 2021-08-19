@@ -100,6 +100,7 @@ object CallPickles {
     case r:ReturnCourse => Json.obj(k -> Json.fromString("ReturnCourse"), b -> r.asJson)
     case r:ReturnTask => Json.obj(k -> Json.fromString("ReturnTask"), b -> r.asJson)
     case r:ReturnTaskOutput => Json.obj(k -> Json.fromString("ReturnTaskOutput"), b -> r.asJson)
+    case r:ReturnTarget => Json.obj(k -> Json.fromString("ReturnTarget"), b -> r.asJson)
     case r:ReturnGroup => Json.obj(k -> Json.fromString("ReturnGroup"), b -> r.asJson)
     case r:ReturnGroupSet => Json.obj(k -> Json.fromString("ReturnGroupSet"), b -> r.asJson)
     case r:ReturnGroupReg => Json.obj(k -> Json.fromString("ReturnGroupReg"), b -> r.asJson)
@@ -115,6 +116,7 @@ object CallPickles {
       case "ReturnCourse" => c.downField(b).as[ReturnCourse]
       case "ReturnTask" => c.downField(b).as[ReturnTask]
       case "ReturnTaskOutput" => c.downField(b).as[ReturnTask]
+      case "ReturnTarget" => c.downField(b).as[ReturnTarget]
       case "ReturnGroupSet" => c.downField(b).as[ReturnGroupSet]
       case "ReturnGroup" => c.downField(b).as[ReturnGroup]
       case "ReturnGroupReg" => c.downField(b).as[ReturnGroupReg]
