@@ -1,7 +1,7 @@
 package com.assessory.clientpickle
 
 import com.assessory.api.appbase.{ActiveSession, User}
-import com.wbillingsley.handy.Latch
+import com.wbillingsley.handy.{Latch, Ref, refOps}
 import com.assessory.api.call.{Call, Return, ReturnSession, ReturnUser, SessionCall}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -20,6 +20,8 @@ class CallClient(using networkService: Call => Future[Return], ec:ExecutionConte
   )
 
   def makeCall(call:Call):Future[Return] = session.request.flatMap(s => networkService(SessionCall.WithSession(s, call)))
+
+  def call(call:Call):Ref[Return] = makeCall(call).toRef
 
   def login(email:String, password:String):Future[User] = {
     for

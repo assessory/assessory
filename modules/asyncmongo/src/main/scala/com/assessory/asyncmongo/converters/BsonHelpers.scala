@@ -88,6 +88,12 @@ object BsonHelpers {
 
   def $push(tuples:(String,BsonValue)*) = Document("$push" -> Document.fromSeq(tuples))
 
+  def $pushLimit(retain:Int, field:String, values:BsonValue*) = Document("$push" ->
+    Document(field ->
+      Document("$each" -> values, "$slice" -> retain)
+    )
+  )
+
   def $addToSet(tuples:(String,BsonValue)*) = Document("$addToSet" -> Document.fromSeq(tuples))
 
   def $in(arr:BsonArray) = Document("$in" -> arr).toBsonDocument

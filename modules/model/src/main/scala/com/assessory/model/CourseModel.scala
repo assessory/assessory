@@ -1,16 +1,16 @@
 package com.assessory.model
 
-import java.io.{StringWriter, StringReader}
-
-import au.com.bytecode.opencsv.{CSVWriter, CSVReader}
-import com.assessory.api.{given, _}
+import java.io.{StringReader, StringWriter}
+import au.com.bytecode.opencsv.{CSVReader, CSVWriter}
+import com.assessory.api.{given, *}
 import com.assessory.api.client.WithPerms
-import com.assessory.api.wiring.Lookups.{given, _}
-import com.assessory.asyncmongo._
-import com.wbillingsley.handy.{Ref, refOps, Approval, RefOpt, RefMany, HasKind, EmptyKind, Id, lazily}
-import com.assessory.api.appbase._
+import com.assessory.api.wiring.Lookups.{given, *}
+import com.assessory.asyncmongo.*
+import com.wbillingsley.handy.{Approval, EmptyKind, HasKind, Id, Ref, RefMany, RefNone, RefOpt, lazily, refOps}
+import com.assessory.api.appbase.*
+import com.assessory.api.call.{CourseCall, Return, ReturnCourse, StandardReturn}
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.*
 
 object CourseModel {
 
@@ -110,6 +110,29 @@ object CourseModel {
       cId <- c.refId.require
       reg <- RegistrationDAO.course.register(uId, cId, r, EmptyKind)
     } yield reg
+  }
+
+  def handleCall(a:Approval[User], cc:CourseCall):Ref[Return] = cc match {
+    case CourseCall.CreateCourse(c) =>
+      create(a, c).map {
+        wp => StandardReturn.ReturnWithPermissions(ReturnCourse(wp.item), wp.perms)
+      }
+
+    case CourseCall.GetCourse(id) =>
+      byId(a, id).map {
+        wp => StandardReturn.ReturnWithPermissions(ReturnCourse(wp.item), wp.perms)
+      }
+
+    case CourseCall.ByShortName(name) =>
+      byShortName(name).first.map(
+        c => ReturnCourse(c)
+      ).require
+
+    case CourseCall.MyCourses =>
+      myCourses(a).map(wp =>
+        StandardReturn.ReturnWithPermissions(ReturnCourse(wp.item), wp.perms)
+      ).collect.map(s => StandardReturn.ReturnMany(s))
+
   }
 
 }

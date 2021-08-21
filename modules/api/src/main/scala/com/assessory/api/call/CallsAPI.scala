@@ -31,18 +31,21 @@ enum UserCall extends Call {
 
 enum CourseCall extends Call {
   case GetCourse(id:CourseId)
+  case ByShortName(sn:String)
   case CreateCourse(c:Course)
   case MyCourses
 }
 
 enum TaskCall extends Call {
   case GetTask(id:TaskId)
+  case ByName(cid:CourseId, n:String)
   case CreateTask(t:Task)
   case CourseTasks(cid:CourseId)
 }
 
 enum GroupSetCall extends Call {
   case GetGroupSet(id:GroupSetId)
+  case ByName(c:CourseId, n:String)
   case CreateGroupSet(gs:GroupSet)
 }
 

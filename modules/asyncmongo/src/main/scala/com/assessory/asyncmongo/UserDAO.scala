@@ -55,7 +55,10 @@ object UserDAO extends DAO(classOf[User], "assessoryUser", UserB.read) with com.
       uid <- ru.refId.require
       u <- updateAndFetch(
         query = "_id" $eq uid,
-        update = $push("activeSessions" -> ActiveSessionB.write(as))
+
+        // TODO: we're just retaining 10 sessions due to LTI sessions profilerating. If we improve how LTI login works we can change this.
+        // (issue with the session key not being passed to the app on the initial third party POST request due to SameSite restrictions).
+        update = $pushLimit(-10, "activeSessions", ActiveSessionB.write(as))
       ).require
     } yield u
   }

@@ -150,6 +150,7 @@ given ExceptionHandler = ExceptionHandler {
               val consumerKey = fieldMap.getOrElse("oauth_consumer_key", "")
               val email = fieldMap.getOrElse("lis_person_contact_email_primary", "")
               val name = fieldMap.getOrElse("lis_person_name_full", "")
+              val roles = fieldMap.getOrElse("roles", "")
 
               val path = uri.path.toString()
               val authority = uri.authority.host.toString()
@@ -170,7 +171,7 @@ given ExceptionHandler = ExceptionHandler {
                   println(s"Logging you in with existing session cookie ${sessionCookie.value}")
                   complete {
                     for
-                      reg <- UserModel.lti11Login(CourseId(courseId), consumerKey, sessionCookie.value, ip.value, email, name).toFuture
+                      reg <- UserModel.lti11Login(CourseId(courseId), consumerKey, sessionCookie.value, ip.value, email, name, roles).toFuture
                     yield redir
                   }
 
@@ -187,7 +188,7 @@ given ExceptionHandler = ExceptionHandler {
                         )
                         _ <- if signature == generatedSignature then true.itself else RefFailed(Refused(s"Generated signature $generatedSignature did not match request signature $signature"))
 
-                        reg <- UserModel.lti11Login(CourseId(courseId), consumerKey, cookie.value(), ip.value, email, name)
+                        reg <- UserModel.lti11Login(CourseId(courseId), consumerKey, cookie.value(), ip.value, email, name, roles)
                       yield redir).toFuture
                     }
                   }

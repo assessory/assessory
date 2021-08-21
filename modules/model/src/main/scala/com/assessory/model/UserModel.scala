@@ -72,7 +72,7 @@ object UserModel {
   }
 
   /** Perform an LTI 1.1 login to a course */
-  def lti11Login(courseId:CourseId, consumerKey:String, session:String, ip:String, email:String, name:String):Ref[Course.Reg] = {
+  def lti11Login(courseId:CourseId, consumerKey:String, session:String, ip:String, email:String, name:String, roles:String):Ref[Course.Reg] = {
     val service = "LTI" + consumerKey
     def courseContainsLti(c:Course, ck:String) = {
       c.ltis.exists(_.clientKey == ck)
@@ -100,7 +100,11 @@ object UserModel {
 
       loggedIn <- UserDAO.pushSession(user.itself, ActiveSession(key=session, ip=ip))
 
-      reg <- RegistrationDAO.course.register(user.id, course.id, Set(CourseRole.student), EmptyKind)
+      reg <- RegistrationDAO.course.register(
+        user.id, course.id,
+        if roles.contains("Instructor") then Set (CourseRole.student, CourseRole.staff) else Set(CourseRole.student),
+        EmptyKind
+      )
     yield reg
   }
 

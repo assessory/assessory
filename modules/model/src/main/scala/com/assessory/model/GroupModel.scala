@@ -485,6 +485,10 @@ object GroupModel {
   def handleGroupSetCall(a:Approval[User], call:GroupSetCall):Ref[Return] = call match {
     case GroupSetCall.GetGroupSet(id) =>
       for WithPerms(perms, g) <- groupSet(a, id) yield StandardReturn.ReturnWithPermissions(ReturnGroupSet(g), perms)
+
+    case GroupSetCall.ByName(c, name) =>
+      (for g <- byName(c.lazily, name) yield ReturnGroupSet(g)).require
+
     case GroupSetCall.CreateGroupSet(gs) =>
       for WithPerms(perms, g) <- createGroupSet(a, gs) yield StandardReturn.ReturnWithPermissions(ReturnGroupSet(g), perms)
   }
