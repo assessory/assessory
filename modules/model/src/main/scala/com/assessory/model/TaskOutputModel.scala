@@ -290,13 +290,13 @@ object TaskOutputModel {
 
     case TaskOutputCall.CreateTaskOutput(clientTO) =>
       for
-        WithPerms(perms, to) <- create(
+        wp <- create(
           a = a,
           task = clientTO.task.lazily,
           clientTaskOutput = clientTO,
           finalise = false // TODO: allow finalising of tasks
         )
-      yield StandardReturn.ReturnWithPermissions(ReturnTaskOutput(to), perms)
+      yield StandardReturn.ReturnWithPermissions(ReturnTaskOutput(wp.item), wp.perms)
 
     case TaskOutputCall.MyOutputs(taskId) =>
       val rm = for t <- myOutputs(a, taskId.lazily) yield ReturnTaskOutput(t)

@@ -517,7 +517,7 @@ object GroupModel {
    */
   def handleGroupSetCall(a:Approval[User], call:GroupSetCall):Ref[Return] = call match {
     case GroupSetCall.GetGroupSet(id) =>
-      for WithPerms(perms, g) <- groupSet(a, id) yield StandardReturn.ReturnWithPermissions(ReturnGroupSet(g), perms)
+      for wp <- groupSet(a, id) yield StandardReturn.ReturnWithPermissions(ReturnGroupSet(wp.item), wp.perms)
 
     case GroupSetCall.ByCourse(c) =>
       val rm = (for g <- courseGroupSets(a, c.lazily) yield ReturnGroupSet(g)).collect
@@ -527,15 +527,15 @@ object GroupModel {
       (for g <- byName(c.lazily, name) yield ReturnGroupSet(g)).require
 
     case GroupSetCall.CreateGroupSet(gs) =>
-      for WithPerms(perms, g) <- createGroupSet(a, gs) yield StandardReturn.ReturnWithPermissions(ReturnGroupSet(g), perms)
+      for wp <- createGroupSet(a, gs) yield StandardReturn.ReturnWithPermissions(ReturnGroupSet(wp.item), wp.perms)
   }
 
   def handleGroupCall(a:Approval[User], call:GroupCall):Ref[Return] = call match {
     case GroupCall.CreateGroup(g) =>
-      for WithPerms(perms, g) <- createGroup(a, g) yield StandardReturn.ReturnWithPermissions(ReturnGroup(g), perms)
+      for wp <- createGroup(a, g) yield StandardReturn.ReturnWithPermissions(ReturnGroup(wp.item), wp.perms)
 
     case GroupCall.GetGroup(id) =>
-      for WithPerms(perms, g) <- group(a, id) yield StandardReturn.ReturnWithPermissions(ReturnGroup(g), perms)
+      for wp <- group(a, id) yield StandardReturn.ReturnWithPermissions(ReturnGroup(wp.item), wp.perms)
 
     case GroupCall.JoinGroup(g) =>
       for reg <- joinGroup(a, g) yield ReturnGroupReg(reg)

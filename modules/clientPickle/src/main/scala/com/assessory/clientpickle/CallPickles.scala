@@ -115,7 +115,7 @@ object CallPickles {
       case "ReturnUser" => c.downField(b).as[ReturnUser]
       case "ReturnCourse" => c.downField(b).as[ReturnCourse]
       case "ReturnTask" => c.downField(b).as[ReturnTask]
-      case "ReturnTaskOutput" => c.downField(b).as[ReturnTask]
+      case "ReturnTaskOutput" => c.downField(b).as[ReturnTaskOutput]
       case "ReturnTarget" => c.downField(b).as[ReturnTarget]
       case "ReturnGroupSet" => c.downField(b).as[ReturnGroupSet]
       case "ReturnGroup" => c.downField(b).as[ReturnGroup]

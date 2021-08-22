@@ -21,7 +21,7 @@ def makeNetworkCall(call:Call):Future[Return] = {
     req.status match {
       case 400 => Future.failed(UserError(req.responseText)) // Bad request
       case 403 => Future.failed(Refused(req.responseText)) // Forbidden
-      case 404 => Future.failed(new NoSuchElementException) // NotFound
+      case 404 => Future.failed(new NoSuchElementException("Not found")) // NotFound
       case 500 => Future.failed(RuntimeException(req.responseText)) // Internal Server Error
       case _ => Future.failed(IllegalArgumentException(s"Could not match response code ${req.status}. ${req.responseText}"))
     }

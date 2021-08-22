@@ -29,12 +29,12 @@ object TaskModel {
   }
 
   val CompleteTask = Perm.onId[User, Task, Id[Task, String]] { case (prior, task) =>
-    for (
-      t <- task;
-      a <- prior ask Permissions.ViewTask(t.itself);
-      due <- Permissions.isOpen(prior, t).withFilter(identity) recoverWith { case _ => RefFailed(UserError("This task is closed")) };
+    for
+      t <- task
+      a <- prior ask Permissions.ViewTask(t.itself)
+      due <- Permissions.isOpen(prior, t).withFilter(identity) orFail UserError("This task is closed")
       restrictions <- checkRestrictions(prior, t)
-    ) yield a
+    yield a
   }
 
 

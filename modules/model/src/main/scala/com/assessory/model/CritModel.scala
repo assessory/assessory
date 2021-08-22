@@ -2,7 +2,8 @@ package com.assessory.model
 
 import java.io.StringWriter
 import au.com.bytecode.opencsv.CSVWriter
-import com.assessory.api.{given, *}
+import com.assessory.api
+import com.assessory.api.*
 import com.assessory.api.client.WithPerms
 import com.assessory.api.critique.*
 import com.assessory.api.question.*
@@ -349,18 +350,30 @@ object CritModel {
   def allocateMe(by:Target, task:Task, t:TargetType, num:Int, alreadyDone:Seq[Target]):Ref[Seq[Target]] = {
     t match {
       case TTOutputs(id) =>
-        for {
-          crits <- TaskOutputDAO.byTask(task.itself).collect
-          outputs = TaskOutputDAO.byTask(id.lazily).withFilter({ case to => to.finalised.nonEmpty && !alreadyDone.contains(TargetTaskOutput(to.id)) })
-          toCrit <- filtering[TaskOutput](outputs, { x => isBy(x, by).map(!_) }).collect
-        } yield {
-          val critCounts = crits.collect(
-            { case TaskOutput(_, _, _, _, Critique(TargetTaskOutput(toId), _), _, _, _) => toId}
-          ).groupBy(identity).mapValues(_.size)
+        println(s"Already done: $alreadyDone")
 
-          val selected = Random.shuffle(toCrit).sortBy({ c => critCounts.getOrElse(c.id, 0) }).take(num)
-          selected.map({ to => TargetTaskOutput(to.id) })
-        }
+        // Eligible outputs are those that are published that we didn't write
+        def eligible:RefMany[TaskOutputId] = for
+          output <- TaskOutputDAO.byTask(id.lazily) if output.finalised.nonEmpty && !alreadyDone.contains(TargetTaskOutput(output.id))
+          isByMe <- isBy(output, by) if !isByMe
+        yield output.id
+
+        for
+          outputs <- eligible.collect
+          existingCrits <- TaskOutputDAO.byTask(task.itself).collect
+
+          // Sort by how many critiques have already been allocated to these
+          sorted = Random.shuffle(outputs).sortBy(o =>
+            existingCrits.count(_ match
+              case api.TaskOutput(_, _, _, _, Critique(TargetTaskOutput(toId), _), _, _, _) => o == toId
+              case _ => false
+            )
+          )
+
+          // Take the ones with the fewest
+          chosen = sorted.takeRight(num)
+        yield chosen.map { output => TargetTaskOutput(output) }
+
       case TTGroups(gsId) => for {
         gs <- gsId.lazily
         crits <- TaskOutputDAO.byTask(task.itself).collect
