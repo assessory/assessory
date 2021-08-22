@@ -187,10 +187,11 @@ object Cosc220 {
           description = Some(
             """This task should show you all the critiques your group has received. You're asked to fill in a little
               |form on whether they were helpful, constructive, etc.
-              |""".stripMargin)
+              |""".stripMargin),
+          restrictions = Seq(MustHaveFinished(progressVideo.id))
         ),
         body = CritiqueTask(
-          strategy = TargetMyStrategy(progressVideo.id, TTOutputs(progressVideo.id), None),
+          strategy = TargetMyStrategy(critique.id, TTOutputs(progressVideo.id), None),
           task = QuestionnaireTask(Seq(
             BooleanQuestion(
               QuestionId(TaskDAO.allocateId),

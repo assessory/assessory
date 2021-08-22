@@ -5,15 +5,15 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshalling.{Marshaller, ToEntityMarshaller}
 import akka.http.scaladsl.model.*
-import akka.http.scaladsl.model.StatusCodes.{Forbidden, InternalServerError, NotFound}
+import akka.http.scaladsl.model.StatusCodes.{BadRequest, Forbidden, InternalServerError, NotFound}
 import akka.http.scaladsl.model.headers.{HttpCookie, SameSite}
 import akka.http.scaladsl.server.Directives.*
 import akka.http.scaladsl.server.{ExceptionHandler, Route}
 import akka.http.scaladsl.unmarshalling.{FromRequestUnmarshaller, Unmarshaller}
-import com.assessory.api.appbase.{ActiveSession, Course, CourseId, CourseRole, Identity, User, UserId}
+import com.assessory.api.appbase.{ActiveSession, Course, CourseId, CourseRole, Identity, User, UserError, UserId}
 
 import scala.io.StdIn
-import com.wbillingsley.handy.{Approval, EmptyKind, RefFuture, RefFailed, Refused, refOps, lazily}
+import com.wbillingsley.handy.{Approval, EmptyKind, RefFailed, RefFuture, Refused, lazily, refOps}
 import com.assessory.api.call.{Call, Return, ReturnSession, SessionCall}
 import com.assessory.asyncmongo.{DB, RegistrationDAO, UserDAO}
 import com.assessory.clientpickle.CallPickles
@@ -49,6 +49,8 @@ given ToEntityMarshaller[Return] =
 given ExceptionHandler = ExceptionHandler {
   case _:NoSuchElementException =>
     complete(HttpResponse(NotFound))
+  case UserError(msg) =>
+    complete(HttpResponse(BadRequest, entity=msg))
   case Refused(msg) =>
     complete(HttpResponse(Forbidden, entity=msg))
   case NonFatal(e) =>
