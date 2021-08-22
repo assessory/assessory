@@ -64,6 +64,37 @@ object Permissions {
     } yield Approved("Course viewers can view groups")
   }
 
+  val CreateGroup = Perm.onId[User, GroupSet, Id[GroupSet, String]] { case (prior, rGroupSet) =>
+    for {
+      g <- rGroupSet
+      a <- prior ask EditGroupSet(g.itself)
+    } yield Approved("If you can edit the group set, you can edit the group")
+  }
+
+  // You may join a group if you are in a course and not already in a group in the same set
+  val JoinGroup = Perm.onId[User, Group, Id[Group, String]] { case (prior, rGroup) =>
+    for
+      u <- prior.who orFail Refused("Only logged in users can join groups")
+      g <- rGroup
+      a <- prior ask ViewGroup(g.itself)
+
+      userGroupIds <- Lookups.groupRegistrationProvider.byUser(u.id).withFilter(_.roles.nonEmpty).map(_.target).collect
+      userGroups <- Lookups.luGroup.many(userGroupIds).withFilter(_.set == g.set).collect
+
+      notInGroups <- if userGroups.isEmpty then true.itself else RefFailed(Refused(s"You are already in group ${userGroups.head.name} "))
+    yield Approved("You may join this group")
+  }
+
+  // You may leave a group if you are in it
+  val LeaveGroup = Perm.onId[User, Group, Id[Group, String]] { case (prior, rGroup) =>
+    for
+      u <- prior.who orFail Refused("Only logged in users can leave groups")
+      g <- rGroup
+
+      reg <- Lookups.groupRegistrationProvider.byUserAndTarget(u.id, g.id) orFail Refused("You're not in this group")
+    yield Approved("You may leave the group")
+  }
+
   val EditGroup = Perm.onId[User, Group, Id[Group, String]] { case (prior, rGroup) =>
     for {
       g <- rGroup

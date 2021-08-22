@@ -189,6 +189,12 @@ class DAO[DataT <: HasId[Id[DataT, String]]] (
       conv <- Future.fromTry(converter(doc))
     } yield conv
   }
+
+  def removeMany(query:Bson):Future[Long] = {
+    for
+      x <- coll.deleteMany(query).head()
+    yield x.getDeletedCount
+  }
 }
 
 object DAO {

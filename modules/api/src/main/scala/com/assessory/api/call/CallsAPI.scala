@@ -51,9 +51,13 @@ enum GroupSetCall extends Call {
 
 enum GroupCall extends Call {
   case GetGroup(id:GroupId)
+  case GroupSetGroups(id:GroupSetId)
   case GetManyGroups(ids:Seq[GroupId])
   case MyGroups
   case MyGroupsInCourse(courseId:CourseId)
+  case JoinGroup(id:GroupId)
+  case LeaveGroup(id:GroupId)
+
   case CreateGroupsFromCsv(setId: GroupSetId, csv: String)
   case CreateGroup(g:Group)
   case AddGroupReg(gr:Group.Reg)

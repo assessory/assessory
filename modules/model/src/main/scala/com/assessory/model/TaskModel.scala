@@ -101,6 +101,10 @@ object TaskModel {
   def handleCall(a:Approval[User], call:TaskCall):Ref[Return] = call match {
     case TaskCall.GetTask(id) =>
       for wp <- byId(a, id) yield StandardReturn.ReturnWithPermissions(ReturnTask(wp.item), wp.perms)
+
+    case TaskCall.ByName(cid, name) =>
+      (for t <- byName(cid.lazily, name) yield ReturnTask(t)).require
+
     case TaskCall.CreateTask(t) =>
       for wp <- create(a, t) yield StandardReturn.ReturnWithPermissions(ReturnTask(wp.item), wp.perms)
     case TaskCall.CourseTasks(cid) =>

@@ -1,17 +1,16 @@
 package com.assessory.model
 
 import java.io.StringReader
-
 import au.com.bytecode.opencsv.CSVReader
 import com.assessory.api.{given, _}
-import call._
+import call.*
 import com.assessory.api.client.WithPerms
-import com.assessory.asyncmongo._
+import com.assessory.asyncmongo.*
 import com.assessory.api.wiring.Lookups.{given, _}
-import com.wbillingsley.handy.{Ref, RefOpt, RefNone, RefMany, RefFailed, RefManyFailed, refOps, Approval, Id, lazily, HasKind, EmptyKind}
-import com.assessory.api.appbase._
+import com.wbillingsley.handy.{Approval, EmptyKind, HasKind, Id, Ref, RefFailed, RefMany, RefManyFailed, RefNone, RefOpt, Refused, lazily, refOps}
+import com.assessory.api.appbase.*
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.*
 
 object GroupModel {
 
@@ -96,12 +95,46 @@ object GroupModel {
   /**
    * The groups belonging to a particular group set
    */
-  def groupSetGroups(a:Approval[User], rGS:Ref[GroupSet]) = {
+  def groupSetGroups(a:Approval[User], rGS:Ref[GroupSet]):RefMany[Group] = {
     for {
       gs <- rGS
       approved <- a ask Permissions.ViewGroupSet(gs.itself)
       g <- GroupDAO.bySet(gs.id)
     } yield g
+  }
+
+  def createGroup(a:Approval[User], clientG:Group) = {
+    for {
+      approved <- a ask Permissions.CreateGroup(clientG.set)
+      unsaved = clientG.copy(id=GroupId(GroupSetDAO.allocateId))
+      saved <- GroupDAO.saveNew(unsaved)
+
+      wp <- withPerms(a, saved)
+    } yield wp
+  }
+
+  def joinGroup(a:Approval[User], gid:GroupId) = {
+    for
+      u <- a.who orFail Refused("You can't join a group if you're not logged in")
+      approved <- a ask Permissions.JoinGroup(gid)
+
+      reg <- RegistrationDAO.group.saveSafe(Registration(
+        id = RegistrationId(RegistrationDAO.group.allocateId),
+        user = u.id,
+        target = gid,
+        roles = Set(GroupRole.member), provenance = EmptyKind
+      ))
+    yield reg
+  }
+
+  def leaveGroup(a:Approval[User], gid:GroupId) = {
+    for
+      u <- a.who orFail Refused("You can't leave a group if you're not logged in")
+      approved <- a ask Permissions.LeaveGroup(gid)
+
+      reg <- RegistrationDAO.group.byUserAndTarget(u.id, gid) orFail Refused("You weren't in the group")
+      deleted <- RegistrationDAO.group.delete(u.id, gid)
+    yield reg
   }
 
   def addUserToGroup(a:Approval[User], gr:Group.Reg): Ref[Group.Reg] = {
@@ -494,11 +527,17 @@ object GroupModel {
   }
 
   def handleGroupCall(a:Approval[User], call:GroupCall):Ref[Return] = call match {
-    //case GroupCall.CreateGroup(g) =>
-    //  for WithPerms(perms, g) <- crea(a, id) yield StandardReturn.ReturnWithPermissions(ReturnGroupSet(g), perms)
+    case GroupCall.CreateGroup(g) =>
+      for WithPerms(perms, g) <- createGroup(a, g) yield StandardReturn.ReturnWithPermissions(ReturnGroup(g), perms)
 
     case GroupCall.GetGroup(id) =>
       for WithPerms(perms, g) <- group(a, id) yield StandardReturn.ReturnWithPermissions(ReturnGroup(g), perms)
+
+    case GroupCall.JoinGroup(g) =>
+      for reg <- joinGroup(a, g) yield ReturnGroupReg(reg)
+
+    case GroupCall.LeaveGroup(g) =>
+      for reg <- leaveGroup(a, g) yield ReturnGroupReg(reg)
 
     case GroupCall.GetManyGroups(ids) =>
       val rm = for
@@ -506,6 +545,10 @@ object GroupModel {
         WithPerms(perms, _) <- withPerms(a, g)
       yield StandardReturn.ReturnWithPermissions(ReturnGroup(g), perms)
       for list <- rm.collect yield StandardReturn.ReturnMany(list)
+
+    case GroupCall.GroupSetGroups(gsId) =>
+      val rm = for g <- groupSetGroups(a, gsId.lazily) yield ReturnGroup(g)
+      for seq <- rm.collect yield StandardReturn.ReturnMany(seq)
 
     case GroupCall.MyGroups =>
       val rm = for WithPerms(perms, g) <- myGroupsWP(a) yield StandardReturn.ReturnWithPermissions(ReturnGroup(g), perms)

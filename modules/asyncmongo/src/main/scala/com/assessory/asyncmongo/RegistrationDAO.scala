@@ -43,6 +43,12 @@ class RegistrationDAO[T, R, P <: HasKind](collName:String, r:RegistrationB[T, R,
     ).toRefOpt).require
   }
 
+  def delete(user:UserId, target:Id[T, String]):Ref[Long] = {
+    for
+      count <- removeMany(("user" $eq user) and ("target" $eq target)).toRef
+    yield count
+  }
+
 }
 
 object RegistrationDAO {
