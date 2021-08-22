@@ -519,6 +519,10 @@ object GroupModel {
     case GroupSetCall.GetGroupSet(id) =>
       for WithPerms(perms, g) <- groupSet(a, id) yield StandardReturn.ReturnWithPermissions(ReturnGroupSet(g), perms)
 
+    case GroupSetCall.ByCourse(c) =>
+      val rm = (for g <- courseGroupSets(a, c.lazily) yield ReturnGroupSet(g)).collect
+      for items <- rm yield StandardReturn.ReturnMany(items)
+
     case GroupSetCall.ByName(c, name) =>
       (for g <- byName(c.lazily, name) yield ReturnGroupSet(g)).require
 

@@ -4,8 +4,8 @@ import com.assessory.api.client.WithPerms
 import com.assessory.clientpickle.Pickles
 import com.assessory.clientpickle.Pickles.*
 import com.wbillingsley.handy.Id.*
-import com.assessory.api.appbase.{GroupSet, GroupSetId}
-import com.assessory.api.call.{StandardReturn, GroupSetCall, ReturnGroupSet}
+import com.assessory.api.appbase.{CourseId, GroupSet, GroupSetId}
+import com.assessory.api.call.{GroupSetCall, ReturnGroupSet, StandardReturn}
 import com.wbillingsley.handy.{Id, Latch}
 import org.scalajs.dom.ext.Ajax
 
@@ -29,5 +29,9 @@ object GroupSetService {
   def latch(s:String):Latch[WithPerms[GroupSet]] = cache.getOrElseUpdate(s, Latch.lazily(loadId(GroupSetId(s))))
 
   def latch(id:Id[GroupSet,String]):Latch[WithPerms[GroupSet]] = cache.getOrElseUpdate(id.id, Latch.lazily(loadId(GroupSetId(id.id))))
+
+  def groupSetsInCourse(c:CourseId):Future[Seq[GroupSet]] =
+    for StandardReturn.ReturnMany(items) <- callClient.makeCall(GroupSetCall.ByCourse(c)) yield
+      for ReturnGroupSet(g) <- items yield g
 
 }

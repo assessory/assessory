@@ -2,9 +2,9 @@ package org.assessory.vclient.services
 
 import com.assessory.api.client.WithPerms
 import com.assessory.clientpickle.Pickles
-import com.assessory.clientpickle.Pickles.{given, _}
+import com.assessory.clientpickle.Pickles.*
 import com.assessory.api.appbase.*
-import com.assessory.api.call.{GroupCall, ReturnGroup, ReturnTask, StandardReturn}
+import com.assessory.api.call.{GroupCall, ReturnGroup, ReturnGroupReg, ReturnTask, StandardReturn}
 import com.wbillingsley.handy.{EagerLookUpOne, Id, Ids, Latch, Ref, RefMany, refOps}
 import org.scalajs.dom.ext.Ajax
 
@@ -28,12 +28,30 @@ object GroupService {
   )
   UserService.self.addListener { _ => myGroups.clear(); cache.clear() }
 
-  def myGroupsInCourse(courseId:Id[Course,String]):Latch[Seq[WithPerms[Group]]] = Latch.lazily(
+  def myGroupsInCourse(courseId:Id[Course,String]):Future[Seq[WithPerms[Group]]] =
     for
       StandardReturn.ReturnMany(items) <- callClient.makeCall(GroupCall.MyGroupsInCourse(CourseId(courseId.id)))
     yield
       for StandardReturn.ReturnWithPermissions(ReturnGroup(t), perms) <- items yield WithPerms(perms, t)
+
+  def myGroupsInSet(groupSet:GroupSet):Future[Seq[Group]] =
+    for
+      StandardReturn.ReturnMany(items) <- callClient.makeCall(GroupCall.MyGroupsInCourse(groupSet.course))
+    yield
+      for StandardReturn.ReturnWithPermissions(ReturnGroup(g), _) <- items if g.set == groupSet.id yield g
+
+  def allGroupsInSet(groupSet:GroupSet):Latch[Seq[Group]] = Latch.lazily(
+    for
+      StandardReturn.ReturnMany(items) <- callClient.makeCall(GroupCall.GroupSetGroups(groupSet.id))
+    yield
+      for ReturnGroup(g) <- items yield g
   )
+
+  def leaveGroup(gs:GroupId):Future[Group.Reg] =
+    for ReturnGroupReg(reg) <- callClient.makeCall(GroupCall.LeaveGroup(gs)) yield reg
+
+  def joinGroup(gs:GroupId):Future[Group.Reg] =
+    for ReturnGroupReg(reg) <- callClient.makeCall(GroupCall.JoinGroup(gs)) yield reg
 
   def loadId(id:GroupId):Future[WithPerms[Group]] = {
     for

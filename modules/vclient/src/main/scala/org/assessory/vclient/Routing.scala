@@ -13,6 +13,7 @@ import Id._
 import com.assessory.api._
 import com.wbillingsley.veautiful.logging.Logger
 import org.assessory.vclient.task.TaskViews
+import org.assessory.vclient.group.GroupViews
 
 object Routing {
 
@@ -48,6 +49,11 @@ object Routing {
     def render = TaskViews.allOutputs(id)
   }
 
+  case class GroupSetRoute(gsId:GroupSetId) extends Route {
+    def path:String = (/# / "groupSet" / gsId.id).stringify
+    def render = GroupViews.groupSetView(gsId)
+  }
+
   case class GroupRoute(id:Id[Group, String]) extends Route {
     def path:String = (/# / "group" / id.id).stringify
     def render = <.div("todo")
@@ -70,6 +76,7 @@ object Routing {
         case Array("course", id) => CourseRoute(CourseId(id))
         case Array("task", id, "outputs") => TaskOutputRoute(TaskId(id))
         case Array("task", id) => TaskRoute(TaskId(id))
+        case Array("groupSet", id) => GroupSetRoute(GroupSetId(id))
         case _ => Home
       }
     }

@@ -45,6 +45,7 @@ enum TaskCall extends Call {
 
 enum GroupSetCall extends Call {
   case GetGroupSet(id:GroupSetId)
+  case ByCourse(c:CourseId)
   case ByName(c:CourseId, n:String)
   case CreateGroupSet(gs:GroupSet)
 }
