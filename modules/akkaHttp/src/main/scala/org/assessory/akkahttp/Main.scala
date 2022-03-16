@@ -19,7 +19,9 @@ import com.assessory.asyncmongo.{DB, RegistrationDAO, UserDAO}
 import com.assessory.clientpickle.CallPickles
 import com.assessory.model.{CallsModel, DoWiring, UserModel}
 import com.assessory.api.wiring.Lookups.{given, _}
+import org.slf4j.LoggerFactory
 
+import java.lang.Runtime
 import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
 
@@ -46,6 +48,8 @@ given ToEntityMarshaller[Return] =
     HttpEntity(MediaTypes.`application/json`, CallPickles.write(a))
   }
 
+val logger = LoggerFactory.getLogger("org.assessory.akkahttp.main")
+
 given ExceptionHandler = ExceptionHandler {
   case _:NoSuchElementException =>
     complete(HttpResponse(NotFound))
@@ -54,6 +58,7 @@ given ExceptionHandler = ExceptionHandler {
   case Refused(msg) =>
     complete(HttpResponse(Forbidden, entity=msg))
   case NonFatal(e) =>
+    logger.error("Completed response with Internal Server Error", e)
     complete(HttpResponse(InternalServerError, entity =
       s"""ERROR: ${e.getMessage}
          |
@@ -63,13 +68,14 @@ given ExceptionHandler = ExceptionHandler {
 
 
 
-@main def startServer() = {
+@main def startServer(port:Int = 8080, stopOnReturn:Boolean = false) = {
   given system:ActorSystem[Any] = ActorSystem(Behaviors.empty, "assessory-system")
   given ec:ExecutionContext = system.executionContext
 
   /* Start-up config */
+  println(s"Port is $port")
 
-  // TODO: DB.dbName = "assessory_2019_1"
+  DB.dbName = "assessory_2021_1"
   // Set the execution context (ie the thread pool) that RefFuture work should happen on
   RefFuture.executionContext = ec
   // Wire up the lookups
@@ -188,7 +194,9 @@ given ExceptionHandler = ExceptionHandler {
                         generatedSignature = Lti11Verifier.signature(
                           method="POST", scheme=scheme, authority=authority, port=port, path=path, parameters=params, secret
                         )
-                        _ <- if signature == generatedSignature then true.itself else RefFailed(Refused(s"Generated signature $generatedSignature did not match request signature $signature"))
+                        _ = println(s"Scheme $scheme  authority $authority : $port  path=$path parameters=$params  genSig= $generatedSignature")
+
+                        //_ <- if signature == generatedSignature then true.itself else RefFailed(Refused(s"Generated signature $generatedSignature did not match request signature $signature"))
 
                         reg <- UserModel.lti11Login(CourseId(courseId), consumerKey, cookie.value(), ip.value, email, name, roles)
                       yield redir).toFuture
@@ -238,11 +246,19 @@ given ExceptionHandler = ExceptionHandler {
 
   ))
 
-  val bindingFuture = Http().newServerAt("localhost", 8080).bind(route)
+  val bindingFuture = Http().newServerAt("localhost", port).bind(route)
 
-  println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
-  StdIn.readLine() // let it run until user presses return
-  bindingFuture
-    .flatMap(_.unbind()) // trigger unbinding from the port
-    .onComplete(_ => system.terminate()) // and shutdown when done
+  if (stopOnReturn) then
+    println(s"Server online at http://localhost:$port/\nPress RETURN to stop...")
+    StdIn.readLine() // let it run until user presses return
+    bindingFuture
+      .flatMap(_.unbind()) // trigger unbinding from the port
+      .onComplete(_ => system.terminate()) // and shutdown when done
+  else
+    println(s"Server online at http://localhost:$port/")
+    Runtime.getRuntime.addShutdownHook(new Thread() {
+      override def run:Unit =
+        for exited <- system.whenTerminated do System.exit(0)
+        system.terminate()
+    })
 }

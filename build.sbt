@@ -3,12 +3,12 @@
 import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 
 name := "assessory"
-scalaVersion := "3.0.0"
+scalaVersion := "3.1.0"
 organization := "org.assessory"
 version := "0.4.0-SNAPSHOT"
 
-def useScala3 = (scalaVersion := "3.0.0")
-def useScala2 = (scalaVersion := "2.13.6")
+def useScala3 = (scalaVersion := "3.1.0")
+def useScala2 = (scalaVersion := "2.13.7")
 
 lazy val commonSettings = Seq(
   organization := "org.assessory",
@@ -22,14 +22,12 @@ lazy val commonSettings = Seq(
   ),
   libraryDependencies ++= Seq(
     //Handy
-    "org.scalactic" %% "scalactic" % "3.2.9",
+   "org.scalactic" %% "scalactic" % "3.2.9",
     "org.scalatest" %% "scalatest" % "3.2.9" % "test",
-    ("org.specs2" %% "specs2-core" % "4.8.3" % "test").cross(CrossVersion.for3Use2_13)
+//  ("org.specs2" %% "specs2-core" % "4.8.3" % "test").cross(CrossVersion.for3Use2_13)
   )
 
 )
-
-
 
 lazy val api = (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure) in file("modules/api"))
   .settings(commonSettings:_*)
@@ -37,7 +35,6 @@ lazy val api = (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure) 
     useScala3,
     libraryDependencies ++= Seq(
       "com.github.wbillingsley.handy" %%% "handy" % "v0.11-SNAPSHOT",
-//      "com.github.wbillingsley.handy" %%% "handy-appbase" % "v0.10-SNAPSHOT"
     )
   )
 
@@ -105,6 +102,8 @@ lazy val sjsProjects = Seq(vclient)
 val AkkaVersion = "2.6.8"
 val AkkaHttpVersion = "10.2.6"
 
+val prod = true
+
 lazy val akkahttp = (project in file("modules/akkaHttp"))
   .dependsOn(apiJVM, mongo, model, clientPickleJVM)
   .settings(commonSettings:_*)
@@ -128,10 +127,18 @@ lazy val akkahttp = (project in file("modules/akkaHttp"))
       ("com.typesafe.akka" %% "akka-actor-typed" % AkkaVersion).cross(CrossVersion.for3Use2_13),
       ("com.typesafe.akka" %% "akka-stream" % AkkaVersion).cross(CrossVersion.for3Use2_13),
       ("com.typesafe.akka" %% "akka-http" % AkkaHttpVersion).cross(CrossVersion.for3Use2_13),
+
+      "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.17.1"
     ),
     Assets / WebKeys.packagePrefix := "public/",
     Runtime / managedClasspath += (Assets / packageBin).value,
-    (Compile / resources) += (vclient / Compile / fastOptJS).value.data
+
+    if (prod) {
+      (Compile / resources) += (vclient / Compile / fullOptJS).value.data
+    } else {
+      (Compile / resources) += (vclient / Compile / fastOptJS).value.data
+    }
+
   ).enablePlugins(SbtWeb, JavaAppPackaging)
 
 
@@ -143,7 +150,7 @@ lazy val cheatScript = project.in(file("modules/cheatScript"))
     useScala3,
 
     libraryDependencies ++= Seq(
-      ("org.specs2" %% "specs2-core" % "4.3.4" % "test").cross(CrossVersion.for3Use2_13),
+//      ("org.specs2" %% "specs2-core" % "4.3.4" % "test").cross(CrossVersion.for3Use2_13),
       ("com.typesafe.akka" %% "akka-actor-typed" % AkkaVersion).cross(CrossVersion.for3Use2_13),
       ("com.typesafe.akka" %% "akka-stream" % AkkaVersion).cross(CrossVersion.for3Use2_13),
       ("com.typesafe.akka" %% "akka-http" % AkkaHttpVersion).cross(CrossVersion.for3Use2_13),

@@ -371,7 +371,7 @@ object CritModel {
           )
 
           // Take the ones with the fewest
-          chosen = sorted.takeRight(num)
+          chosen = sorted.take(num)
         yield chosen.map { output => TargetTaskOutput(output) }
 
       case TTGroups(gsId) => for {

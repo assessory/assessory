@@ -48,6 +48,9 @@ class NetworkService(url:String) {
     println(s"Making call $call")
     for {
       resp <- Http().singleRequest(Post(url, call))
+
+      _ = println(s"Status ${resp.status}")
+
       data <- resp match {
         case HttpResponse(StatusCodes.OK, headers, entity, _) =>
           Unmarshal(resp).to[Return]
@@ -60,7 +63,10 @@ class NetworkService(url:String) {
         case HttpResponse(_, _, entity, _) =>
           Unmarshal(entity).to[String].flatMap(err => Future.failed(IllegalStateException(err)))
       }
-    } yield data
+    } yield {
+      println(s"Returned $data")
+      data
+    }
   }
 
 }
