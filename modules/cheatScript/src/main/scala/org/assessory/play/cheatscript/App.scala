@@ -1,6 +1,6 @@
 package org.assessory.play.cheatscript
 
-import com.wbillingsley.handy.{Ref, RefFailed, RefOptFailed, RefSome, RefNone, RefItself, refOps}
+import com.wbillingsley.handy.{Ref, RefFailed, RefOptFailed, RefSome, RefNone, RefOpt, RefItself, refOps}
 import com.assessory.api.*
 import call.*
 import appbase.*
@@ -25,7 +25,7 @@ object App {
 
     def ensureTestUser() = loginTestUser().toRefOpt orElse createTestUser()
 
-    def makeTestCourse():Ref[WithPerms[Course]] = for
+    def makeTestCourse():Ref[WithPerms[Course]] = (for
       StandardReturn.ReturnWithPermissions(ReturnCourse(c), perms) <- client.makeCall(CourseCall.CreateCourse(Course(
         id = CourseId("61147cf6dbdf4746b7012183"),
         addedBy = RegistrationId("invalid"),
@@ -34,32 +34,19 @@ object App {
         shortDescription = Some("In which we test if the system is working"),
         ltis = Seq(LTIConsumer("UNE moodle", "grumplestiltskin"))
       ))).toRef
-    yield WithPerms(perms, c)
+    yield WithPerms(perms, c)) orFail IllegalStateException("Failed to create course")
 
-    def getTestCourse():Ref[WithPerms[Course]] =
+    def getTestCourse():RefOpt[WithPerms[Course]] =
       for
         StandardReturn.ReturnWithPermissions(ReturnCourse(c), perms) <- client.makeCall(
           CourseCall.GetCourse(CourseId("61147cf6dbdf4746b7012183"))
         ).toRef
       yield WithPerms(perms, c)
 
-    def ensureTestCourse() = {
-      val a = getTestCourse()
-      println(a)
-
-      a.toRefOpt.recoverWith {
-        case n:NoSuchElementException => println("Hoorya"); RefSome(())
-        case x => println("boo"); RefOptFailed(x)
-      }
-
-      a.toRefOpt orElse {
-        println("Alt!")
-        makeTestCourse()
-      }
-    }
+    def ensureTestCourse() = getTestCourse() orElse makeTestCourse()
 
     def makeTestTask() =
-      for
+      (for
         WithPerms(_, c) <- ensureTestCourse()
         StandardReturn.ReturnWithPermissions(ReturnTask(t), perms) <- client.makeCall(TaskCall.CreateTask(
           Task(
@@ -76,7 +63,7 @@ object App {
             ))
           )
         )).toRef
-      yield WithPerms(perms, t)
+      yield WithPerms(perms, t)) orFail IllegalStateException("Failed creating test task")
 
     def getTestTask() =
       for
@@ -85,7 +72,7 @@ object App {
         ).toRef
       yield WithPerms(perms, c)
 
-    def ensureTestTask() = getTestTask().toRefOpt orElse makeTestTask()
+    def ensureTestTask() = getTestTask() orElse makeTestTask()
 
     /*
     (for
@@ -109,7 +96,7 @@ object App {
       u <- ensureTestUser()
       _ = println("Logged in..")
 
-      _ <- Cosc220.run()(using client)
+      _ <- Cosc370.createCourse()(using client)
     yield
       println("Completed")
     ).recoverWith { case x:Throwable =>
