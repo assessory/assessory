@@ -19,13 +19,13 @@ object Cosc220 {
         id=CourseId("invalid"),
         addedBy=RegistrationId("invalid"),
         title = Some("Software Development Studio 2"),
-        shortName = Some("COSC220 2021"),
+        shortName = Some("COSC220 2022"),
         shortDescription = Some("In which our heroes develop amazing software together..."),
         ltis = Seq(LTIConsumer("UNE moodle", "grumplestiltskin"))
       )))
     yield c) orFail IllegalStateException("Return from creating course was not what I expected")
 
-  def getCourse()(using cc:CallClient):RefOpt[Course] = (for ReturnCourse(c) <- cc.call(CourseCall.ByShortName("COSC220 2021")) yield c)
+  def getCourse()(using cc:CallClient):RefOpt[Course] = (for ReturnCourse(c) <- cc.call(CourseCall.ByShortName("COSC220 2022")) yield c)
 
   def ensureCourse()(using cc:CallClient) = getCourse() orElse createCourse()
 
@@ -45,9 +45,14 @@ object Cosc220 {
   def ensureGroupSet(c:Course)(using cc:CallClient):Ref[GroupSet] = getGroupSet(c) orElse createGroupSet(c)
 
   def createGroups(gs:GroupSet)(using cc:CallClient):Ref[Seq[Group]] = {
-    val groups = Seq(
-      "Team Mates",
-    )
+    /*val groups = Seq(
+      "App Monsters", "The Programmers", "In Classers", "Bit by Bit", "Pure Logic",
+      "Status 404", "CTRL+C", "CSTEM32", "The Dirty Bits", "The Front Enders", "Bug Smashers",
+      "Coders", "Card Sharks", "DFENS", "Iterators", "The Colossal Titans", "The Global Gits",
+      "KAPPS", "Software Chasers"
+    )*/
+
+    val groups = Seq("alt-f4")
 
     (for
       StandardReturn.ReturnMany(existingSeq) <- cc.call(GroupCall.GroupSetGroups(gs.id))
@@ -90,8 +95,6 @@ object Cosc220 {
 
       groups <- createGroups(gs)
       _ = println(s"${groups.length} new groups created")
-
-      /*
 
       progressVideo <- ensureTask(Task(
         id = TaskId("invalid"),
@@ -203,8 +206,6 @@ object Cosc220 {
       ))
       _ = println(s"Reverse task has id ${reverseCritique.id}")
 
-
-       */
 
     yield
       println("Done")

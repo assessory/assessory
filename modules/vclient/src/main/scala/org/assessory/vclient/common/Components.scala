@@ -2,7 +2,7 @@ package org.assessory.vclient.common
 
 import com.wbillingsley.handy.Latch
 import com.wbillingsley.veautiful.{DiffNode, Update}
-import com.wbillingsley.veautiful.html.{<, VHtmlComponent, VHtmlNode, ^}
+import com.wbillingsley.veautiful.html.{<, DHtmlComponent, DHtmlContent, ^}
 import org.scalajs.dom.{Element, Event, Node, html}
 
 import scala.util.{Failure, Success}
@@ -10,10 +10,10 @@ import scala.util.{Failure, Success}
 object Components {
 
   case class LatchRender[T](latch: Latch[T], _key: String = "")(
-                           some: T => DiffNode[Element, Node],
-                           none: => DiffNode[Element, Node] = <.div(),
-                           error: Throwable => DiffNode[Element, Node] = x => <.div(x.getMessage)
-  ) extends VHtmlComponent with Update {
+                           some: T => DHtmlContent,
+                           none: => DHtmlContent = <.div(),
+                           error: Throwable => DHtmlContent = x => <.div(x.getMessage)
+  ) extends DHtmlComponent with Update {
 
     val listener:Latch.Listener[T] = { _ => rerender() }
 
@@ -22,7 +22,7 @@ object Components {
       latch.addListener(listener)
     }
 
-    override protected def render: DiffNode[Element, Node] = {
+    override protected def render = {
       latch.request.value match {
         case Some(Success(v)) => some(v)
         case Some(Failure(x)) => error(x)

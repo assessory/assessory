@@ -2,7 +2,7 @@ package org.assessory.vclient.task
 
 import com.assessory.api.{Target, TargetCourseReg, TargetGroup, TargetTaskOutput, TargetUser}
 import com.wbillingsley.handy.{Latch, Ref, lazily, refOps}
-import com.wbillingsley.veautiful.html.{<, VHtmlComponent, VHtmlNode}
+import com.wbillingsley.veautiful.html.{<, DHtmlComponent, DHtmlContent}
 import org.assessory.vclient.common.Components.LatchRender
 import org.assessory.vclient.group.GroupViews
 import org.assessory.vclient.services.{GroupService, TaskOutputService, UserService}
@@ -24,7 +24,7 @@ object TargetViews {
   }
 
 
-  case class ByLabel(t:Target) extends VHtmlComponent {
+  case class ByLabel(t:Target) extends DHtmlComponent {
 
     val text:Latch[String] = Latch.lazily(displayName(t).toFuture)
 

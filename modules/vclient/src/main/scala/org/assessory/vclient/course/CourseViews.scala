@@ -3,7 +3,7 @@ package org.assessory.vclient.course
 import com.assessory.api.client.WithPerms
 import com.wbillingsley.handy.Id
 import com.assessory.api.appbase._
-import com.wbillingsley.veautiful.html.{<, DElement, VHtmlNode, ^}
+import com.wbillingsley.veautiful.html.{<, DElement, VHtmlContent, DHtmlContent, ^}
 import org.assessory.vclient.Routing
 import org.assessory.vclient.common.Components.LatchRender
 import org.assessory.vclient.common.Front
@@ -18,7 +18,7 @@ object CourseViews {
    * The "My Courses" block on the front page of Assessory
    * @return
    */
-  def myCourses:VHtmlNode = LatchRender(CourseService.myCourses) {
+  def myCourses:VHtmlContent = LatchRender(CourseService.myCourses) {
     case courses if courses.nonEmpty =>
       <.div(^.cls := "container",
         <.h2("My Courses"),
@@ -28,7 +28,7 @@ object CourseViews {
       <.div(^.cls := "container")
   }
 
-  def courseInfo(id:Id[Course, String]):VHtmlNode = LatchRender(CourseService.latch(id)) { wp =>
+  def courseInfo(id:Id[Course, String]):VHtmlContent = LatchRender(CourseService.latch(id)) { wp =>
     courseInfo(wp)
   }
 
@@ -37,7 +37,7 @@ object CourseViews {
    * @param wp
    * @return
    */
-  def courseInfo(wp:WithPerms[Course]):DElement[html.Element] = {
+  def courseInfo(wp:WithPerms[Course]):DHtmlContent = {
     val course = wp.item
 
     <.div(^.cls := "course-info",
@@ -59,7 +59,7 @@ object CourseViews {
   /**
    * Provides admin links if the user has the necessary permissions
    */
-  def courseAdmin(wp:WithPerms[Course]):VHtmlNode = {
+  def courseAdmin(wp:WithPerms[Course]):VHtmlContent = {
     if (wp.perms("edit")) {
       <.div(<.a(^.href:=s"api/course/${wp.item.id.id}/autolinks.csv", "autolinks.csv"))
     } else <.div()
@@ -68,7 +68,7 @@ object CourseViews {
   /**
    * The front page of a course
    */
-  def courseFront(c:Id[Course, String]):VHtmlNode = LatchRender(CourseService.latch(c)) { wp =>
+  def courseFront(c:Id[Course, String]):VHtmlContent = LatchRender(CourseService.latch(c)) { wp =>
     val course = wp.item
 
     <.div(

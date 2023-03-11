@@ -2,10 +2,8 @@ package org.assessory.vclient
 
 import com.wbillingsley.handy.Id
 import com.assessory.api.appbase._
-import com.wbillingsley.veautiful.PathDSL
-import com.wbillingsley.veautiful.PathDSL.Compose./#
-import com.wbillingsley.veautiful.html.{<, VHtmlNode}
-import com.wbillingsley.veautiful.templates.HistoryRouter
+import com.wbillingsley.veautiful.html.{<, VHtmlContent, HistoryRouter, PathDSL}
+import PathDSL.Compose./#
 import org.assessory.vclient.common.Front
 import org.assessory.vclient.course.CourseViews
 import org.assessory.vclient.user.LoginViews
@@ -20,7 +18,7 @@ object Routing {
   private val logger = Logger.getLogger(this.getClass)
 
   sealed trait Route {
-    def render: VHtmlNode
+    def render: VHtmlContent
     def path: String
   }
 
@@ -62,7 +60,7 @@ object Routing {
   object Router extends HistoryRouter[Route] {
     var route: Route = Home
 
-    override def render: VHtmlNode = {
+    override def render = {
       logger.info(s"Rendering route $route")
       route.render
     }

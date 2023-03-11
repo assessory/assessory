@@ -3,7 +3,7 @@ package org.assessory.vclient.group
 import com.assessory.api.client.WithPerms
 import com.wbillingsley.handy.{Id, Latch}
 import com.assessory.api.appbase.{Course, CourseId, Group, GroupSet, GroupSetId}
-import com.wbillingsley.veautiful.html.{<, DElement, VHtmlComponent, VHtmlNode, ^}
+import com.wbillingsley.veautiful.html.{<, DElement, VHtmlComponent, VHtmlContent, DHtmlContent, ^}
 import org.assessory.vclient.Routing
 import org.assessory.vclient.common.Components.LatchRender
 import org.assessory.vclient.common.Front
@@ -15,7 +15,7 @@ import scala.concurrent.Future
 
 object GroupViews {
 
-  def myGroups(c:CourseId):VHtmlNode = {
+  def myGroups(c:CourseId):VHtmlContent = {
 
     import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -47,7 +47,7 @@ object GroupViews {
     LatchRender(html) { html => <.div(html) }
   }
 
-  def groupSetLink(gs:GroupSet):DElement[html.Element] = {
+  def groupSetLink(gs:GroupSet):VHtmlContent = {
     val name = gs.name.getOrElse("Untitled group set")
     <.a(^.href := Routing.GroupSetRoute(gs.id).path, <.span(name))
   }
@@ -89,7 +89,7 @@ object GroupViews {
         rerender()
     }
 
-    def show:Latch[VHtmlNode] =
+    def show:Latch[DHtmlContent] =
       for
         myG <- myGroup
         allG <- allGroups.request

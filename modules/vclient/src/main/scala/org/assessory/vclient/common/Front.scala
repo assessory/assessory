@@ -2,7 +2,7 @@ package org.assessory.vclient.common
 
 import com.wbillingsley.handy.Latch
 import com.assessory.api.appbase.User
-import com.wbillingsley.veautiful.html.{<, VHtmlNode, ^}
+import com.wbillingsley.veautiful.html.{<, VHtmlContent, DHtmlContent, ^}
 import org.assessory.vclient.Routing
 import org.assessory.vclient.common.Components.LatchRender
 import org.assessory.vclient.course.CourseViews
@@ -11,7 +11,7 @@ import org.assessory.vclient.user.UserViews
 
 object Front {
 
-  def siteHeader: VHtmlNode = {
+  def siteHeader: VHtmlContent = {
     <.div(^.cls := "site-header",
       <.div(^.cls := "navbar navbar-light navbar-expand justify-content-between",
         <.a(^.cls := "navbar-brand", "Assessory", ^.href := Routing.Home.path),
@@ -21,7 +21,7 @@ object Front {
   }
 
 
-  def loginStatus(l:Latch[Option[User]]):VHtmlNode = {
+  def loginStatus(l:Latch[Option[User]]):VHtmlContent = {
     LatchRender(l)({
       case Some(u) =>
         <.div(^.cls := "navbar-nav mr-auto test",
@@ -38,7 +38,7 @@ object Front {
     )
   }
 
-  def front:VHtmlNode = {
+  def front:VHtmlContent = {
     <.div(
       siteHeader,
       CourseViews.myCourses

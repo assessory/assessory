@@ -1,8 +1,11 @@
 package org.assessory.vclient
 
-import com.wbillingsley.veautiful.html.Attacher
+import com.wbillingsley.veautiful.html.*
 import com.wbillingsley.veautiful.logging.Logger
 import org.scalajs.dom
+import scalajs.js
+
+given marked:Markup = new Markup({ (s:String) => js.Dynamic.global.marked.parse(s).asInstanceOf[String] })
 
 object Main {
   val logger = Logger.getLogger(this.getClass)

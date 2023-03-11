@@ -4,7 +4,7 @@ import com.assessory.api.client.EmailAndPassword
 import com.wbillingsley.handy.Latch
 import com.assessory.api.appbase.UserError
 import com.wbillingsley.veautiful.DiffNode
-import com.wbillingsley.veautiful.html.{<, VHtmlComponent, VHtmlNode, ^}
+import com.wbillingsley.veautiful.html.{<, DHtmlComponent, DHtmlContent, ^}
 import org.assessory.vclient.Routing
 import org.assessory.vclient.common.Front
 import org.scalajs.dom.{Element, Node}
@@ -16,7 +16,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 object LoginViews {
 
-  object Login extends VHtmlComponent {
+  object Login extends DHtmlComponent {
 
     var email:String = ""
     var password:String = ""
@@ -29,7 +29,7 @@ object LoginViews {
       Routing.Router.routeTo(Routing.Home)
     }
 
-    def socialLogin:VHtmlNode = {
+    def socialLogin:DHtmlContent = {
       <.div(^.cls := "col-sm-6",
         <.h1("or"),
         <("form")(^.attr("action") := "/oauth/github", ^.attr("method") := "POST",
@@ -40,7 +40,7 @@ object LoginViews {
       )
     }
 
-    override protected def render: DiffNode[Element, Node] = {
+    override protected def render = {
       <.div(
         Front.siteHeader,
 

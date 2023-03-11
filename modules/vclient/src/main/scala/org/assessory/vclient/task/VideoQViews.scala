@@ -2,7 +2,7 @@ package org.assessory.vclient.task
 
 import com.assessory.api.question.{Question, VideoAnswer}
 import com.assessory.api.video.{Kaltura, UnrecognisedVideoUrl, VideoResource, YouTube}
-import com.wbillingsley.veautiful.html.{<, VHtmlNode, ^}
+import com.wbillingsley.veautiful.html.{<, DHtmlContent, ^}
 import org.assessory.vclient.services.VideoService
 
 import org.assessory.vclient.common.Components._
@@ -13,7 +13,7 @@ import org.assessory.vclient.common.Components._
 object VideoQViews {
 
   /** A player for YouTube videos */
-  def youTubePlayer(ytId:String):VHtmlNode = {
+  def youTubePlayer(ytId:String):DHtmlContent = {
     val extracted = VideoService.extractYouTubeId(ytId)
 
     <("iframe")(
@@ -23,7 +23,7 @@ object VideoQViews {
   }
 
   /** A player for Kaltura videos */
-  def kalturaPlayer(url:String):VHtmlNode = {
+  def kalturaPlayer(url:String):DHtmlContent = {
     val extracted = VideoService.extractKalturaId(url)
 
     <("iframe")(
@@ -32,13 +32,13 @@ object VideoQViews {
     )
   }
 
-  def videoPlayer(vr:VideoResource):VHtmlNode = vr match {
+  def videoPlayer(vr:VideoResource):DHtmlContent = vr match {
     case YouTube(url) => youTubePlayer(url)
     case Kaltura(url)  => kalturaPlayer(url)
     case UnrecognisedVideoUrl(url) => <.a(^.href := url, ^.attr("target") := "_blank", "Unrecognised video URL: ", url)
   }
 
-  def editVideoAnswer(q:Question, a:VideoAnswer)(f: VideoAnswer => Unit):VHtmlNode = {
+  def editVideoAnswer(q:Question, a:VideoAnswer)(f: VideoAnswer => Unit):DHtmlContent = {
     def updateVideo(url:String):Unit = {
       f(a.copy(answer=VideoService.video(url)))
     }
@@ -55,7 +55,7 @@ object VideoQViews {
     )
   }
 
-  def viewVideoAnswer(q:Question, a:VideoAnswer):VHtmlNode = {
+  def viewVideoAnswer(q:Question, a:VideoAnswer):DHtmlContent = {
     a.answer match {
       case Some(vr) => videoPlayer(vr)
       case _ => <.div("No video chosen yet")

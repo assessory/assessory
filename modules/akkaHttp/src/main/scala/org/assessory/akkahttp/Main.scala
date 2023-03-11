@@ -75,7 +75,7 @@ given ExceptionHandler = ExceptionHandler {
   /* Start-up config */
   println(s"Port is $port")
 
-  DB.dbName = "assessory_2021_1"
+  DB.dbName = "assessory_2023_1"
   // Set the execution context (ie the thread pool) that RefFuture work should happen on
   RefFuture.executionContext = ec
   // Wire up the lookups

@@ -15,7 +15,7 @@ object App {
   def main(args:Array[String]): Unit = {
 
     println("Starting...")
-    val networkService = NetworkService("http://localhost:8080/api/call")
+    val networkService = NetworkService("https://assessory.une.edu.au/api/call")
     import networkService.given
     val client = CallClient()
     println("Created client...")
@@ -24,6 +24,8 @@ object App {
     def loginTestUser() = for u <- client.login("test@example.com", "samplepassword").toRef yield u
 
     def ensureTestUser() = loginTestUser().toRefOpt orElse createTestUser()
+
+    def admin() = (for u <- client.login("admin@assessory.une.edu.au", "samplepassword").toRef yield u)
 
     def makeTestCourse():Ref[WithPerms[Course]] = (for
       StandardReturn.ReturnWithPermissions(ReturnCourse(c), perms) <- client.makeCall(CourseCall.CreateCourse(Course(
@@ -93,10 +95,10 @@ object App {
     }*/
 
     (for
-      u <- ensureTestUser()
+      u <- admin()
       _ = println("Logged in..")
 
-      _ <- Cosc370.createCourse()(using client)
+      _ <- Cosc220.run()(using client)
     yield
       println("Completed")
     ).recoverWith { case x:Throwable =>

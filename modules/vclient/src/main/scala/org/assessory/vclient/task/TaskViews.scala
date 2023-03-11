@@ -7,7 +7,7 @@ import com.assessory.api.due.Due
 import com.assessory.api.question.{QuestionnaireTask, QuestionnaireTaskOutput}
 import com.wbillingsley.handy.{Id, Latch, lazily}
 import com.assessory.api.appbase._
-import com.wbillingsley.veautiful.html.{<, DElement, VHtmlComponent, VHtmlNode, ^}
+import com.wbillingsley.veautiful.html.{<, DElement, DHtmlComponent, VHtmlContent, DHtmlContent, ^}
 import org.assessory.vclient.Routing
 import org.assessory.vclient.common.Components.LatchRender
 import org.assessory.vclient.services.{GroupService, TaskOutputService, TaskService}
@@ -28,7 +28,7 @@ object TaskViews {
   /**
    * The list of tasks on the front page of a course
    */
-  def courseTasks(c:Id[Course, String]):VHtmlNode = LatchRender(TaskService.courseTasks(c)) { tasks =>
+  def courseTasks(c:Id[Course, String]):VHtmlContent = LatchRender(TaskService.courseTasks(c)) { tasks =>
     <.div(
       for { t <- tasks } yield taskInfo(t)
     )
@@ -37,7 +37,7 @@ object TaskViews {
   /**
    * The information that appears in the Course task list
    */
-  def taskInfo(wp:WithPerms[Task]):VHtmlNode = {
+  def taskInfo(wp:WithPerms[Task]):DHtmlContent = {
     val task = wp.item
     val name = task.details.name.getOrElse("Untitled task")
 
@@ -58,7 +58,7 @@ object TaskViews {
   /**
    * Converts a due date to a span
    */
-  def due(due:Due):VHtmlNode = {
+  def due(due:Due):VHtmlContent = {
     val groups = Latch.lazily(
       for {
         groups <- GroupService.myGroups.request
@@ -73,14 +73,14 @@ object TaskViews {
   /**
    * Text for a date in Unix epoch
    */
-  def optDate(o:Option[Long]):DElement[html.Element] = <.span(
+  def optDate(o:Option[Long]) = <.span(
     for { d <- o } yield new Date(d.toDouble).toLocaleString()
   )
 
   /**
    * Provides administrative links for a task
    */
-  def taskAdmin(wp:WithPerms[Task]):VHtmlNode = {
+  def taskAdmin(wp:WithPerms[Task]):DHtmlContent = {
     if (wp.perms("edit")) {
       <.div(
         <.a(^.href := Routing.TaskOutputRoute(wp.item.id).path, "View submissions")
@@ -92,7 +92,7 @@ object TaskViews {
    * The "front page" for a task - letting a user edit or view their entry depending on whether it is open
    * @return
    */
-  def taskFront(id:Id[Task, String]):VHtmlNode = LatchRender(TaskService.latch(id)) { wp =>
+  def taskFront(id:Id[Task, String]):VHtmlContent = LatchRender(TaskService.latch(id)) { wp =>
     val task = wp.item
 
     <.div(
@@ -111,7 +111,7 @@ object TaskViews {
   }
 
 
-  def outputLabel(task:Task, taskOutput:TaskOutput):VHtmlNode = taskOutput.body match {
+  def outputLabel(task:Task, taskOutput:TaskOutput):VHtmlContent = taskOutput.body match {
     case c:Critique =>
       <.span(TargetViews.ByLabel(taskOutput.by), " critiques ", TargetViews.ByLabel(c.target))
     case _ =>
@@ -123,7 +123,7 @@ object TaskViews {
    * Show a screen where the marker can review all submitted task outputs (whether published or not)
    * @return
    */
-  def allOutputs(id:Id[Task, String]):VHtmlNode = {
+  def allOutputs(id:Id[Task, String]):VHtmlContent = {
     LatchRender(TaskService.latch(id), _key="outputs") { wp =>
       val task = wp.item
 
@@ -139,7 +139,7 @@ object TaskViews {
     }
   }
 
-  case class AllOutputsViewer(task:Task) extends VHtmlComponent {
+  case class AllOutputsViewer(task:Task) extends DHtmlComponent {
 
     private val outputsLatch = Latch.lazily(TaskOutputService.allOutputs(task.id))
 
@@ -150,7 +150,7 @@ object TaskViews {
       rerender()
     }
 
-    override protected def render: DiffNode[Element, Node] = {
+    override protected def render = {
       <.div(^.cls := "row",
         <.div(^.cls := "col-md-3 scrolling-sidebar",
           LatchRender(outputsLatch) { outputs =>
@@ -182,20 +182,20 @@ object TaskViews {
   }
 
 
-  def preview(target:Target):VHtmlNode = target match {
+  def preview(target:Target):VHtmlContent = target match {
     case TargetTaskOutput(id) => Preview(id)
     case x => <.div("Missing preview renderer for target: " + x.getClass.getName)
   }
 
 
-  case class Preview(to:Id[TaskOutput, String]) extends VHtmlComponent {
+  case class Preview(to:Id[TaskOutput, String]) extends DHtmlComponent {
 
     val latches = Latch.lazily((for {
       taskOutput <- to.lazily
       task <- taskOutput.task.lazily
     } yield (task, task.body, taskOutput, taskOutput.body)).toFuture)
 
-    override protected def render: DiffNode[Element, Node] = <.div(LatchRender(latches) {
+    override protected def render = <.div(LatchRender(latches) {
       case (t, tb:QuestionnaireTask, to, tob:QuestionnaireTaskOutput) =>
         <.div(QuestionnaireViews.previewAnswers(tb, tob))
       case (t, tb:CritiqueTask, to, tob:Critique) =>
@@ -206,7 +206,7 @@ object TaskViews {
   }
 
 
-  def editOutputForTask(task: Task):VHtmlNode = {
+  def editOutputForTask(task: Task):VHtmlContent = {
     task.body match {
       case q:QuestionnaireTask => QuestionnaireViews.EditOutputView(task)
       case c:CritiqueTask => CritiqueViews.EditOutputView(task)
@@ -214,7 +214,7 @@ object TaskViews {
     }
   }
 
-  def viewOutputForTask(task: Task):VHtmlNode = {
+  def viewOutputForTask(task: Task):VHtmlContent = {
     task.body match {
       case _ => <.div(s"View screen needs writing for ${task.body.getClass.getName}")
     }
@@ -224,7 +224,7 @@ object TaskViews {
    * Forwards to the correct renderer for editing a TaskOutput's body. The action buttons (save, publish) are passed
    * on, as some renderers (e.g. for critiques) may need to put the buttons in a different place.
    */
-  def editOutputBody(task:TaskBody, taskOutput:TaskOutputBody)(updateBody: TaskOutputBody => Unit, actions: => Seq[VHtmlNode]) = (task, taskOutput) match {
+  def editOutputBody(task:TaskBody, taskOutput:TaskOutputBody)(updateBody: TaskOutputBody => Unit, actions: => Seq[DHtmlContent]) = (task, taskOutput) match {
     case (q:QuestionnaireTask, qto:QuestionnaireTaskOutput) =>
       QuestionnaireViews.editAnswers(q, qto)(updateBody, actions)
     case (ct:CritiqueTask, c:Critique) =>
@@ -243,7 +243,7 @@ object TaskViews {
   }
 
 
-  case class EditOutputBody(task:Task, var taskOutput:TaskOutput)(onSave: TaskOutput => Unit) extends VHtmlComponent {
+  case class EditOutputBody(task:Task, var taskOutput:TaskOutput)(onSave: TaskOutput => Unit) extends DHtmlComponent {
 
     private var status = Latch.immediate(taskOutput)
     status.request

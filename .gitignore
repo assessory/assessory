@@ -36,3 +36,6 @@ tmp
 .metals/
 .bloop/
 .bsp/
+
+# VSCode
+.vscode/

@@ -1,7 +1,7 @@
 package org.assessory.vclient.task
 
 import com.assessory.api.question.{BooleanAnswer, Question, ShortTextAnswer}
-import com.wbillingsley.veautiful.html.{<, VHtmlNode, ^}
+import com.wbillingsley.veautiful.html.{<, DHtmlContent, ^}
 import org.assessory.vclient.common.Components._
 import org.scalajs.dom
 
@@ -10,7 +10,7 @@ import org.scalajs.dom
  */
 object BooleanQViews {
 
-  def editBooleanAnswer(q:Question, a:BooleanAnswer)(f: BooleanAnswer => Unit):VHtmlNode = {
+  def editBooleanAnswer(q:Question, a:BooleanAnswer)(f: BooleanAnswer => Unit):DHtmlContent = {
     def updateAnswer(ans:Boolean):Unit = {
       f(a.copy(answer=Some(ans)))
     }
@@ -33,7 +33,7 @@ object BooleanQViews {
     )
   }
 
-  def viewBooleanAnswer(q:Question, a:BooleanAnswer):VHtmlNode = {
+  def viewBooleanAnswer(q:Question, a:BooleanAnswer):DHtmlContent = {
     <.div(^.cls := "form-group",
       <.div(^.cls := "form-check form-check-inline",
         <.input(^.attr("type") := "radio", ^.cls := "form-check-input", ^.attr("read-only") := "true",

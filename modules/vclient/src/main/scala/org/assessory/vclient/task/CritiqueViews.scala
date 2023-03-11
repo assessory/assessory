@@ -4,7 +4,7 @@ import com.assessory.api.critique.{Critique, CritiqueTask}
 import com.assessory.api.{TargetGroup, Task, TaskBody, TaskOutput, TaskOutputBody}
 import com.wbillingsley.handy.{Id, Latch, lazily}
 import com.wbillingsley.veautiful.DiffNode
-import com.wbillingsley.veautiful.html.{<, VHtmlComponent, VHtmlNode, ^}
+import com.wbillingsley.veautiful.html.{<, DHtmlComponent, VHtmlContent, DHtmlContent, ^}
 import org.assessory.vclient.common.Components.LatchRender
 import org.assessory.vclient.group.GroupViews
 import org.assessory.vclient.services.TaskOutputService
@@ -18,7 +18,7 @@ object CritiqueViews {
   /**
    * Edit view for critique tasks
    */
-  case class EditOutputView(task:Task) extends VHtmlComponent {
+  case class EditOutputView(task:Task) extends DHtmlComponent {
 
     // These are the original (unedited) allocations
     private val allocations = TaskOutputService.fillAllocations(task.id)
@@ -59,7 +59,7 @@ object CritiqueViews {
   }
 
 
-  def editBody(critiqueTask: CritiqueTask, critique: Critique)(updateBody: TaskOutputBody => Unit, actions: => Seq[VHtmlNode]):VHtmlNode = {
+  def editBody(critiqueTask: CritiqueTask, critique: Critique)(updateBody: TaskOutputBody => Unit, actions: => Seq[DHtmlContent]):DHtmlContent = {
     <.div(^.cls := "row",
       <.div(^.cls := "col",
         <.div(^.cls := "card mt-1 mb-1",
@@ -81,7 +81,7 @@ object CritiqueViews {
   }
 
 
-  def viewBody(critiqueTask: CritiqueTask, critique: Critique):VHtmlNode = {
+  def viewBody(critiqueTask: CritiqueTask, critique: Critique):DHtmlContent = {
     <.div(^.cls := "card",
       <.div(^.cls := "card-header", "Your critique"),
       <.div(^.cls := "card-body",
@@ -90,7 +90,7 @@ object CritiqueViews {
     )
   }
 
-  def previewBody(critiqueTask: CritiqueTask, critique: Critique):VHtmlNode = {
+  def previewBody(critiqueTask: CritiqueTask, critique: Critique):DHtmlContent = {
     TaskViews.viewOutputBody(critiqueTask.task, critique.task)
   }
 

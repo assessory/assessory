@@ -5,11 +5,11 @@ import com.assessory.api.video.{Kaltura, UnrecognisedVideoUrl, VideoResource, Yo
 import com.assessory.api._
 import com.assessory.api.appbase._
 import com.wbillingsley.handy.{Id, Latch, lazily}
-import com.wbillingsley.veautiful.html.{<, VHtmlComponent, VHtmlNode, ^}
+import com.wbillingsley.veautiful.html.{<, DHtmlComponent, DHtmlContent, ^}
 import org.assessory.vclient.common.Components.LatchRender
 import org.assessory.vclient.services.TaskOutputService
 import org.assessory.vclient.services._
-import org.assessory.vclient.common.Markup
+import org.assessory.vclient.marked
 import org.assessory.vclient.common.Components._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -28,7 +28,7 @@ object QuestionnaireViews {
   /**
    * Edit view for questionnaire tasks
    */
-  case class EditOutputView(task:Task) extends VHtmlComponent {
+  case class EditOutputView(task:Task) extends DHtmlComponent {
 
     var output = Latch.lazily(loadOrDefaultOutput(task))
 
@@ -44,7 +44,7 @@ object QuestionnaireViews {
 
 
 
-  def editAnswers(q:QuestionnaireTask, qto:QuestionnaireTaskOutput)(update: QuestionnaireTaskOutput => Unit, actions: => Seq[VHtmlNode]):VHtmlNode = {
+  def editAnswers(q:QuestionnaireTask, qto:QuestionnaireTaskOutput)(update: QuestionnaireTaskOutput => Unit, actions: => Seq[DHtmlContent]):DHtmlContent = {
 
     val qmap = (for { q <- q.questionnaire} yield q.id -> q).toMap
 
@@ -56,7 +56,7 @@ object QuestionnaireViews {
       for { (a, i) <- qto.answers.zipWithIndex } yield {
         <.div(^.cls := "question",
           <.div(
-            Markup.marked.MarkupNode(() => qmap(a.question).prompt)
+            marked.div(qmap(a.question).prompt)
           ),
           a match {
             case v:VideoAnswer => VideoQViews.editVideoAnswer(qmap(a.question), v) { a => replaceAnswer(a, i) }
@@ -71,14 +71,14 @@ object QuestionnaireViews {
     )
   }
 
-  def previewAnswers(q:QuestionnaireTask, qto:QuestionnaireTaskOutput, showHidden:Boolean = false):VHtmlNode = {
+  def previewAnswers(q:QuestionnaireTask, qto:QuestionnaireTaskOutput, showHidden:Boolean = false):DHtmlContent = {
     val qmap = (for { q <- q.questionnaire} yield q.id -> q).toMap
 
     <.div(
       for { a <- qto.answers if showHidden || !qmap(a.question).hideInCrit } yield {
         <.div(^.cls := "question",
           <.div(
-            Markup.marked.MarkupNode(() => qmap(a.question).prompt)
+            marked.div(qmap(a.question).prompt)
           ),
           a match {
             case v:VideoAnswer => VideoQViews.viewVideoAnswer(qmap(a.question), v)
