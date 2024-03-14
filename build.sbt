@@ -7,7 +7,7 @@ scalaVersion := "3.1.0"
 organization := "org.assessory"
 version := "0.4.0-SNAPSHOT"
 
-def useScala3 = (scalaVersion := "3.1.0")
+def useScala3 = (scalaVersion := "3.3.3")
 def useScala2 = (scalaVersion := "2.13.7")
 
 lazy val commonSettings = Seq(
