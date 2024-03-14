@@ -1,15 +1,15 @@
 package org.assessory.akkahttp
 
-import akka.actor.typed.ActorSystem
-import akka.actor.typed.scaladsl.Behaviors
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.marshalling.{Marshaller, ToEntityMarshaller}
-import akka.http.scaladsl.model.*
-import akka.http.scaladsl.model.StatusCodes.{BadRequest, Forbidden, InternalServerError, NotFound}
-import akka.http.scaladsl.model.headers.{HttpCookie, SameSite}
-import akka.http.scaladsl.server.Directives.*
-import akka.http.scaladsl.server.{ExceptionHandler, Route}
-import akka.http.scaladsl.unmarshalling.{FromRequestUnmarshaller, Unmarshaller}
+import org.apache.pekko.actor.typed.ActorSystem
+import org.apache.pekko.actor.typed.scaladsl.Behaviors
+import org.apache.pekko.http.scaladsl.Http
+import org.apache.pekko.http.scaladsl.marshalling.{Marshaller, ToEntityMarshaller}
+import org.apache.pekko.http.scaladsl.model.*
+import org.apache.pekko.http.scaladsl.model.StatusCodes.{BadRequest, Forbidden, InternalServerError, NotFound}
+import org.apache.pekko.http.scaladsl.model.headers.{HttpCookie, SameSite}
+import org.apache.pekko.http.scaladsl.server.Directives.*
+import org.apache.pekko.http.scaladsl.server.{ExceptionHandler, Route}
+import org.apache.pekko.http.scaladsl.unmarshalling.{FromRequestUnmarshaller, Unmarshaller}
 import com.assessory.api.appbase.{ActiveSession, Course, CourseId, CourseRole, Identity, User, UserError, UserId}
 
 import scala.io.StdIn

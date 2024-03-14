@@ -98,12 +98,12 @@ lazy val sjsProjects = Seq(vclient)
 
 
 // The web layer
-val AkkaVersion = "2.6.8"
-val AkkaHttpVersion = "10.2.6"
+val PekkoVersion = "1.0.2"
+val PekkoHttpVersion = "1.0.1"
 
 val prod = true
 
-lazy val akkahttp = (project in file("modules/akkaHttp"))
+lazy val pekkohttp = (project in file("modules/pekkoHttp"))
   .dependsOn(apiJVM, mongo, model, clientPickleJVM)
   .settings(commonSettings:_*)
   .aggregate(sjsProjects.map(sbt.Project.projectToRef):_*)
@@ -123,9 +123,9 @@ lazy val akkahttp = (project in file("modules/akkaHttp"))
     // triggers scalaJSPipeline when using compile or continuous compilation
     Compile / compile := ((Compile / compile) dependsOn scalaJSPipeline).value,
     libraryDependencies ++= Seq(
-      ("com.typesafe.akka" %% "akka-actor-typed" % AkkaVersion).cross(CrossVersion.for3Use2_13),
-      ("com.typesafe.akka" %% "akka-stream" % AkkaVersion).cross(CrossVersion.for3Use2_13),
-      ("com.typesafe.akka" %% "akka-http" % AkkaHttpVersion).cross(CrossVersion.for3Use2_13),
+      ("org.apache.pekko" %% "pekko-actor-typed" % PekkoVersion),
+      ("org.apache.pekko" %% "pekko-stream" % PekkoVersion),
+      ("org.apache.pekko" %% "pekko-http" % PekkoHttpVersion),
 
       "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.17.1"
     ),
@@ -150,9 +150,9 @@ lazy val cheatScript = project.in(file("modules/cheatScript"))
 
     libraryDependencies ++= Seq(
 //      ("org.specs2" %% "specs2-core" % "4.3.4" % "test").cross(CrossVersion.for3Use2_13),
-      ("com.typesafe.akka" %% "akka-actor-typed" % AkkaVersion).cross(CrossVersion.for3Use2_13),
-      ("com.typesafe.akka" %% "akka-stream" % AkkaVersion).cross(CrossVersion.for3Use2_13),
-      ("com.typesafe.akka" %% "akka-http" % AkkaHttpVersion).cross(CrossVersion.for3Use2_13),
+      ("org.apache.pekko" %% "pekko-actor-typed" % PekkoVersion),
+      ("org.apache.pekko" %% "pekko-stream" % PekkoVersion),
+      ("org.apache.pekko" %% "pekko-http" % PekkoHttpVersion),
     )
   )
 

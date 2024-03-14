@@ -1,11 +1,11 @@
 package org.assessory.play.cheatscript
 
-import akka.actor.typed.ActorSystem
-import akka.actor.typed.scaladsl.Behaviors
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.marshalling.{Marshaller, ToEntityMarshaller}
-import akka.http.scaladsl.model.*
-import akka.http.scaladsl.unmarshalling.{FromRequestUnmarshaller, FromResponseUnmarshaller, Unmarshal, Unmarshaller}
+import org.apache.pekko.actor.typed.ActorSystem
+import org.apache.pekko.actor.typed.scaladsl.Behaviors
+import org.apache.pekko.http.scaladsl.Http
+import org.apache.pekko.http.scaladsl.marshalling.{Marshaller, ToEntityMarshaller}
+import org.apache.pekko.http.scaladsl.model.*
+import org.apache.pekko.http.scaladsl.unmarshalling.{FromRequestUnmarshaller, FromResponseUnmarshaller, Unmarshal, Unmarshaller}
 import com.assessory.api.call.{Call, Return, ReturnSession, UserCall}
 import com.wbillingsley.handy.{Ref, Refused, refOps}
 import com.assessory.api.appbase.{ActiveSession, UserError}
@@ -14,7 +14,7 @@ import com.assessory.clientpickle.CallPickles.*
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.ExecutionContext.Implicits.*
-import akka.http.scaladsl.client.RequestBuilding.Post
+import org.apache.pekko.http.scaladsl.client.RequestBuilding.Post
 
 
 class NetworkService(url:String) {
