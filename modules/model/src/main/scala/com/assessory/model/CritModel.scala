@@ -15,6 +15,7 @@ import com.assessory.api.appbase.*
 import com.assessory.api.call.{CritiqueCall, Return, ReturnTarget, ReturnTaskOutput, StandardReturn}
 
 import scala.util.Random
+import com.wbillingsley.handy.RefManyFailed
 
 object CritModel {
 
@@ -458,18 +459,18 @@ object CritModel {
   }
 
   /** Called by the client view to create blank task outputs as necessary */
-  def fillMyTaskOutputs(approval:Approval[User], task:Task):RefMany[TaskOutput] = task match {
-    case Task(_, _, _, CritiqueTask(AllocateStrategy(TTOutputs(id), num), critTask)) =>
+  def fillMyTaskOutputs(approval:Approval[User], task:Task):RefMany[TaskOutput] = task.body match {
+    case CritiqueTask(AllocateStrategy(TTOutputs(id), num), critTask) =>
       for {
         u <- approval.who
         to <- fillUp(TargetUser(u.id), task, TTOutputs(id), num)
       } yield to
-    case Task(_, _, _, CritiqueTask(AllocateStrategy(TTGroups(id), num), critTask)) =>
+    case CritiqueTask(AllocateStrategy(TTGroups(id), num), critTask) =>
       for {
         u <- approval.who
         to <- fillUp(TargetUser(u.id), task, TTGroups(id), num)
       } yield to
-    case Task(_, _, _, CritiqueTask(TargetMyStrategy(critTaskId, _, _), critTask)) =>
+    case CritiqueTask(TargetMyStrategy(critTaskId, _, _), critTask) =>
       for {
         u <- approval.who
         critTask <- critTaskId.lazily
@@ -480,6 +481,8 @@ object CritModel {
       } yield {
         to.item
       }
+    case CritiqueTask(strategy, task) => RefManyFailed(IllegalArgumentException("Could not fill task outputs for this critique - unmatched strategy"))
+    case _: TaskBody => RefManyFailed(IllegalArgumentException("Asked to fill task outputs on a non-critique task"))
   }
 
 

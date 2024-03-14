@@ -3,7 +3,7 @@
 import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 
 name := "assessory"
-scalaVersion := "3.1.0"
+scalaVersion := "3.3.1"
 organization := "org.assessory"
 version := "0.4.0-SNAPSHOT"
 
@@ -25,6 +25,10 @@ lazy val commonSettings = Seq(
    "org.scalactic" %% "scalactic" % "3.2.9",
     "org.scalatest" %% "scalatest" % "3.2.9" % "test",
 //  ("org.specs2" %% "specs2-core" % "4.8.3" % "test").cross(CrossVersion.for3Use2_13)
+
+//    what it downloads, it'll be something like org.scalameta.munit_3.0.0-M3.jar
+    "org.scalameta" %% "munit" % "0.7.29" % Test
+
   )
 
 )
@@ -156,6 +160,11 @@ lazy val cheatScript = project.in(file("modules/cheatScript"))
     )
   )
 
+
+
+// We also need to register munit as a test framework in sbt so that "sbt test" will work and the IDE will recognise
+// tests
+testFrameworks += new TestFramework("munit.Framework")
 
 /*
 lazy val play = (project in file("modules/play"))

@@ -1,7 +1,7 @@
 package org.assessory.vclient.task
 
 import com.assessory.api.question.{Question, VideoAnswer}
-import com.assessory.api.video.{Kaltura, UnrecognisedVideoUrl, VideoResource, YouTube}
+import com.assessory.api.video.{Kaltura, UnrecognisedVideoUrl, VideoResource, YouTube, EchoVideo}
 import com.wbillingsley.veautiful.html.{<, DHtmlContent, ^}
 import org.assessory.vclient.services.VideoService
 
@@ -32,9 +32,21 @@ object VideoQViews {
     )
   }
 
+  /** A player for Kaltura videos */
+  def echoPlayer(url:String):DHtmlContent = {
+    val extracted = VideoService.extractEchoVideoId(url)
+
+    <.iframe(
+      ^.attr.width := "560", ^.attr.height := "315", ^.attr.allowfullscreen := "", ^.attr.frameborder := 0, 
+      ^.src := s"https://echo360.net.au/media/${extracted}/public?autoplay=false&automute=false", ^.attr("frameBorder") := "0", ^.attr("allowFullScreen") := "true"
+    )
+  }
+
+
   def videoPlayer(vr:VideoResource):DHtmlContent = vr match {
     case YouTube(url) => youTubePlayer(url)
     case Kaltura(url)  => kalturaPlayer(url)
+    case EchoVideo(url) => echoPlayer(url)
     case UnrecognisedVideoUrl(url) => <.a(^.href := url, ^.attr("target") := "_blank", "Unrecognised video URL: ", url)
   }
 
