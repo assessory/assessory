@@ -123,7 +123,7 @@ class GroupController @Inject() (startupSettings: StartupSettings, cc: Controlle
 
     import au.com.bytecode.opencsv.CSVReader
 
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters.*
 
     val reader = new CSVReader(new StringReader(request.body.trim()))
     val lines = reader.readAll().asScala.toSeq.toRefMany.map(_.toSeq.toString)

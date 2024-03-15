@@ -5,7 +5,7 @@ import com.wbillingsley.handy.Id
 import com.assessory.api.appbase.{ActiveSession, Identity, PasswordLogin, User, UserId}
 import org.mongodb.scala.bson._
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters.*
 import scala.util.Try
 
 object UserB {

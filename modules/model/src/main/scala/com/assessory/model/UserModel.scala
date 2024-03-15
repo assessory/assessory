@@ -38,7 +38,7 @@ object UserModel {
       email <- oEmail.toRefOpt orFail UserError("Email must not be blank")
       password <- oPassword.toRefOpt orFail UserError("Password must not be blank")
       user <- UserDAO.byEmailAndPassword(email, password)
-      updated <- UserDAO.pushSession(user.itself, session)
+      updated <- UserDAO.addSession(user.itself, session)
     } yield updated
   }
 
@@ -47,9 +47,9 @@ object UserModel {
    */
   def secretLogIn(ru:Ref[User], secret:String, activeSession:ActiveSession) = {
     for {
-      oldUser <- UserDAO.deleteSession(ru, activeSession).toRefOpt
+      oldUser <- UserDAO.removeSession(ru, activeSession.key).toRefOpt
       u <- ru if u.secret == secret
-      pushed <- UserDAO.pushSession(u.itself, activeSession)
+      pushed <- UserDAO.addSession(u.itself, activeSession)
     } yield pushed
   }
 
@@ -59,7 +59,7 @@ object UserModel {
   def logOut(rUser:Ref[User], session:ActiveSession) = {
     for (
       u <- rUser;
-      user <- UserDAO.deleteSession(u.itself, session)
+      user <- UserDAO.removeSession(u.itself, session.key)
     ) yield {
       user
     }
@@ -98,7 +98,7 @@ object UserModel {
         }
       }
 
-      loggedIn <- UserDAO.pushSession(user.itself, ActiveSession(key=session, ip=ip))
+      loggedIn <- UserDAO.addSession(user.itself, ActiveSession(key=session, ip=ip))
 
       reg <- RegistrationDAO.course.register(
         user.id, course.id,

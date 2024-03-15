@@ -17,7 +17,7 @@ object Cosc370 {
 
   def createCourse()(using cc:CallClient):Ref[Course] =
     (for
-      StandardReturn.ReturnWithPermissions(ReturnCourse(c), perms) <- cc.call(CourseCall.CreateCourse(Course(
+      case StandardReturn.ReturnWithPermissions(ReturnCourse(c), perms) <- cc.call(CourseCall.CreateCourse(Course(
         id=CourseId("invalid"),
         addedBy=RegistrationId("invalid"),
         title = Some("User Experience and Interaction Design"),
@@ -27,18 +27,18 @@ object Cosc370 {
       )))
     yield c) orFail IllegalStateException("Return from creating course was not what I expected")
 
-  def getCourse()(using cc:CallClient):RefOpt[Course] = (for ReturnCourse(c) <- cc.call(CourseCall.ByShortName("COSC370/570 2022")) yield c)
+  def getCourse()(using cc:CallClient):RefOpt[Course] = (for case ReturnCourse(c) <- cc.call(CourseCall.ByShortName("COSC370/570 2022")) yield c)
 
   def ensureCourse()(using cc:CallClient) = getCourse() orElse createCourse()
 
   def ensureTask(task:Task)(using cc:CallClient):Ref[Task] =
     def getTask() = for
       name <- task.details.name.toRefOpt.require
-      ReturnTask(t) <- cc.call(TaskCall.ByName(task.course, name))
+      case ReturnTask(t) <- cc.call(TaskCall.ByName(task.course, name))
     yield t
 
     def makeTask() = (for
-      StandardReturn.ReturnWithPermissions(ReturnTask(t), _) <- cc.call(TaskCall.CreateTask(task))
+      case StandardReturn.ReturnWithPermissions(ReturnTask(t), _) <- cc.call(TaskCall.CreateTask(task))
     yield t) orFail IllegalStateException("Return from creating task wasn't what I expected")
 
     getTask() orElse makeTask()

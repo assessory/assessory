@@ -4,7 +4,7 @@ import com.assessory.api.appbase._
 import com.wbillingsley.handy.{EmptyKind, HasKind, Id}
 import org.mongodb.scala.bson._
 import BsonHelpers._
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters.*
 
 import scala.util.Try
 

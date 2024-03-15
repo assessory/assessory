@@ -5,7 +5,7 @@ import Id._
 import org.mongodb.scala.bson._
 import Ids._
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters.*
 import com.assessory.api.TaskId
 
 object IdB {

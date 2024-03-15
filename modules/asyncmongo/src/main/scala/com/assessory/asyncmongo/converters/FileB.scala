@@ -10,7 +10,7 @@ import critique._
 import question._
 import org.mongodb.scala.bson._
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try}
 
 object SmallFileB {

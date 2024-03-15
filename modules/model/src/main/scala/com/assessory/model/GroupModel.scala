@@ -399,7 +399,7 @@ object GroupModel {
     val updates = for {
       u <- ensured
       missing = identities.filterNot({ i => u.identities.exists({ ui => ui.username == i.username && ui.service == i.service && ui.value == i.value }) })
-      i <- missing.toRefMany.foldLeft[Ref[User]](u.itself) { case (ref, i) => UserDAO.pushIdentity(ref, i) }
+      i <- missing.toRefMany.foldLeft[Ref[User]](u.itself) { case (ref, i) => UserDAO.addIdentity(ref, i) }
     } yield i
 
     updates.flatMap(identity)

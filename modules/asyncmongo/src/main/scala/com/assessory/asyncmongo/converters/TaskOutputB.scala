@@ -7,7 +7,7 @@ import com.wbillingsley.handy.Id
 import com.assessory.api.appbase.{User, Group, Course}
 import com.assessory.api._
 import org.mongodb.scala.bson._
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters.*
 
 
 import scala.util.{Failure, Try}

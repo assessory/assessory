@@ -6,7 +6,7 @@ import com.assessory.api.appbase.{Course, CourseId, Group, GroupSet, GroupSetId}
 import com.assessory.api._
 import org.mongodb.scala.bson._
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Try}
 
 object TaskB  {

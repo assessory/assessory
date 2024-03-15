@@ -6,7 +6,7 @@ import com.assessory.asyncmongo.converters.RegistrationB._
 import com.wbillingsley.handy.Id
 import com.assessory.api.appbase._
 import org.mongodb.scala.bson._
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters.*
 
 import scala.util.Try
 

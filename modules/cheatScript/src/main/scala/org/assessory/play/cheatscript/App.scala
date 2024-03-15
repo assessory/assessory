@@ -28,7 +28,7 @@ object App {
     def admin() = (for u <- client.login("admin@assessory.une.edu.au", "samplepassword").toRef yield u)
 
     def makeTestCourse():Ref[WithPerms[Course]] = (for
-      StandardReturn.ReturnWithPermissions(ReturnCourse(c), perms) <- client.makeCall(CourseCall.CreateCourse(Course(
+      case StandardReturn.ReturnWithPermissions(ReturnCourse(c), perms) <- client.makeCall(CourseCall.CreateCourse(Course(
         id = CourseId("61147cf6dbdf4746b7012183"),
         addedBy = RegistrationId("invalid"),
         title = Some("A Testing Course"),
@@ -40,7 +40,7 @@ object App {
 
     def getTestCourse():RefOpt[WithPerms[Course]] =
       for
-        StandardReturn.ReturnWithPermissions(ReturnCourse(c), perms) <- client.makeCall(
+        case StandardReturn.ReturnWithPermissions(ReturnCourse(c), perms) <- client.makeCall(
           CourseCall.GetCourse(CourseId("61147cf6dbdf4746b7012183"))
         ).toRef
       yield WithPerms(perms, c)
@@ -50,7 +50,7 @@ object App {
     def makeTestTask() =
       (for
         WithPerms(_, c) <- ensureTestCourse()
-        StandardReturn.ReturnWithPermissions(ReturnTask(t), perms) <- client.makeCall(TaskCall.CreateTask(
+        case StandardReturn.ReturnWithPermissions(ReturnTask(t), perms) <- client.makeCall(TaskCall.CreateTask(
           Task(
             id = TaskId("611c7e8e90a80c6b9ea520d6"),
             course = c.id,
@@ -69,7 +69,7 @@ object App {
 
     def getTestTask() =
       for
-        StandardReturn.ReturnWithPermissions(ReturnTask(c), perms) <- client.makeCall(
+        case StandardReturn.ReturnWithPermissions(ReturnTask(c), perms) <- client.makeCall(
           TaskCall.GetTask(TaskId("611c7e8e90a80c6b9ea520d6"))
         ).toRef
       yield WithPerms(perms, c)

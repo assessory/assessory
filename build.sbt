@@ -46,8 +46,20 @@ lazy val apiJS = api.js
 lazy val apiJVM = api.jvm
 
 // Mongo contains the database serialisation and deserialisation
-lazy val mongo = (project in file("modules/asyncmongo"))
+lazy val datalayer = (project in file("modules/datalayer"))
   .dependsOn(apiJVM)
+  .settings(commonSettings:_*)
+  .settings(
+    useScala3,
+    libraryDependencies ++= Seq(
+      "org.mindrot" % "jbcrypt" % "0.3m"
+    )
+  )
+
+
+// Mongo contains the database serialisation and deserialisation
+lazy val mongo = (project in file("modules/asyncmongo"))
+  .dependsOn(apiJVM, datalayer)
   .settings(commonSettings:_*)
   .settings(
     useScala3,
@@ -59,7 +71,7 @@ lazy val mongo = (project in file("modules/asyncmongo"))
 
 // Model relies on both the API and the database layer, just not the web layer
 lazy val model = (project in file("modules/model"))
-  .dependsOn(apiJVM, mongo)
+  .dependsOn(apiJVM, mongo, datalayer)
   .settings(commonSettings:_*)
   .settings(
     useScala3,

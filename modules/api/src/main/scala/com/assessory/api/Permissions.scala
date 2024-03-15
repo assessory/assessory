@@ -135,6 +135,8 @@ object Permissions {
           r <- Lookups.groupRegistrationProvider.byUserAndTarget(who.id, gid) orElse RefOptFailed(Refused("You may only edit your own work"))
          } yield Approved("Registered in group")
       ).require
+      case TargetTaskOutput(id) => 
+        prior.cache(id).flatMap((to) => isOwn(prior, who, to.by))
     }
   }
 

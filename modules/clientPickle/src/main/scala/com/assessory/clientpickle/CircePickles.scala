@@ -447,17 +447,21 @@ object Pickles {
   val youtubeDecoder: Decoder[YouTube] = (c:HCursor) => c.downField("id").as[String].map(YouTube.apply)
   val kalturaEncoder: Encoder[Kaltura] = (v:Kaltura) => Json.obj("kind" -> "kaltura".asJson, "id" -> v.kId.asJson)
   val kalturaDecoder: Decoder[Kaltura] = (c:HCursor) => c.downField("id").as[String].map(Kaltura.apply)
+  val echoVideoEncoder: Encoder[EchoVideo] = (v:EchoVideo) => Json.obj("kind" -> "echoVideo".asJson, "id" -> v.id.asJson)
+  val echoVideoDecoder: Decoder[EchoVideo] = (c:HCursor) => c.downField("id").as[String].map(EchoVideo.apply)
   val unrecognisedVideoEncoder: Encoder[UnrecognisedVideoUrl] = (v:UnrecognisedVideoUrl) => Json.obj("kind" -> "unrecognised".asJson, "url" -> v.url.asJson)
   val unrecognisedVideoDecoder: Decoder[UnrecognisedVideoUrl] = (c:HCursor) => c.downField("url").as[String].map(UnrecognisedVideoUrl.apply)
 
   implicit val videoResourceEncoder: Encoder[VideoResource] = {
     case v:YouTube => youTubeEncoder(v)
     case v:Kaltura => kalturaEncoder(v)
+    case v:EchoVideo => echoVideoEncoder(v)
     case v:UnrecognisedVideoUrl => unrecognisedVideoEncoder(v)
   }
   implicit val videoResourceDecoder: Decoder[VideoResource] = (c:HCursor) => c.downField("kind").as[String].flatMap {
     case "youtube" => youtubeDecoder(c)
     case "kaltura" => kalturaDecoder(c)
+    case "echoVideo" => echoVideoDecoder(c)
     case "unrecognised" => unrecognisedVideoDecoder(c)
   }
 

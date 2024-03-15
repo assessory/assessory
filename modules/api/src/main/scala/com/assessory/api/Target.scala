@@ -9,8 +9,6 @@ sealed trait Target
 
 case class KindedTarget[T <: Target](kind:String, target:T)
 
-case class UnrecognisedT(original:String) extends Target
-
 case class TargetUser(id:Id[User, String]) extends Target
 
 

@@ -15,7 +15,7 @@ object Cosc220 {
 
   def createCourse()(using cc:CallClient):Ref[Course] =
     (for
-      StandardReturn.ReturnWithPermissions(ReturnCourse(c), perms) <- cc.call(CourseCall.CreateCourse(Course(
+      case StandardReturn.ReturnWithPermissions(ReturnCourse(c), perms) <- cc.call(CourseCall.CreateCourse(Course(
         id=CourseId("invalid"),
         addedBy=RegistrationId("invalid"),
         title = Some("Software Development Studio 2"),
@@ -25,13 +25,13 @@ object Cosc220 {
       )))
     yield c) orFail IllegalStateException("Return from creating course was not what I expected")
 
-  def getCourse()(using cc:CallClient):RefOpt[Course] = (for ReturnCourse(c) <- cc.call(CourseCall.ByShortName("COSC220 2022")) yield c)
+  def getCourse()(using cc:CallClient):RefOpt[Course] = (for case ReturnCourse(c) <- cc.call(CourseCall.ByShortName("COSC220 2022")) yield c)
 
   def ensureCourse()(using cc:CallClient) = getCourse() orElse createCourse()
 
   def createGroupSet(c:Course)(using cc:CallClient):Ref[GroupSet] =
     (for
-      StandardReturn.ReturnWithPermissions(ReturnGroupSet(g), perms) <- cc.call(GroupSetCall.CreateGroupSet(GroupSet(
+      case StandardReturn.ReturnWithPermissions(ReturnGroupSet(g), perms) <- cc.call(GroupSetCall.CreateGroupSet(GroupSet(
         id = GroupSetId("invalid"),
         course = c.id,
         name = Some("Project group"),
@@ -40,7 +40,7 @@ object Cosc220 {
     yield g) orFail IllegalStateException("Return from creating gs was not what I expected")
 
   def getGroupSet(c:Course)(using cc:CallClient):RefOpt[GroupSet] =
-    for ReturnGroupSet(g) <- cc.call(GroupSetCall.ByName(c.id, "Project group")) yield g
+    for case ReturnGroupSet(g) <- cc.call(GroupSetCall.ByName(c.id, "Project group")) yield g
 
   def ensureGroupSet(c:Course)(using cc:CallClient):Ref[GroupSet] = getGroupSet(c) orElse createGroupSet(c)
 
@@ -55,12 +55,12 @@ object Cosc220 {
     val groups = Seq("alt-f4")
 
     (for
-      StandardReturn.ReturnMany(existingSeq) <- cc.call(GroupCall.GroupSetGroups(gs.id))
-      existingGroups = for ReturnGroup(g) <- existingSeq yield g.name.getOrElse("")
+      case StandardReturn.ReturnMany(existingSeq) <- cc.call(GroupCall.GroupSetGroups(gs.id))
+      existingGroups = for case ReturnGroup(g) <- existingSeq yield g.name.getOrElse("")
       needed = groups.filterNot(n => existingGroups.contains(n))
 
       groupName <- needed.toRefMany
-      ReturnGroup(group) <- cc.call(GroupCall.CreateGroup(Group(
+      case ReturnGroup(group) <- cc.call(GroupCall.CreateGroup(Group(
         id = GroupId("invalid"),
         course = Some(gs.course),
         set = gs.id,
@@ -75,11 +75,11 @@ object Cosc220 {
   def ensureTask(task:Task)(using cc:CallClient):Ref[Task] =
     def getTask() = for
       name <- task.details.name.toRefOpt.require
-      ReturnTask(t) <- cc.call(TaskCall.ByName(task.course, name))
+      case ReturnTask(t) <- cc.call(TaskCall.ByName(task.course, name))
     yield t
 
     def makeTask() = (for
-      StandardReturn.ReturnWithPermissions(ReturnTask(t), _) <- cc.call(TaskCall.CreateTask(task))
+      case StandardReturn.ReturnWithPermissions(ReturnTask(t), _) <- cc.call(TaskCall.CreateTask(task))
     yield t) orFail IllegalStateException("Return from creating task wasn't what I expected")
 
     getTask() orElse makeTask()

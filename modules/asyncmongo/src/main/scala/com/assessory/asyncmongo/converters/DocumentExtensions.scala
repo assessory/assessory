@@ -21,7 +21,7 @@ extension (d:Document) {
   def optHexOid(key: String): Option[String] = d.get[BsonObjectId](key).map(_.getValue.toHexString)
 
   def seqHexOid(key: String): Seq[String] = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters.*
     var arr = d[BsonArray](key)
     arr.getValues.asScala.map(_.asObjectId().getValue.toHexString).toSeq
   }

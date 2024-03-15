@@ -10,7 +10,7 @@ import com.wbillingsley.handy.{Approval, EmptyKind, HasKind, Id, Ref, RefMany, R
 import com.assessory.api.appbase.*
 import com.assessory.api.call.{CourseCall, Return, ReturnCourse, StandardReturn}
 
-import scala.collection.JavaConverters.*
+import scala.jdk.CollectionConverters.*
 
 object CourseModel {
 

@@ -16,7 +16,7 @@ class CallClient(using networkService: Call => Future[Return], ec:ExecutionConte
    * The session is kept private to avoid the key becoming accessible to other javascript (session hijacking)
    */
   private val session:Latch[ActiveSession] = Latch.lazily(
-    for ReturnSession(as) <- networkService(SessionCall.GetSession) yield as
+    for case ReturnSession(as) <- networkService(SessionCall.GetSession) yield as
   )
 
   def makeCall(call:Call):Future[Return] = session.request.flatMap(s => networkService(SessionCall.WithSession(s, call)))
@@ -26,21 +26,21 @@ class CallClient(using networkService: Call => Future[Return], ec:ExecutionConte
   def login(email:String, password:String):Future[User] = {
     for
       s <- session.request
-      ReturnUser(u) <- makeCall(SessionCall.Login(email, password, s))
+      case ReturnUser(u) <- makeCall(SessionCall.Login(email, password, s))
     yield u
   }
 
   def logout():Future[User] = {
     for
       s <- session.request
-      ReturnUser(u) <- makeCall(SessionCall.Logout(s))
+      case ReturnUser(u) <- makeCall(SessionCall.Logout(s))
     yield u
   }
 
   def register(email:String, password:String):Future[User] = {
     for
       s <- session.request
-      ReturnUser(u) <- makeCall(SessionCall.Register(email, password, s))
+      case ReturnUser(u) <- makeCall(SessionCall.Register(email, password, s))
     yield u
   }
 
