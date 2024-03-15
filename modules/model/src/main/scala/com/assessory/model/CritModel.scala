@@ -287,6 +287,7 @@ object CritModel {
     t match {
       case TargetGroup(gId) => gId.lazily.flatMap(isBy(to, _))
       case TargetUser(uId) => uId.lazily.flatMap(isBy(to, _))
+      case TargetCourseReg(id) => id.lazily.flatMap((cr) => isBy(to, TargetUser(cr.user)))
     }
   }
 
@@ -321,6 +322,8 @@ object CritModel {
     case TargetCourseReg(cId) => for {
       cr <- cId.lazily
     } yield cr.user == u.id
+    case TargetTaskOutput(id) => 
+      id.lazily.flatMap((to) => targetIncludes(to.by, u))
   }
 
   /**
@@ -351,8 +354,7 @@ object CritModel {
   def allocateMe(by:Target, task:Task, t:TargetType, num:Int, alreadyDone:Seq[Target]):Ref[Seq[Target]] = {
     t match {
       case TTOutputs(id) =>
-        println(s"Already done: $alreadyDone")
-
+        
         // Eligible outputs are those that are published that we didn't write
         def eligible:RefMany[TaskOutputId] = for
           output <- TaskOutputDAO.byTask(id.lazily) if output.finalised.nonEmpty && !alreadyDone.contains(TargetTaskOutput(output.id))
@@ -389,7 +391,7 @@ object CritModel {
       } yield {
         val critCounts = crits.collect(
           { case TaskOutput(_, _, _, _, Critique(TargetGroup(gId), _), _, _, _) => gId}
-        ).groupBy(identity).mapValues(_.size)
+        ).groupBy(identity).view.mapValues(_.size)
 
         val selected = Random.shuffle(toCrit).sortBy({ c => critCounts.getOrElse(c.id, 0) }).take(num)
         selected.map({ to => TargetGroup(to.id) })

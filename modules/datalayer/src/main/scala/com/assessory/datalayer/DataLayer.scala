@@ -12,23 +12,11 @@ trait DataLayer {
 
     given lookups:Lookups.type
 
-}
+    given userDAO:UserDAO
 
-trait UserDAO extends com.assessory.api.appbase.UserDAO[User, Identity] {
-    def unsaved: User
+    given taskDAO:TaskDAO
 
-    def saveSafe(c:User):Ref[User]
-
-    def saveNew(c:User):Ref[User]
-
-    def saveDetails(u:User):RefOpt[User]
-
-    def byEmail(email:String):RefOpt[User]
-
-    def byEmailAndPassword(email:String, password:String):RefOpt[User]
-
-    def byUsernameAndPassword(username:String, password:String):RefOpt[User]
-
-    def bySocialIdOrUsername(service:String, optId:Option[String], optUserName:Option[String] = None):RefOpt[User]
+    given courseDAO:CourseDAO
 
 }
+

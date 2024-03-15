@@ -10,7 +10,7 @@ import com.assessory.api.wiring.Lookups.{given, _}
 import com.wbillingsley.handy.{Approval, EmptyKind, HasKind, Id, Ref, RefFailed, RefMany, RefManyFailed, RefNone, RefOpt, Refused, lazily, refOps}
 import com.assessory.api.appbase.*
 
-import scala.collection.JavaConverters.*
+import scala.jdk.CollectionConverters.*
 
 object GroupModel {
 

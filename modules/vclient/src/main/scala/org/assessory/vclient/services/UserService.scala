@@ -58,7 +58,7 @@ object UserService {
   }
 
   def loadId[KK <: String](id:Id[User,KK]):Latch[User] = Latch.lazily(
-    for ReturnUser(u) <- callClient.makeCall(UserCall.GetUser(UserId(id.id))) yield u
+    for case ReturnUser(u) <- callClient.makeCall(UserCall.GetUser(UserId(id.id))) yield u
   )
 
   given EagerLookUpOne[Id[User, String], User] = (r:Id[User, String]) =>

@@ -1,6 +1,7 @@
 package com.assessory.asyncmongo
 
 import com.assessory.asyncmongo.converters.{CourseB, IdB}
+import com.assessory.datalayer
 import com.assessory.api.appbase.Course
 import com.wbillingsley.handy.{Ref, refOps}
 import org.mongodb.scala.model.FindOneAndReplaceOptions
@@ -10,26 +11,26 @@ import com.assessory.asyncmongo.converters.BsonHelpers._
 
 import scala.concurrent.Future
 
-object CourseDAO extends DAO(clazz = classOf[Course], collName="course", converter = CourseB.read) {
+object CourseDAO extends DAO(clazz = classOf[Course], collName="course", converter = CourseB.read) with datalayer.CourseDAO {
 
   import DB.given
 
-  def byShortName(sn:String) = findMany("shortName" $eq sn)
+  override def byShortName(sn:String) = findMany("shortName" $eq sn)
 
   /**
    * Saves the user's details
    */
-  def saveDetails(c:Course):Future[Course] = coll.findOneAndReplace(
+  private def saveDetails(c:Course):Future[Course] = coll.findOneAndReplace(
     equal("_id", IdB.write(c.id)),
     CourseB.write(c),
     FindOneAndReplaceOptions().upsert(true)
   ).head().flatMap(s => Future.fromTry(CourseB.read(s)))
 
 
-  def saveSafe(c:Course) = {
+  private def saveSafe(c:Course) = {
     findAndReplace("_id" $eq c.id, CourseB.write(c), upsert=true).toRef
   }
 
-  def saveNew(c:Course) = saveSafe(c).map(_ => c)
+  override def saveNew(c:Course) = saveSafe(c).map(_ => c)
 
 }

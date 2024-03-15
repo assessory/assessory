@@ -22,40 +22,40 @@ object GroupService {
 
   val myGroups:Latch[Seq[WithPerms[Group]]] = Latch.lazily(
     for
-      StandardReturn.ReturnMany(items) <- callClient.makeCall(GroupCall.MyGroups)
+      case StandardReturn.ReturnMany(items) <- callClient.makeCall(GroupCall.MyGroups)
     yield
-      for StandardReturn.ReturnWithPermissions(ReturnGroup(t), perms) <- items yield WithPerms(perms, t)
+      for case StandardReturn.ReturnWithPermissions(ReturnGroup(t), perms) <- items yield WithPerms(perms, t)
   )
   UserService.self.addListener { _ => myGroups.clear(); cache.clear() }
 
   def myGroupsInCourse(courseId:Id[Course,String]):Future[Seq[WithPerms[Group]]] =
     for
-      StandardReturn.ReturnMany(items) <- callClient.makeCall(GroupCall.MyGroupsInCourse(CourseId(courseId.id)))
+      case StandardReturn.ReturnMany(items) <- callClient.makeCall(GroupCall.MyGroupsInCourse(CourseId(courseId.id)))
     yield
-      for StandardReturn.ReturnWithPermissions(ReturnGroup(t), perms) <- items yield WithPerms(perms, t)
+      for case StandardReturn.ReturnWithPermissions(ReturnGroup(t), perms) <- items yield WithPerms(perms, t)
 
   def myGroupsInSet(groupSet:GroupSet):Future[Seq[Group]] =
     for
-      StandardReturn.ReturnMany(items) <- callClient.makeCall(GroupCall.MyGroupsInCourse(groupSet.course))
+      case StandardReturn.ReturnMany(items) <- callClient.makeCall(GroupCall.MyGroupsInCourse(groupSet.course))
     yield
-      for StandardReturn.ReturnWithPermissions(ReturnGroup(g), _) <- items if g.set == groupSet.id yield g
+      for case StandardReturn.ReturnWithPermissions(ReturnGroup(g), _) <- items if g.set == groupSet.id yield g
 
   def allGroupsInSet(groupSet:GroupSet):Latch[Seq[Group]] = Latch.lazily(
     for
-      StandardReturn.ReturnMany(items) <- callClient.makeCall(GroupCall.GroupSetGroups(groupSet.id))
+      case StandardReturn.ReturnMany(items) <- callClient.makeCall(GroupCall.GroupSetGroups(groupSet.id))
     yield
-      for ReturnGroup(g) <- items yield g
+      for case ReturnGroup(g) <- items yield g
   )
 
   def leaveGroup(gs:GroupId):Future[Group.Reg] =
-    for ReturnGroupReg(reg) <- callClient.makeCall(GroupCall.LeaveGroup(gs)) yield reg
+    for case ReturnGroupReg(reg) <- callClient.makeCall(GroupCall.LeaveGroup(gs)) yield reg
 
   def joinGroup(gs:GroupId):Future[Group.Reg] =
-    for ReturnGroupReg(reg) <- callClient.makeCall(GroupCall.JoinGroup(gs)) yield reg
+    for case ReturnGroupReg(reg) <- callClient.makeCall(GroupCall.JoinGroup(gs)) yield reg
 
   def loadId(id:GroupId):Future[WithPerms[Group]] = {
     for
-      StandardReturn.ReturnWithPermissions(ReturnGroup(g), perms) <- callClient.makeCall(GroupCall.GetGroup(id))
+       case StandardReturn.ReturnWithPermissions(ReturnGroup(g), perms) <- callClient.makeCall(GroupCall.GetGroup(id))
     yield
       WithPerms(perms, g)
   }
@@ -68,9 +68,9 @@ object GroupService {
     val missing = ids.filterNot(id => cache.contains(id))
     val missingItems =
       for
-        StandardReturn.ReturnMany(items) <- callClient.makeCall(GroupCall.GetManyGroups(missing))
+        case StandardReturn.ReturnMany(items) <- callClient.makeCall(GroupCall.GetManyGroups(missing))
       yield
-        for StandardReturn.ReturnWithPermissions(ReturnGroup(g), perms) <- items yield WithPerms(perms, g)
+        for case StandardReturn.ReturnWithPermissions(ReturnGroup(g), perms) <- items yield WithPerms(perms, g)
 
     def find(id:GroupId):Future[WithPerms[Group]] =
       missingItems.flatMap { items =>

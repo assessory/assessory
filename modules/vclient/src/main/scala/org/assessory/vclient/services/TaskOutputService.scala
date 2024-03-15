@@ -32,12 +32,12 @@ object TaskOutputService {
 
   def myOutputs(taskId:TaskId):Future[Seq[TaskOutput]] = {
     for StandardReturn.ReturnMany(items) <- callClient.makeCall(TaskOutputCall.MyOutputs(taskId)) yield
-      for ReturnTaskOutput(to) <- items yield to
+      for case ReturnTaskOutput(to) <- items yield to
   }
 
   def allOutputs(taskId:TaskId):Future[Seq[TaskOutput]] = {
     for StandardReturn.ReturnMany(items) <- callClient.makeCall(TaskOutputCall.AllOutputs(taskId)) yield
-      for ReturnTaskOutput(to) <- items yield to
+      for case ReturnTaskOutput(to) <- items yield to
   }
 
   def updateBody(to:TaskOutput):Future[WithPerms[TaskOutput]] = {
@@ -110,12 +110,12 @@ object TaskOutputService {
 
   def myAllocations(taskId:TaskId):Future[Seq[Target]] = {
     for StandardReturn.ReturnMany(items) <- callClient.makeCall(CritiqueCall.MyAllocations(taskId)) yield
-      for ReturnTarget(t) <- items yield t
+      for case ReturnTarget(t) <- items yield t
   }
 
   def fillAllocations(taskId:TaskId):Future[Seq[TaskOutput]] = {
     for StandardReturn.ReturnMany(items) <- callClient.makeCall(CritiqueCall.FillMyTaskOutputs(taskId)) yield
-      for ReturnTaskOutput(t) <- items yield t
+      for case ReturnTaskOutput(t) <- items yield t
   }
 
   def findOrCreateCrit(taskId:TaskId, target:Target):Future[TaskOutput] = {

@@ -22,7 +22,7 @@ object FileService {
 
   val detailsCache = mutable.Map.empty[String, Latch[SmallFileDetails]]
 
-  def uploadFile(courseId:Id[Course, String], file:org.scalajs.dom.raw.File, onUpdateProgress: (Double, Double) => Unit):Future[SmallFileDetails] = {
+  def uploadFile(courseId:Id[Course, String], file:org.scalajs.dom.File, onUpdateProgress: (Double, Double) => Unit):Future[SmallFileDetails] = {
     val xhr = new dom.XMLHttpRequest
 
     val detailsP:Promise[SmallFileDetails] = Promise.apply()

@@ -21,7 +21,7 @@ object GroupSetService {
 
   def loadId(id:GroupSetId):Future[WithPerms[GroupSet]] = {
     for
-      StandardReturn.ReturnWithPermissions(ReturnGroupSet(gs), perms) <- callClient.makeCall(GroupSetCall.GetGroupSet(id))
+      case StandardReturn.ReturnWithPermissions(ReturnGroupSet(gs), perms) <- callClient.makeCall(GroupSetCall.GetGroupSet(id))
     yield
       WithPerms(perms, gs)
   }
@@ -31,7 +31,7 @@ object GroupSetService {
   def latch(id:Id[GroupSet,String]):Latch[WithPerms[GroupSet]] = cache.getOrElseUpdate(id.id, Latch.lazily(loadId(GroupSetId(id.id))))
 
   def groupSetsInCourse(c:CourseId):Future[Seq[GroupSet]] =
-    for StandardReturn.ReturnMany(items) <- callClient.makeCall(GroupSetCall.ByCourse(c)) yield
-      for ReturnGroupSet(g) <- items yield g
+    for case StandardReturn.ReturnMany(items) <- callClient.makeCall(GroupSetCall.ByCourse(c)) yield
+      for case ReturnGroupSet(g) <- items yield g
 
 }
