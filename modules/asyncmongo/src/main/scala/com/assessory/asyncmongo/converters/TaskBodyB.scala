@@ -145,9 +145,6 @@ object CritTargetStrategyB  {
     case AllocateStrategy(what, number) => Document(
       "kind" -> "Allocate", "what" -> TargetTypeB.write(what), "number" -> number
     )
-    case AnyStrategy(what, number) => Document(
-      "kind" -> "Any", "what" -> TargetTypeB.write(what), "number" -> number
-    )
   }
 
   def read(doc: Document): Try[CritTargetStrategy] = {

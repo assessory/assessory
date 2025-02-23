@@ -17,32 +17,53 @@ case class Critique(
   val kind = CritiqueTask.kind
 }
 
+/**
+  * What sort of thing are we critiquing?
+  */
 sealed trait TargetType
 case class TTGroups(set:Id[GroupSet, String]) extends TargetType
 case class TTOutputs(task:Id[Task, String]) extends TargetType
 case object TTSelf extends TargetType
 
+/**
+  * How to allocate the items to be critiqued
+  */
 sealed trait CritTargetStrategy
 case class KindedTargetStrategy[T <: CritTargetStrategy](kind:String, strategy:T)
 
+/**
+  * Let me critique items that are addressed to me
+  * (Used in reverse critiques)
+  *
+  * @param task
+  * @param what
+  * @param number
+  */
 case class TargetMyStrategy(
   task: Id[Task,String],
   what: TargetType,
   number: Option[Int]
 ) extends CritTargetStrategy
 
+
+/**
+  * Allocate some number ot items to be critiqued
+  *
+  * @param what
+  * @param number
+  */
 case class AllocateStrategy(
   what: TargetType,
   number: Int
 ) extends CritTargetStrategy
 
-case class AnyStrategy(
-  what: TargetType,
-  number: Int
-) extends CritTargetStrategy
 
-
-
+/**
+  * A critique selects existing (something)s and asks you to perform a task on them
+  *
+  * @param strategy
+  * @param task
+  */
 case class CritiqueTask (
   strategy: CritTargetStrategy,
   task: TaskBody

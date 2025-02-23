@@ -442,7 +442,6 @@ object CritModel {
 
       tt <- strategy match {
         case AllocateStrategy(tt, _) => tt.itself
-        case AnyStrategy(tt, _) => tt.itself
       }
 
       myTargs <- tt match {

@@ -302,23 +302,16 @@ object Pickles {
     what <- c.downField("what").as[TargetType]
     number <- c.downField("number").as[Int]
   } yield AllocateStrategy(what=what, number=number)
-  val anyStrategyEncoder: Encoder[AnyStrategy] = (t:AnyStrategy) => Json.obj(
-    "kind" -> "any".asJson, "what" -> t.what.asJson ,"number" -> t.number.asJson
-  )
-  val anyStrategyDecoder: Decoder[AnyStrategy] = (c:HCursor) => for {
-    what <- c.downField("what").as[TargetType]
-    number <- c.downField("number").as[Int]
-  } yield AnyStrategy(what=what, number=number)
 
   implicit val critiqueTargetStrategyEncoder: Encoder[CritTargetStrategy] = {
     case t:TargetMyStrategy => targetMyStrategyEncoder(t)
     case t:AllocateStrategy => allocateStrategyEncoder(t)
-    case t:AnyStrategy => anyStrategyEncoder(t)
   }
+
   implicit val critiqueTargetStrategyDecoder: Decoder[CritTargetStrategy] = (c:HCursor) => c.downField("kind").as[String] flatMap {
     case "my" => targetMyStrategyDecoder(c)
     case "allocate" => allocateStrategyDecoder(c)
-    case "any" => anyStrategyDecoder(c)
+    // case "any" => anyStrategyDecoder(c)
   }
 
   implicit val critiqueTaskEncoder: Encoder[CritiqueTask] = (c:CritiqueTask) => Json.obj(
