@@ -9,11 +9,18 @@ import com.assessory.api.question.{BooleanQuestion, QuestionId, QuestionnaireTas
 import com.assessory.asyncmongo.TaskDAO
 import com.assessory.clientpickle.CallClient
 import com.wbillingsley.handy.{Ref, RefOpt, refOps}
+import java.time.LocalDate
+import java.time.ZoneId
 
 /**
   * Created by wbilling on 21/02/2017.
   */
 object Cosc370 {
+
+  val zone = ZoneId.of("Australia/Sydney")
+
+  def openDate(year:Int, month:Int, day:Int) = DueDate(LocalDate.of(year, month, day).atStartOfDay.atZone(zone).toInstant().toEpochMilli())
+  def closeDate(year:Int, month:Int, day:Int) = DueDate(LocalDate.of(year, month, day).atTime(23, 59, 59, 999999999).atZone(zone).toInstant().toEpochMilli())
 
   def createCourse()(using cc:CallClient):Ref[Course] =
     (for
@@ -21,13 +28,13 @@ object Cosc370 {
         id=CourseId("invalid"),
         addedBy=RegistrationId("invalid"),
         title = Some("User Experience and Interaction Design"),
-        shortName = Some("COSC370/570 2022"),
+        shortName = Some("COSC370/570 2024"),
         shortDescription = Some("In which our heroes practice design thinking..."),
         ltis = Seq(LTIConsumer("UNE moodle", "grumplestiltskin"))
       )))
     yield c) orFail IllegalStateException("Return from creating course was not what I expected")
 
-  def getCourse()(using cc:CallClient):RefOpt[Course] = (for case ReturnCourse(c) <- cc.call(CourseCall.ByShortName("COSC370/570 2022")) yield c)
+  def getCourse()(using cc:CallClient):RefOpt[Course] = (for case ReturnCourse(c) <- cc.call(CourseCall.ByShortName("COSC370/570 2024")) yield c)
 
   def ensureCourse()(using cc:CallClient) = getCourse() orElse createCourse()
 
@@ -53,18 +60,20 @@ object Cosc370 {
         course = course.id,
         details = TaskDetails(
           name = Some("Concept Video"),
-          open = DueDate(System.currentTimeMillis()),
+          open = openDate(2024, 3, 16),
+          closed = closeDate(2024, 4, 9),
           groupSet = None,
           individual = true,
           description = Some(
-            """Please upload your video to either UNE MyMedia (Kaltura) or YouTube. If you use YouTube, ensure the
-              |video is not private (or it can't be watched by your critics) - "unlisted" is ok.
+            """Paste the public share link of your video below. 
+              |To obtain this, go to your EchoVideo library, find your video, go to the "Share" settings, the "Links" tab, create a new public share link, and press the copy-to-clipboard button.
               |
-              |Paste the embed code (for Kaltura videos) or the video URL (for YouTube videos) below. If the code or
-              |URL is recognised, you'll see a preview of the video appear when you click "preview". Then click save.
+              |When you paste the public share link in below, if the URL is recognised, you'll see a preview of the video appear when you click "preview". Then click save.
               |
-              |Don't forget to click "Publish" or "Make available" once you are done. This doesn't stop you from
-              |editing the form, but does make it available to students for critique.
+              |In case of emergency, this system can also recognise YouTube public or unlisted video URLs. i.e. you can re-upload your video to YouTube and share that version here.
+              |Note that a YouTube video needs to be public or unlisted, but not private. (Otherwise you'll be able to see it but your critics and the marker won't.)
+              |
+              |Don't forget to click "Publish" once you are done. This doesn't stop you from editing the form, but does make it available to students for critique.
               |""".stripMargin)
         ),
         body = QuestionnaireTask(Seq(
@@ -89,7 +98,7 @@ object Cosc370 {
         course = course.id,
         details = TaskDetails(
           name = Some("Concept stage: Critique three videos"),
-          open = DueDate(System.currentTimeMillis()),
+          open = openDate(2024, 3, 19),
           groupSet = None,
           individual = true,
           description = Some(
@@ -130,7 +139,7 @@ object Cosc370 {
         course = course.id,
         details = TaskDetails(
           name = Some("Concept stage: View your critiques"),
-          open = DueDate(System.currentTimeMillis()),
+          open = openDate(2024, 3, 20),
           groupSet = None,
           individual = true,
           description = Some(
@@ -173,18 +182,19 @@ object Cosc370 {
         course = course.id,
         details = TaskDetails(
           name = Some("Design Prototype Video"),
-          open = DueDate(System.currentTimeMillis()),
+          open = openDate(2024, 4, 10),
           groupSet = None,
           individual = true,
-          description = Some(
-            """Please upload your video to either UNE MyMedia (Kaltura) or YouTube. If you use YouTube, ensure the
-              |video is not private (or it can't be watched by your critics) - "unlisted" is ok.
+          description = Some(            
+            """Paste the public share link of your video below. 
+              |To obtain this, go to your EchoVideo library, find your video, go to the "Share" settings, the "Links" tab, create a new public share link, and press the copy-to-clipboard button.
               |
-              |Paste the embed code (for Kaltura videos) or the video URL (for YouTube videos) below. If the code or
-              |URL is recognised, you'll see a preview of the video appear when you click "preview". Then click save.
+              |When you paste the public share link in below, if the URL is recognised, you'll see a preview of the video appear when you click "preview". Then click save.
               |
-              |Don't forget to click "Publish" or "Make available" once you are done. This doesn't stop you from
-              |editing the form, but does make it available to students for critique.
+              |In case of emergency, this system can also recognise YouTube public or unlisted video URLs. i.e. you can re-upload your video to YouTube and share that version here.
+              |Note that a YouTube video needs to be public or unlisted, but not private. (Otherwise you'll be able to see it but your critics and the marker won't.)
+              |
+              |Don't forget to click "Publish" once you are done. This doesn't stop you from editing the form, but does make it available to students for critique.
               |""".stripMargin)
         ),
         body = QuestionnaireTask(Seq(
@@ -209,7 +219,7 @@ object Cosc370 {
         course = course.id,
         details = TaskDetails(
           name = Some("Design prototype stage: Critique three videos"),
-          open = DueDate(System.currentTimeMillis()),
+          open = openDate(2024, 4, 16),
           groupSet = None,
           individual = true,
           description = Some(
@@ -250,7 +260,7 @@ object Cosc370 {
         course = course.id,
         details = TaskDetails(
           name = Some("Design prototype stage: View your critiques"),
-          open = DueDate(System.currentTimeMillis()),
+          open = openDate(2024, 4, 17),
           groupSet = None,
           individual = true,
           description = Some(
@@ -293,18 +303,19 @@ object Cosc370 {
         course = course.id,
         details = TaskDetails(
           name = Some("Working Prototype Video"),
-          open = DueDate(System.currentTimeMillis()),
+          open = openDate(2024, 5, 20),
           groupSet = None,
           individual = true,
           description = Some(
-            """Please upload your video to either UNE MyMedia (Kaltura) or YouTube. If you use YouTube, ensure the
-              |video is not private (or it can't be watched by your critics) - "unlisted" is ok.
+            """Paste the public share link of your video below. 
+              |To obtain this, go to your EchoVideo library, find your video, go to the "Share" settings, the "Links" tab, create a new public share link, and press the copy-to-clipboard button.
               |
-              |Paste the embed code (for Kaltura videos) or the video URL (for YouTube videos) below. If the code or
-              |URL is recognised, you'll see a preview of the video appear when you click "preview". Then click save.
+              |When you paste the public share link in below, if the URL is recognised, you'll see a preview of the video appear when you click "preview". Then click save.
               |
-              |Don't forget to click "Publish" or "Make available" once you are done. This doesn't stop you from
-              |editing the form, but does make it available to students for critique.
+              |In case of emergency, this system can also recognise YouTube public or unlisted video URLs. i.e. you can re-upload your video to YouTube and share that version here.
+              |Note that a YouTube video needs to be public or unlisted, but not private. (Otherwise you'll be able to see it but your critics and the marker won't.)
+              |
+              |Don't forget to click "Publish" once you are done. This doesn't stop you from editing the form, but does make it available to students for critique.
               |""".stripMargin)
         ),
         body = QuestionnaireTask(Seq(

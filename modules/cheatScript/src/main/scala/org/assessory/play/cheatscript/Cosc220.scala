@@ -19,13 +19,13 @@ object Cosc220 {
         id=CourseId("invalid"),
         addedBy=RegistrationId("invalid"),
         title = Some("Software Development Studio 2"),
-        shortName = Some("COSC220 2022"),
+        shortName = Some("COSC220 2024"),
         shortDescription = Some("In which our heroes develop amazing software together..."),
         ltis = Seq(LTIConsumer("UNE moodle", "grumplestiltskin"))
       )))
     yield c) orFail IllegalStateException("Return from creating course was not what I expected")
 
-  def getCourse()(using cc:CallClient):RefOpt[Course] = (for case ReturnCourse(c) <- cc.call(CourseCall.ByShortName("COSC220 2022")) yield c)
+  def getCourse()(using cc:CallClient):RefOpt[Course] = (for case ReturnCourse(c) <- cc.call(CourseCall.ByShortName("COSC220 2024")) yield c)
 
   def ensureCourse()(using cc:CallClient) = getCourse() orElse createCourse()
 
@@ -45,14 +45,27 @@ object Cosc220 {
   def ensureGroupSet(c:Course)(using cc:CallClient):Ref[GroupSet] = getGroupSet(c) orElse createGroupSet(c)
 
   def createGroups(gs:GroupSet)(using cc:CallClient):Ref[Seq[Group]] = {
-    /*val groups = Seq(
-      "App Monsters", "The Programmers", "In Classers", "Bit by Bit", "Pure Logic",
-      "Status 404", "CTRL+C", "CSTEM32", "The Dirty Bits", "The Front Enders", "Bug Smashers",
-      "Coders", "Card Sharks", "DFENS", "Iterators", "The Colossal Titans", "The Global Gits",
-      "KAPPS", "Software Chasers"
-    )*/
 
-    val groups = Seq("alt-f4")
+    // val groups = Seq(
+    //   "Group Armidale", "The Debugging Ninjas", "Mr Magorium's Authentication Emporium", 
+    //   "The Placeholders", "Group Algorithm Avengers", "405 Found", "Wild Bug Chase",
+    //   "Null pointers", "Tab Invaders (space space space space invaders)", "Hotfix Heroes",
+    //   "We Need a Group", "Rodents Revenge", "JavaCrafters", "The .WAV Dwellers",
+    //   "Group 14"
+    // )
+
+    val groups = Seq(
+      // "Final Void"
+      // "The GAME"
+      //"Collab Assignment", "SuRAv", "The Mini game plan", "SDP Group", 
+      //"Focus", "MY Mini Game"
+      // "Newbie_Coder"
+      //"SS Project"
+      //"Solo Levelling"
+      //"Bunny crossy"
+      "VVAN Sudoku", "Number Guessing Game", "Shark"
+    )
+
 
     (for
       case StandardReturn.ReturnMany(existingSeq) <- cc.call(GroupCall.GroupSetGroups(gs.id))
@@ -105,14 +118,15 @@ object Cosc220 {
           groupSet = Some(gs.id),
           individual = false,
           description = Some(
-            """Please upload your video to either UNE MyMedia (Kaltura) or YouTube. If you use YouTube, ensure the
-              |video is not private (or it can't be watched by your critics) - "unlisted" is ok.
+            """Paste the public share link of your video below. 
+              |To obtain this, go to your EchoVideo library, find your video, go to the "Share" settings, the "Links" tab, create a new public share link, and press the copy-to-clipboard button.
               |
-              |Paste the embed code (for Kaltura videos) or the video URL (for YouTube videos) below. If the code or
-              |URL is recognised, you'll see a preview of the video appear when you click "preview". Then click save.
+              |When you paste the public share link in below, if the URL is recognised, you'll see a preview of the video appear when you click "preview". Then click save.
               |
-              |Don't forget to click "Publish" or "Make available" once you are done. This doesn't stop you from
-              |editing the form, but does make it available to students for critique.
+              |In case of emergency, this system can also recognise YouTube public or unlisted video URLs. i.e. you can re-upload your video to YouTube and share that version here.
+              |Note that a YouTube video needs to be public or unlisted, but not private. (Otherwise you'll be able to see it but your critics and the marker won't.)
+              |
+              |Don't forget to click "Publish" once you are done. This doesn't stop you from editing the form, but does make it available to students for critique.
               |""".stripMargin)
         ),
         body = QuestionnaireTask(Seq(
