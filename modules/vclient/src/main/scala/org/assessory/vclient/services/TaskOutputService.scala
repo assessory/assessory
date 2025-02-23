@@ -31,18 +31,18 @@ object TaskOutputService {
   def isUnsaved(to:TaskOutput):Boolean = to.id == invalidId
 
   def myOutputs(taskId:TaskId):Future[Seq[TaskOutput]] = {
-    for StandardReturn.ReturnMany(items) <- callClient.makeCall(TaskOutputCall.MyOutputs(taskId)) yield
+    for case StandardReturn.ReturnMany(items) <- callClient.makeCall(TaskOutputCall.MyOutputs(taskId)) yield
       for case ReturnTaskOutput(to) <- items yield to
   }
 
   def allOutputs(taskId:TaskId):Future[Seq[TaskOutput]] = {
-    for StandardReturn.ReturnMany(items) <- callClient.makeCall(TaskOutputCall.AllOutputs(taskId)) yield
+    for case StandardReturn.ReturnMany(items) <- callClient.makeCall(TaskOutputCall.AllOutputs(taskId)) yield
       for case ReturnTaskOutput(to) <- items yield to
   }
 
   def updateBody(to:TaskOutput):Future[WithPerms[TaskOutput]] = {
     val fto = for
-      StandardReturn.ReturnWithPermissions(ReturnTaskOutput(t), perms) <- callClient.makeCall(TaskOutputCall.UpdateBody(to))
+      case StandardReturn.ReturnWithPermissions(ReturnTaskOutput(t), perms) <- callClient.makeCall(TaskOutputCall.UpdateBody(to))
     yield
       WithPerms(perms, t)
     cache.put(to.id.id, fto)
@@ -51,7 +51,7 @@ object TaskOutputService {
 
   def finalise(to:TaskOutput):Future[WithPerms[TaskOutput]] = {
     val fto = for
-      StandardReturn.ReturnWithPermissions(ReturnTaskOutput(t), perms) <- callClient.makeCall(TaskOutputCall.Finalise(to))
+      case StandardReturn.ReturnWithPermissions(ReturnTaskOutput(t), perms) <- callClient.makeCall(TaskOutputCall.Finalise(to))
     yield
       WithPerms(perms, t)
     cache.put(to.id.id, fto)
@@ -60,7 +60,7 @@ object TaskOutputService {
 
   def createNew(to:TaskOutput):Future[WithPerms[TaskOutput]] = {
     val fto = for
-      StandardReturn.ReturnWithPermissions(ReturnTaskOutput(t), perms) <- callClient.makeCall(TaskOutputCall.CreateTaskOutput(to))
+      case StandardReturn.ReturnWithPermissions(ReturnTaskOutput(t), perms) <- callClient.makeCall(TaskOutputCall.CreateTaskOutput(to))
     yield
       WithPerms(perms, t)
     cache.put(to.id.id, fto)
@@ -73,7 +73,7 @@ object TaskOutputService {
 
   def loadId(id:TaskOutputId):Future[WithPerms[TaskOutput]] = {
     for
-      StandardReturn.ReturnWithPermissions(ReturnTaskOutput(t), perms) <- callClient.makeCall(TaskOutputCall.GetTaskOutput(id))
+      case StandardReturn.ReturnWithPermissions(ReturnTaskOutput(t), perms) <- callClient.makeCall(TaskOutputCall.GetTaskOutput(id))
     yield
       WithPerms(perms, t)
   }
@@ -109,18 +109,18 @@ object TaskOutputService {
 
 
   def myAllocations(taskId:TaskId):Future[Seq[Target]] = {
-    for StandardReturn.ReturnMany(items) <- callClient.makeCall(CritiqueCall.MyAllocations(taskId)) yield
+    for case StandardReturn.ReturnMany(items) <- callClient.makeCall(CritiqueCall.MyAllocations(taskId)) yield
       for case ReturnTarget(t) <- items yield t
   }
 
   def fillAllocations(taskId:TaskId):Future[Seq[TaskOutput]] = {
-    for StandardReturn.ReturnMany(items) <- callClient.makeCall(CritiqueCall.FillMyTaskOutputs(taskId)) yield
+    for case StandardReturn.ReturnMany(items) <- callClient.makeCall(CritiqueCall.FillMyTaskOutputs(taskId)) yield
       for case ReturnTaskOutput(t) <- items yield t
   }
 
   def findOrCreateCrit(taskId:TaskId, target:Target):Future[TaskOutput] = {
     val fwp = for
-      StandardReturn.ReturnWithPermissions(ReturnTaskOutput(to), perms) <- callClient.makeCall(CritiqueCall.FindOrCreateCritique(taskId, target))
+      case StandardReturn.ReturnWithPermissions(ReturnTaskOutput(to), perms) <- callClient.makeCall(CritiqueCall.FindOrCreateCritique(taskId, target))
     yield WithPerms(perms, to)
     for { wp <- fwp } yield {
       cache.put(wp.item.id.id, fwp)

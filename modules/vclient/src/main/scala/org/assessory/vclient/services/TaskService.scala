@@ -25,14 +25,14 @@ object TaskService {
 
   def courseTasks(courseId:Id[Course,String]):Latch[Seq[WithPerms[Task]]] = Latch.lazily(
     for
-      StandardReturn.ReturnMany(items) <- callClient.makeCall(TaskCall.CourseTasks(CourseId(courseId.id)))
+      case StandardReturn.ReturnMany(items) <- callClient.makeCall(TaskCall.CourseTasks(CourseId(courseId.id)))
     yield
-      for StandardReturn.ReturnWithPermissions(ReturnTask(t), perms) <- items yield WithPerms(perms, t)
+      for case StandardReturn.ReturnWithPermissions(ReturnTask(t), perms) <- items yield WithPerms(perms, t)
   )
 
   def loadId(id:TaskId):Future[WithPerms[Task]] = {
     for
-      StandardReturn.ReturnWithPermissions(ReturnTask(t), perms) <- callClient.makeCall(TaskCall.GetTask(id))
+      case StandardReturn.ReturnWithPermissions(ReturnTask(t), perms) <- callClient.makeCall(TaskCall.GetTask(id))
     yield
       WithPerms(perms, t)
   }

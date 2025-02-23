@@ -20,23 +20,23 @@ object CourseService {
 
   val myCourses:Latch[Seq[WithPerms[Course]]] = Latch.lazily(
     for
-      StandardReturn.ReturnMany(entries) <- callClient.makeCall(CourseCall.MyCourses)
+      case StandardReturn.ReturnMany(entries) <- callClient.makeCall(CourseCall.MyCourses)
     yield
-      for StandardReturn.ReturnWithPermissions(ReturnCourse(c), perms) <- entries yield WithPerms(perms, c)
+      for case StandardReturn.ReturnWithPermissions(ReturnCourse(c), perms) <- entries yield WithPerms(perms, c)
   )
 
   UserService.self.addListener { _ => myCourses.clear(); cache.clear() }
 
   def createCourse(c:Course):Future[WithPerms[Course]] = {
     for
-      StandardReturn.ReturnWithPermissions(ReturnCourse(c), perms) <- callClient.makeCall(CourseCall.CreateCourse(c))
+      case StandardReturn.ReturnWithPermissions(ReturnCourse(c), perms) <- callClient.makeCall(CourseCall.CreateCourse(c))
     yield
       WithPerms(perms, c)
   }
 
   def loadId(id:CourseId):Future[WithPerms[Course]] = {
     for
-      StandardReturn.ReturnWithPermissions(ReturnCourse(c), perms) <- callClient.makeCall(CourseCall.GetCourse(id))
+      case StandardReturn.ReturnWithPermissions(ReturnCourse(c), perms) <- callClient.makeCall(CourseCall.GetCourse(id))
     yield
       WithPerms(perms, c)
   }
