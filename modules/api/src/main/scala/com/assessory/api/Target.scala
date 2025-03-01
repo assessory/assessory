@@ -3,6 +3,15 @@ package com.assessory.api
 import com.wbillingsley.handy.{Id, HasKind}
 import com.assessory.api.appbase._
 
+
+/**
+  * Who an item, usually a task output, is owned by
+  */
+enum By {
+    case ByUser(u:Id[User, String])
+    case ByGroup(g:Id[Group, String])
+}
+
 sealed trait Target
 
 

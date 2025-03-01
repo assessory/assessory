@@ -22,7 +22,7 @@ object CritModel {
 
   /**
    * Allocates within these groups, taking no account of groups' parents
- *
+   *
    * @param num
    * @return
    */
@@ -32,7 +32,7 @@ object CritModel {
     val groups = inGroups.sortBy(_.id.id)
     val regs = inRegs
 
-    println("ALLOCATING " + groups.map(_.name) + s"for ${regs.size} students")
+    // println("ALLOCATING " + groups.map(_.name) + s"for ${regs.size} students")
 
     val groupIds = groups.map(_.id)
     val memberMap = for {
@@ -82,7 +82,7 @@ object CritModel {
       unsaved = CritAllocation(
         id = CritAllocationId(CritAllocationDAO.allocateId),
         task = TaskId(task.id),
-        completeBy = TargetUser(u),
+        completeBy = By.ByUser(u),
         allocation = for (g <- gIds.toSeq) yield AllocatedCrit(target=TargetGroup(g))
       )
 
@@ -142,7 +142,7 @@ object CritModel {
   }
 
 
-  def byFromTask(a:Approval[User], t:Task):Ref[Target] = {
+  def byFromTask(a:Approval[User], t:Task):Ref[By] = {
 
     // Get the user's groups in the corresponding groupSet, if it's not an individual assignment
     val groups:RefMany[Group] = for {
@@ -153,15 +153,15 @@ object CritModel {
     } yield g
 
     // Pick the first group
-    val targetGroup:RefOpt[TargetGroup] = for {
+    val byGroup:RefOpt[By] = for {
       u <- a.who
       g <- groups.first
-    } yield TargetGroup(g.id)
+    } yield By.ByGroup(g.id)
 
     // Return the group, or the user if there isn't one
     for {
       u <- a.who.require
-      t <- (targetGroup orElse RefSome(TargetUser(u.id))).require
+      t <- (byGroup orElse RefSome(By.ByUser(u.id))).require
     } yield t
   }
 
@@ -181,7 +181,7 @@ object CritModel {
    * @param target
    * @return
    */
-  private def createCrit(by:Target, task:Task, target:Target):Ref[TaskOutput] = {
+  private def createCrit(by:By, task:Task, target:Target):Ref[TaskOutput] = {
 
     def blankFor(t:TaskBody):TaskOutputBody = t match {
       case qt:QuestionnaireTask => QuestionnaireTaskOutput(answers = for {
@@ -248,30 +248,6 @@ object CritModel {
     } yield crit
   }
 
-
-  /** Fetches allocations as a CSV. */
-  def allocationsAsCSV(a:Approval[User], rTask:Ref[Task]):Ref[String] = {
-    val sWriter = new StringWriter()
-    val writer = new CSVWriter(sWriter)
-
-    val lineArrays = for {
-      t <- rTask
-      c <- a.cache.lookUp(t.course)
-      approved <- a ask Permissions.EditCourse(c.itself)
-      allocC <- CritAllocationDAO.byTask(t.itself).collect
-      alloc <- allocC.toRefMany
-      by <- TaskOutputModel.targetAsCsvString(a, alloc.completeBy)
-      allocLine <- alloc.allocation.toRefMany
-      targ <- TaskOutputModel.targetAsCsvString(a, allocLine.target)
-    } yield (by ++ targ).toArray
-
-    for { lines <- lineArrays.collect } yield {
-      for { line <- lines } writer.writeNext(line)
-      writer.close()
-      sWriter.toString
-    }
-  }
-
   /**
     * Filters a RefMany with a possibly asynchronous filter
     * TODO: Move this onto RefMany
@@ -283,62 +259,56 @@ object CritModel {
     } yield item
   }
 
-  def isBy(to:TaskOutput, t:Target):Ref[Boolean] = {
-    t match {
-      case TargetGroup(gId) => gId.lazily.flatMap(isBy(to, _))
-      case TargetUser(uId) => uId.lazily.flatMap(isBy(to, _))
-      case TargetCourseReg(id) => id.lazily.flatMap((cr) => isBy(to, TargetUser(cr.user)))
+  def isBy(to:TaskOutput, by:By):Ref[Boolean] = {
+    by match {
+      case By.ByGroup(gId) => gId.lazily.flatMap(isBy(to, _))
+      case By.ByUser(uId) => uId.lazily.flatMap(isBy(to, _))
     }
   }
 
   /**
     * Returns true if this task output should be considered as "by the group" (or one of their users, etc)
     */
-  def isBy(to:TaskOutput, g:Group):Ref[Boolean] = targetIncludes(to.by, g)
+  def isBy(to:TaskOutput, g:Group):Ref[Boolean] = byIncludes(to.by, g)
 
   /**
     * Returns true if this task output should be considered as "by the user" (or their group, etc)
     */
-  def isBy(to:TaskOutput, u:User):Ref[Boolean] = targetIncludes(to.by, u)
+  def isBy(to:TaskOutput, u:User):Ref[Boolean] = byIncludes(to.by, u)
 
   /**
     * Returns true if this Target relates to this Group
     */
-  def targetIncludes(by:Target, g:Group):Ref[Boolean] = by match {
-    case TargetUser(uId) => for {
+  def byIncludes(by:By, g:Group):Ref[Boolean] = by match {
+    case By.ByUser(uId) => for {
       rs <- GroupModel.registrationsInGroup(g.itself).collect
     } yield rs.exists(_.user == uId)
-    case TargetGroup(gId) => (gId == g.id).itself
+    case By.ByGroup(gId) => (gId == g.id).itself
   }
 
   /**
     * Returns true if this Target relates to this User
     */
-  def targetIncludes(by:Target, u:User):Ref[Boolean] = by match {
-    case TargetUser(uId) => (uId == u.id).itself
-    case TargetGroup(gId) => for {
+  def byIncludes(by:By, u:User):Ref[Boolean] = by match {
+    case By.ByUser(uId) => (uId == u.id).itself
+    case By.ByGroup(gId) => for {
       rs <- GroupModel.registrationsInGroup(gId.lazily).collect
     } yield rs.exists(_.user == u.id)
-    case TargetCourseReg(cId) => for {
-      cr <- cId.lazily
-    } yield cr.user == u.id
-    case TargetTaskOutput(id) => 
-      id.lazily.flatMap((to) => targetIncludes(to.by, u))
   }
 
   /**
     * Checks that Group g's parent group (if there is one) contains the target
     */
-  def parentOk(t:Target, g:Group):Ref[Boolean] = g.parent match {
+  def parentOk(by:By, g:Group):Ref[Boolean] = g.parent match {
     case Some(pId) => for {
       gParent <- pId.lazily
-      parentMatch <- t match {
-        case TargetUser(uId) => (for {
+      parentMatch <- by match {
+        case By.ByUser(uId) => (for {
           u <- uId.lazily
           gs <- gParent.set.lazily
           g <- GroupModel.myGroupInSet(u, gs) if g.id == gParent.id
         } yield true) orElse false.itself
-        case TargetGroup(gId) => for {
+        case By.ByGroup(gId) => for {
           g <- gId.lazily
         } yield pId == gParent.id
       }
@@ -351,7 +321,7 @@ object CritModel {
     * Allocate me n things to critique, that I didn't write, choosing the ones that have been critiqued the fewest
     * times
     */
-  def allocateMe(by:Target, task:Task, t:TargetType, num:Int, alreadyDone:Seq[Target]):Ref[Seq[Target]] = {
+  def allocateMe(by:By, task:Task, t:TargetType, num:Int, alreadyDone:Seq[Target]):Ref[Seq[Target]] = {
     t match {
       case TTOutputs(id) =>
         
@@ -387,7 +357,7 @@ object CritModel {
         groups = filtering[Group](groupsRemaining, { g => parentOk(by, g) })
 
         // don't allocate a group to be critiqued by itself or one of its users
-        toCrit <- filtering[Group](groups, { g => targetIncludes(by, g).map(!_) }).collect
+        toCrit <- filtering[Group](groups, { g => byIncludes(by, g).map(!_) }).collect
       } yield {
         val critCounts = crits.collect(
           { case TaskOutput(_, _, _, _, Critique(TargetGroup(gId), _), _, _, _) => gId}
@@ -399,7 +369,7 @@ object CritModel {
     }
   }
 
-  def fillUp(by:Target, task:Task, t:TargetType, num:Int):RefMany[TaskOutput] = {
+  def fillUp(by:By, task:Task, t:TargetType, num:Int):RefMany[TaskOutput] = {
     for {
       existing <- TaskOutputDAO.byTaskAndBy(task.id, by).collect
 
@@ -464,12 +434,12 @@ object CritModel {
     case CritiqueTask(AllocateStrategy(TTOutputs(id), num), critTask) =>
       for {
         u <- approval.who
-        to <- fillUp(TargetUser(u.id), task, TTOutputs(id), num)
+        to <- fillUp(By.ByUser(u.id), task, TTOutputs(id), num)
       } yield to
     case CritiqueTask(AllocateStrategy(TTGroups(id), num), critTask) =>
       for {
         u <- approval.who
-        to <- fillUp(TargetUser(u.id), task, TTGroups(id), num)
+        to <- fillUp(By.ByUser(u.id), task, TTGroups(id), num)
       } yield to
     case CritiqueTask(TargetMyStrategy(critTaskId, _, _), critTask) =>
       for {

@@ -16,11 +16,12 @@ object TaskOutputB  {
 
   def rTOB(doc:BsonDocument):TaskOutputBody = TaskOutputBodyB.read(Document(doc)).get
   def rTarget(doc:BsonDocument):Target = TargetB.read(Document(doc)).get
+  def rBy(doc:BsonDocument):By = ByB.read(Document(doc)).get
 
   def write(i: TaskOutput) = Document(
     "_id" -> IdB.write(i.id),
     "task" -> IdB.write(i.task),
-    "by" -> TargetB.write(i.by),
+    "by" -> ByB.write(i.by),
     "attn" -> i.attn.map { case x => TargetB.write(x) },
     "body" -> TaskOutputBodyB.write(i.body),
     "created" -> i.created,
@@ -31,7 +32,7 @@ object TaskOutputB  {
     new TaskOutput(
       id = TaskOutputId(doc[BsonObjectId]("_id").getValue.toHexString),
       task = TaskId(doc[BsonObjectId]("task").getValue.toHexString),
-      by = rTarget(doc[BsonDocument]("by")),
+      by = rBy(doc[BsonDocument]("by")),
       attn = doc[BsonArray]("attn").getValues.asScala.map({ case d => rTarget(d.asDocument()) }).toSeq,
       body = TaskOutputBodyB.read(Document(doc[BsonDocument]("body"))).get,
       created = doc[BsonInt64]("created").longValue(),

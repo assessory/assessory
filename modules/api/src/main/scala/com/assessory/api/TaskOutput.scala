@@ -16,7 +16,7 @@ case class TaskOutput (
 
   task:TaskId,
 
-  by:Target,
+  by:By,
 
   attn:Seq[Target] = Seq.empty,
 

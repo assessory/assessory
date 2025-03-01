@@ -15,7 +15,7 @@ object CritAllocationB {
   def write(i: CritAllocation) = Document(
     "_id" -> IdB.write(i.id),
     "task" -> IdB.write(i.task),
-    "completeBy" -> TargetB.write(i.completeBy),
+    "completeBy" -> ByB.write(i.completeBy),
     "allocation" -> i.allocation.map(AllocatedCritB.write)
   )
 
@@ -23,7 +23,7 @@ object CritAllocationB {
     new CritAllocation(
       id = CritAllocationId(doc.hexOid("_id")),
       task = TaskId(doc.hexOid("task")),
-      completeBy = TargetB.read(Document(doc[BsonDocument]("completeBy"))).get,
+      completeBy = ByB.read(Document(doc[BsonDocument]("completeBy"))).get,
       allocation = doc[BsonArray]("allocation").getValues.asScala.map({ case x => AllocatedCritB.read(Document(x.asDocument())).get }).toSeq
     )
   }

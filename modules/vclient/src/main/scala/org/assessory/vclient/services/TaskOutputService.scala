@@ -89,7 +89,7 @@ object TaskOutputService {
    * Creates a blank answer for a given task
    * @return
    */
-  def blankOutputFor(t:Task, by:Target):TaskOutput = {
+  def blankOutputFor(t:Task, by:By):TaskOutput = {
     TaskOutput(
       id = invalidId,
       task = t.id,

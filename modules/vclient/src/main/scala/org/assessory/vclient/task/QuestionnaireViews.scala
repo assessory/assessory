@@ -20,7 +20,7 @@ object QuestionnaireViews {
 
   def loadOrDefaultOutput(task:Task):Future[TaskOutput] = {
     for { outputs <- TaskOutputService.myOutputs(task.id) } yield {
-      outputs.headOption.getOrElse(TaskOutputService.blankOutputFor(task, TargetUser(UserId("self"))))
+      outputs.headOption.getOrElse(TaskOutputService.blankOutputFor(task, By.ByUser(UserId("self"))))
     }
   }
 

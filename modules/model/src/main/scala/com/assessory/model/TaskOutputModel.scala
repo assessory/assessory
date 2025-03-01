@@ -42,16 +42,16 @@ object TaskOutputModel {
     * @param u
     * @return
     */
-  def byForTask(task:Task, u:User):Ref[Target] = {
+  def byForTask(task:Task, u:User):Ref[By] = {
     if (task.details.individual || task.details.groupSet.isEmpty) {
-      TargetUser(u.id).itself
+      By.ByUser(u.id).itself
     } else {
       for {
         gsId <- task.details.groupSet.toRefOpt orFail new IllegalStateException(s"task ${task.id} is a group task with no groupset")
         gs <- gsId.lazily
 
         g <- GroupModel.myGroupInSet(u, gs) orFail UserError("You are not in a group but this is a group task")
-      } yield TargetGroup(g.id)
+      } yield By.ByGroup(g.id)
     }
   }
 
@@ -126,96 +126,7 @@ object TaskOutputModel {
     } yield wp
   }
 
-  def targetAsCsvString(a:Approval[User], t:Target):Ref[Seq[String]] = {
-
-    def idNameFromUser(u:User):RefOpt[String] = {
-      u.identities.find(_.service == I_STUDENT_NUMBER).flatMap(_.value)
-        .orElse(u.identities.headOption.flatMap(_.username))
-        .orElse(u.identities.headOption.flatMap(_.value))
-        .toRefOpt
-    }
-
-    t match {
-      case TargetUser(id) =>
-        for {
-          u <- a.cache.lookUp(id)
-          id <- idNameFromUser(u) orFail new IllegalStateException(s"Failed to get ID name from user ${u.id.id}")
-        } yield Seq(id, u.name.getOrElse(""))
-      case TargetGroup(id) =>
-        for {
-          g <- a.cache.lookUp(id)
-        } yield Seq(g.name.getOrElse(""))
-      case TargetTaskOutput(id) =>
-        for {
-          to <- a.cache.lookUp(id)
-          by <- targetAsCsvString(a, to.by)
-        } yield by
-      case _ => RefFailed(UserError("Can't represent this target as a string"))
-    }
-  }
-
-
-  /**
-   * Produces a CSV file of all the outputs for this task
-    *
-    * @param a
-   * @param t
-   * @return
-   */
-  def asCsv(a:Approval[User], t:Id[Task,String]) = {
-    val sWriter = new StringWriter()
-    val writer = new CSVWriter(sWriter)
-
-    val rTask = t.lazily
-
-    def outputs = for {
-      task <- rTask
-      approved <- a ask Permissions.EditTask(task.itself)
-      output <- TaskOutputDAO.byTask(task.itself)
-    } yield {
-      println("FOUND OUTPUT " + output.id.id)
-      output
-    }
-
-
-    // We don't write a header because we don't know how many columns the "for" or "by" lines should take up.
-
-    def line(tob:TaskOutputBody):Ref[Seq[String]] = {
-
-      tob match {
-        case QuestionnaireTaskOutput(answers) => (answers map {
-          case ShortTextAnswer(q, ans) => ans.getOrElse("")
-          case BooleanAnswer(q, ans) => ans.map(_.toString).getOrElse("")
-          case FileAnswer(q, ans) => "File answers aren't output in csv"
-          case VideoAnswer(q, ans) => "Video answers aren't output in csv"
-        }).itself
-        case c: Critique => for {
-          ofor <- targetAsCsvString(a, c.target)
-          cols <- line(c.task)
-        } yield ofor ++ cols
-        case VideoTaskOutput(Some(YouTube(id))) => Seq(id).itself
-        case _ => Seq("").itself
-        //case _ => RefFailed(UserError(s"I don't know how to make a CSV for ${tob.kind}"))
-      }
-    }
-
-
-    def write = (for {
-      output <- outputs
-      by <- targetAsCsvString(a, output.by)
-      l <- line(output.body)
-      line = by ++ l
-    } yield {
-      writer.writeNext(line.toArray)
-      true
-    }).collect
-
-    for (written <- write) yield {
-      writer.close()
-      sWriter.toString
-    }
-  }
-
+  
   /**
     * Retrieves a Seq[VideoResource] from a TaskOutputBody
     */
@@ -234,6 +145,11 @@ object TaskOutputModel {
     case TargetGroup(g) => g.lazily.map(_.name.getOrElse("Unnamed group"))
     case TargetCourseReg(r) => r.lazily.flatMap(_.user.lazily).map(UserModel.displayName)
     case TargetTaskOutput(to) => for { o <- to.lazily; by <- name(o.by) } yield by
+  }
+
+  def name(by:By):Ref[String] = by match {
+    case By.ByUser(u) => for (user <- u.lazily) yield UserModel.displayName(user)
+    case By.ByGroup(g) => g.lazily.map(_.name.getOrElse("Unnamed group"))
   }
 
   def name(t:TaskOutput):Ref[String] = t.body match {

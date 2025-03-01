@@ -89,7 +89,7 @@ case class CritAllocation(
 
   task: TaskId,
 
-  completeBy: Target,
+  completeBy: By,
 
   allocation: Seq[AllocatedCrit] = Seq.empty
 

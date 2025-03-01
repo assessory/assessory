@@ -2,7 +2,7 @@ package com.assessory.asyncmongo
 
 import com.assessory.api.{given, _}
 import com.assessory.asyncmongo.converters.BsonHelpers._
-import com.assessory.asyncmongo.converters.{TargetB, TaskOutputBodyB, TaskOutputB}
+import com.assessory.asyncmongo.converters.{TargetB, TaskOutputBodyB, TaskOutputB, ByB}
 import com.wbillingsley.handy.{Ref, RefMany, refOps, Id}
 import refOps._
 
@@ -31,8 +31,8 @@ object TaskOutputDAO extends DAO(classOf[TaskOutput], "taskOutput", TaskOutputB.
     } yield to
   }
 
-  def byTaskAndBy(t:Id[Task,String], by:Target) = {
-    findMany (("task" $eq t) and ("by" $eq TargetB.write(by)))
+  def byTaskAndBy(t:Id[Task,String], by:By) = {
+    findMany (("task" $eq t) and ("by" $eq ByB.write(by)))
   }
 
   def byTaskAndAttn(t:Id[Task,String], attn:Target):RefMany[TaskOutput] = {

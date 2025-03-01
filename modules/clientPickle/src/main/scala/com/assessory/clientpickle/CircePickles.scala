@@ -445,6 +445,21 @@ object Pickles {
     case "output" => targetTaskOutputDecoder(c)
   }
 
+  /* By, for authorship */
+  val byUserEncoder: Encoder[By.ByUser] = (t:By.ByUser) => Json.obj("kind" -> "user".asJson, "id" -> t.u.asJson)
+  val byUserDecoder: Decoder[By.ByUser] = (c:HCursor) => c.downField("id").as[UserId].map(By.ByUser.apply)
+  val byGroupEncoder: Encoder[By.ByGroup] = (t:By.ByGroup) => Json.obj("kind" -> "group".asJson, "id" -> t.g.asJson)
+  val byGroupDecoder: Decoder[By.ByGroup] = (c:HCursor) => c.downField("id").as[GroupId].map(By.ByGroup.apply)
+
+  given byEncoder: Encoder[By] = {
+    case t:By.ByUser => byUserEncoder(t)
+    case t:By.ByGroup => byGroupEncoder(t)
+  }
+  given byDecoder: Decoder[By] = (c:HCursor) => c.downField("kind").as[String].flatMap {
+    case "user" => byUserDecoder(c)
+    case "group" => byGroupDecoder(c)
+  }
+  
   implicit val critiqueEncoder: Encoder[Critique] = (c:Critique) => Json.obj(
     "kind" -> "critique".asJson, "target" -> c.target.asJson, "task" -> c.task.asJson
   )
@@ -536,7 +551,7 @@ object Pickles {
   implicit val taskOutputDecoder: Decoder[TaskOutput] = (c:HCursor) => for {
     id <- c.downField("id").as[TaskOutputId]
     attn <- c.downField("attn").as[Seq[Target]]
-    by <- c.downField("by").as[Target]
+    by <- c.downField("by").as[By]
     task <- c.downField("task").as[TaskId]
     created <- c.downField("created").as[Long]
     updated <- c.downField("updated").as[Long]
@@ -624,9 +639,9 @@ object Pickles {
   implicit val critAllocationDecoder: Decoder[CritAllocation] = (c:HCursor) => for {
     id <- c.downField("id").as[CritAllocationId]
     task <- c.downField("task").as[TaskId]
-    completedBy <- c.downField("completedBy").as[Target]
+    completedBy <- c.downField("completedBy").as[By]
     allocation <- c.downField("allocation").as[Seq[AllocatedCrit]]
-  } yield CritAllocation(id=id, task=task, completeBy = completedBy, allocation=allocation)
+  } yield CritAllocation(id=id, task=task, completeBy = completedBy, allocation=allocation) 
 
   def write[T](thing: T)(implicit encoder: Encoder[T]): String = thing.asJson.toString
 

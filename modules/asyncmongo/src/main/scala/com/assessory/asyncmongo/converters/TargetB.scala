@@ -25,3 +25,19 @@ object TargetB {
     }
   }
 }
+
+
+object ByB {
+
+  def write(i: By) = i match {
+    case By.ByUser(id) => Document("kind" -> "User", "id" -> IdB.write(id))
+    case By.ByGroup(id) => Document("kind" -> "Group", "id" -> IdB.write(id))
+  }
+
+  def read(doc: Document): Try[By] = Try {
+    doc[BsonString]("kind").getValue match {
+      case "User" => By.ByUser(UserId(doc.hexOid("id")))
+      case "Group" => By.ByGroup(GroupId(doc.hexOid("id")))
+    }
+  }
+}

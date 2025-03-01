@@ -116,27 +116,18 @@ object Permissions {
     ) yield a
   }
 
-  def isOwn(prior:Approval[User], who:User, t:Target):Ref[Approved] = {
-    t match {
-      case TargetUser(uid) => {
-        if (uid != who.id) {
-          RefFailed(Refused("You may only edit your own work"))
-        } else {
-          Approved("Own work").itself
-        }
-      }
-      case TargetCourseReg(cregId) => 
+  /** Whether this item was created by this user or their group */
+  def isOwn(prior:Approval[User], who:User, by:By):Ref[Approved] = {
+    by match {
+      case By.ByUser(userId) => 
         for { 
-          creg <- prior.cache(cregId)
-          result <- if (creg.user == who.id) Approved("Own work").itself else RefFailed(Refused("You may only edit your own work"))
+          result <- if (UserId == who.id) Approved("Own work").itself else RefFailed(Refused("You may only edit your own work"))
         } yield result
-      case TargetGroup(gid) => (
+      case By.ByGroup(gid) => (
         for {
           r <- Lookups.groupRegistrationProvider.byUserAndTarget(who.id, gid) orElse RefOptFailed(Refused("You may only edit your own work"))
          } yield Approved("Registered in group")
       ).require
-      case TargetTaskOutput(id) => 
-        prior.cache(id).flatMap((to) => isOwn(prior, who, to.by))
     }
   }
 

@@ -113,7 +113,7 @@ object TaskViews {
 
   def outputLabel(task:Task, taskOutput:TaskOutput):VHtmlContent = taskOutput.body match {
     case c:Critique =>
-      <.span(TargetViews.ByLabel(taskOutput.by), " critiques ", TargetViews.ByLabel(c.target))
+      <.span(TargetViews.ByLabel(taskOutput.by), " critiques ", TargetViews.TargetLabel(c.target))
     case _ =>
       TargetViews.ByLabel(taskOutput.by)
   }

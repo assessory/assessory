@@ -1,6 +1,6 @@
 package org.assessory.vclient.task
 
-import com.assessory.api.{Target, TargetCourseReg, TargetGroup, TargetTaskOutput, TargetUser}
+import com.assessory.api.{By, Target, TargetCourseReg, TargetGroup, TargetTaskOutput, TargetUser}
 import com.wbillingsley.handy.{Latch, Ref, lazily, refOps}
 import com.wbillingsley.veautiful.html.{<, DHtmlComponent, DHtmlContent}
 import org.assessory.vclient.common.Components.LatchRender
@@ -16,6 +16,11 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 object TargetViews {
 
+  def displayName(by:By):Ref[String] = by match {
+    case By.ByGroup(gId) => gId.lazily.map(_.name.getOrElse("Unnamed group"))
+    case By.ByUser(id) => id.lazily.map(UserViews.name)
+  }
+
   def displayName(t:Target):Ref[String] = t match {
     case TargetGroup(gId) => gId.lazily.map(_.name.getOrElse("Unnamed group"))
     case TargetUser(id) => id.lazily.map(UserViews.name)
@@ -24,7 +29,17 @@ object TargetViews {
   }
 
 
-  case class ByLabel(t:Target) extends DHtmlComponent {
+
+  case class TargetLabel(target:Target) extends DHtmlComponent {
+
+    val text:Latch[String] = Latch.lazily(displayName(target).toFuture)
+
+    def render = <.span({
+      LatchRender(text)({ n => <.span(n) }, none = <.span())
+    })
+  }
+
+  case class ByLabel(t:By) extends DHtmlComponent {
 
     val text:Latch[String] = Latch.lazily(displayName(t).toFuture)
 
