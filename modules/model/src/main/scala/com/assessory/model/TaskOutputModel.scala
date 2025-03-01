@@ -12,6 +12,7 @@ import com.assessory.api.wiring.Lookups.{given, _}
 import com.wbillingsley.handy.{Approval, Id, Ref, RefFailed, RefMany, RefNone, RefOpt, lazily, refOps}
 import com.assessory.api.appbase.{User, UserError}
 import com.assessory.api.call.{Return, TaskOutputCall, ReturnTaskOutput, StandardReturn}
+import com.assessory.api.question.FileAnswer
 
 object TaskOutputModel {
 
@@ -181,12 +182,12 @@ object TaskOutputModel {
 
     def line(tob:TaskOutputBody):Ref[Seq[String]] = {
 
-      println("CALLED FOR " + tob)
-
       tob match {
         case QuestionnaireTaskOutput(answers) => (answers map {
           case ShortTextAnswer(q, ans) => ans.getOrElse("")
           case BooleanAnswer(q, ans) => ans.map(_.toString).getOrElse("")
+          case FileAnswer(q, ans) => "File answers aren't output in csv"
+          case VideoAnswer(q, ans) => "Video answers aren't output in csv"
         }).itself
         case c: Critique => for {
           ofor <- targetAsCsvString(a, c.target)

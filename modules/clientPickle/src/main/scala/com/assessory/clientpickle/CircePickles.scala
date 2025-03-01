@@ -82,15 +82,32 @@ object Pickles {
     hideInCrit <- c.downField("hideInCrit").as[Boolean]
   } yield VideoQuestion(id, prompt, hideInCrit)
 
+
+  val fileQuestionEncoder:Encoder[FileQuestion] = (q:FileQuestion) => Json.obj(
+    "kind" -> "video".asJson,
+    "id" -> q.id.asJson,
+    "prompt" -> q.prompt.asJson,
+    "hideInCrit" -> q.hideInCrit.asJson
+  )
+
+  val fileQuestionDecoder: Decoder[FileQuestion] = (c:HCursor) => for {
+    id <- c.downField("id").as[QuestionId]
+    prompt <- c.downField("prompt").as[String]
+    hideInCrit <- c.downField("hideInCrit").as[Boolean]
+  } yield FileQuestion(id, prompt, hideInCrit)
+
+
   implicit val questionEncoder: Encoder[Question] = {
     case s: ShortTextQuestion => shortTextQuestionEncoder(s)
     case b: BooleanQuestion => booleanQuestionEncoder(b)
     case b: VideoQuestion => videoQuestionEncoder(b)
+    case f: FileQuestion => fileQuestionEncoder(f)
   }
   implicit val questionDecoder: Decoder[Question] = (c:HCursor) => c.downField("kind").as[String] flatMap {
     case "shortText" => shortTextQuestionDecoder(c)
     case "boolean" => booleanQuestionDecoder(c)
     case "video" => videoQuestionDecoder(c)
+    case "file" => fileQuestionDecoder(c)
   }
 
   implicit val courseRoleEncoder: Encoder[CourseRole] = (r:CourseRole) => Json.obj("role" -> r.r.asJson)
@@ -468,16 +485,25 @@ object Pickles {
     question <- c.downField("question").as[QuestionId]
     answer <- c.downField("answer").as[Option[Boolean]]
   } yield BooleanAnswer(question=question, answer=answer)
+  
   val videoAnswerEncoder: Encoder[VideoAnswer] = (a:VideoAnswer) => Json.obj("kind" -> "video".asJson, "question" -> a.question.asJson, "answer" -> a.answer.asJson)
   val videoAnswerDecoder: Decoder[VideoAnswer] = (c:HCursor) => for {
     question <- c.downField("question").as[QuestionId]
     answer <- c.downField("answer").as[Option[VideoResource]]
   } yield VideoAnswer(question=question, answer=answer)
 
+  val fileAnswerEncoder: Encoder[FileAnswer] = (a:FileAnswer) => Json.obj("kind" -> "video".asJson, "question" -> a.question.asJson, "fileId" -> a.answer.asJson)
+  val fileAnswerDecoder: Decoder[FileAnswer] = (c:HCursor) => for {
+    question <- c.downField("question").as[QuestionId]
+    answer <- c.downField("fileId").as[Option[SmallFileId]]
+  } yield FileAnswer(question=question, answer=answer)
+
+
   implicit val answerEncoder: Encoder[Answer] = {
     case a:ShortTextAnswer => shortTextAnswerEncoder(a)
     case a:BooleanAnswer => booleanAnswerEncoder(a)
     case a:VideoAnswer => videoAnswerEncoder(a)
+    case a:FileAnswer => fileAnswerEncoder(a)
   }
   implicit val answerDecoder: Decoder[Answer] = (c:HCursor) => c.downField("kind").as[String] flatMap {
     case "shortText" => shortTextAnswerDecoder(c)

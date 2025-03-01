@@ -11,6 +11,8 @@ import org.scalajs.dom.ext.Ajax
 import scala.collection.mutable
 import scala.concurrent.{Future, Promise}
 import scala.concurrent.ExecutionContext.Implicits.global
+import org.scalajs.dom.RequestInit
+import org.scalajs.dom.Headers
 
 
 /**
@@ -54,7 +56,32 @@ object FileService {
   }
 
   def loadDetailsFor(id:Id[SmallFile, String]):Future[SmallFileDetails] = {
-    Ajax.get(detailsUrl(id), headers=AJAX_HEADERS).responseText.flatMap(Pickles.readF[SmallFileDetails])
+    import scala.scalajs.js.Thenable.Implicits.thenable2future
+    import com.wbillingsley.handy.Refused
+    import com.assessory.api.appbase.UserError
+
+
+    for {
+        httpResponse <- dom.fetch(detailsUrl(id), new RequestInit {
+          headers = new Headers {
+            scalajs.js.Array(
+              scalajs.js.Array("Accept", "application/json"),
+              scalajs.js.Array("Content-Type", "application/json"),
+            )
+          }
+        })
+        text <- {
+          httpResponse.status match {
+            case 200 => httpResponse.text():Future[String]
+            case 400 => Future.failed(UserError(httpResponse.statusText)) // Bad request
+            case 403 => Future.failed(Refused(httpResponse.statusText)) // Forbidden
+            case 404 => Future.failed(new NoSuchElementException("Not found")) // NotFound
+            case 500 => Future.failed(RuntimeException(httpResponse.statusText)) // Internal Server Error
+            case x => Future.failed(IllegalArgumentException(s"Could not match response code $x. ${httpResponse.statusText}"))
+          }    
+        }
+        resp <- Pickles.readF[SmallFileDetails](text)
+      } yield resp
   }
 
   def detailsUrl(smallFile:Id[SmallFile, String]):String = {

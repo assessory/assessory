@@ -3,7 +3,7 @@ package org.assessory.vclient.group
 import com.assessory.api.client.WithPerms
 import com.wbillingsley.handy.{Id, Latch}
 import com.assessory.api.appbase.{Course, CourseId, Group, GroupSet, GroupSetId}
-import com.wbillingsley.veautiful.html.{<, DElement, VHtmlComponent, VHtmlContent, DHtmlContent, ^}
+import com.wbillingsley.veautiful.html.{<, DElement, DHtmlComponent, VHtmlContent, DHtmlContent, ^}
 import org.assessory.vclient.Routing
 import org.assessory.vclient.common.Components.LatchRender
 import org.assessory.vclient.common.Front
@@ -66,7 +66,7 @@ object GroupViews {
     )
   }
 
-  case class GroupChooser(gs:GroupSet) extends VHtmlComponent {
+  case class GroupChooser(gs:GroupSet) extends DHtmlComponent {
 
     import concurrent.ExecutionContext.Implicits.global
 
