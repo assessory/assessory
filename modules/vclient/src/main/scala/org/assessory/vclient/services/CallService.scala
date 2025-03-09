@@ -21,14 +21,12 @@ def makeNetworkCall(call:Call):Future[Return] = {
 
   for {
     httpResponse <- dom.fetch(callEndpoint, new RequestInit {
-      method = HttpMethod.POST
+      method = HttpMethod.POST      
+      headers = scalajs.js.Dictionary(
+          "Accept" -> "application/json",
+          "Content-Type" -> "application/json",
+        )    
       body = CallPickles.write(call)
-      headers = new Headers {
-        scalajs.js.Array(
-          scalajs.js.Array("Accept", "application/json"),
-          scalajs.js.Array("Content-Type", "application/json"),
-        )
-      }
     })
     text <- {
       httpResponse.status match {
