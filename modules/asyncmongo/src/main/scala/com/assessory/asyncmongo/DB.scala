@@ -14,7 +14,7 @@ object DB {
 
   val mongoClient: MongoClient = MongoClient()
 
-  var dbName = "assessory_2018_1"
+  var dbName = "assessory_2023_1"
 
   lazy val db = mongoClient.getDatabase(dbName)
 

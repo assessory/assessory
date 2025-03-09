@@ -11,11 +11,14 @@ import com.wbillingsley.handy.{Id, HasId, HasKind}
   */
 case class TaskRecord (
 
+  id:TaskRecordId,
+
   task:TaskId,
 
   by:By,
 
-  knownOutputs:Seq[TaskOutputId]
+  outputs:Seq[TaskOutputId]
 
-)
+) extends HasId[Id[TaskRecord, String]]
 
+case class TaskRecordId(id:String) extends Id[TaskRecord, String]

@@ -91,6 +91,10 @@ object TaskOutputModel {
         by=by
       )
       saved <- TaskOutputDAO.saveSafe(to)
+
+      // Add the task output to the task record
+      taskRecord <- TaskRecordDAO.pushTaskOutput(t.id, by, saved.id)
+      
       finalised <- if (finalise) {
         // Finalise the task output
         TaskOutputDAO.finalise(saved)
