@@ -121,7 +121,7 @@ object Permissions {
     by match {
       case By.ByUser(userId) => 
         for { 
-          result <- if (UserId == who.id) Approved("Own work").itself else RefFailed(Refused("You may only edit your own work"))
+          result <- if (userId == who.id) Approved("Own work").itself else RefFailed(Refused("You may only edit your own work"))
         } yield result
       case By.ByGroup(gid) => (
         for {

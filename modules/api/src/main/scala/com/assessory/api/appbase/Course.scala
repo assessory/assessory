@@ -26,7 +26,11 @@ case class Course (
 
     created:Long = System.currentTimeMillis
 
-) extends HasId[CourseId]
+) extends HasId[CourseId] {
+
+  /** Removes sensitive information from a Course */
+  def expurgated = this.copy(secret = "", ltis = Seq.empty)
+}
 
 object Course {
   type Reg = Registration[Course, CourseRole, HasKind]

@@ -52,6 +52,9 @@ case class User(
 
   def getIdentity(service:String) = identities.find(p => p.service == service)
 
+  /** Removes sensitive information from a user record */
+  def expurgated = this.copy(pwlogin = PasswordLogin(None, None, None), secret = "", identities = Seq.empty, activeSessions = Seq.empty)
+
 }
 
 case class UserId(id:String) extends Id[User, String]
