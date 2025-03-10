@@ -1,5 +1,6 @@
 package org.assessory.play.cheatscript
 
+
 import com.assessory.api.{MustHaveFinished, Task, TaskDetails, TaskId}
 import com.assessory.api.appbase.{Course, CourseId, LTIConsumer, RegistrationId}
 import com.assessory.api.call.{CourseCall, ReturnCourse, ReturnTask, StandardReturn, TaskCall}
@@ -11,11 +12,49 @@ import com.assessory.clientpickle.CallClient
 import com.wbillingsley.handy.{Ref, RefOpt, refOps}
 import java.time.LocalDate
 import java.time.ZoneId
+import com.wbillingsley.handy.RefMany
+import com.assessory.api.appbase.User
+import com.assessory.model.UserModel
+import com.assessory.asyncmongo.RegistrationDAO
+import com.assessory.api.appbase.CourseRole
+import com.wbillingsley.handy.EmptyKind
+
 
 /**
-  * Created by wbilling on 21/02/2017.
+  * A local database version of COSC370 in which we add some local users and outputs for testing purposes. Not to use for real
   */
-object Cosc370 {
+object CTC {
+
+
+
+
+
+  /** Our test users */
+  val testUsers = Seq(
+    ("algernon@example.com", "samplepassword"),
+    ("bertie@example.com", "samplepassword"),
+    ("cecily@example.com", "samplepassword"),
+  )
+
+  /** Creates test users */
+  def createTestUsers()(using client:CallClient):RefMany[User] = {
+    import scala.concurrent.ExecutionContext.Implicits.*
+    
+    for 
+      (email, p) <- testUsers.toRefMany 
+      u <- (client.login(email, p).toRef.toRefOpt orElse client.register(email, p).toRef) 
+    yield u
+  }
+
+  /** Won't work remotely - put a user into a course */
+  def regUser(course:Course, user:User) = {
+    println("Registering " + user)
+    RegistrationDAO.course.register(
+        user.id, course.id,
+        Set(CourseRole.student),
+        EmptyKind
+      )
+  }
 
   val zone = ZoneId.of("Australia/Sydney")
 
@@ -60,7 +99,7 @@ object Cosc370 {
         course = course.id,
         details = TaskDetails(
           name = Some("Concept Video"),
-          open = openDate(2025, 3, 17),
+          open = openDate(2025, 1, 17),
           closed = closeDate(2025, 4, 13),
           groupSet = None,
           individual = true,
@@ -98,7 +137,7 @@ object Cosc370 {
         course = course.id,
         details = TaskDetails(
           name = Some("Concept stage: Critique three videos"),
-          open = openDate(2025, 3, 18),
+          open = openDate(2025, 1, 18),
           groupSet = None,
           individual = true,
           description = Some(
@@ -139,7 +178,7 @@ object Cosc370 {
         course = course.id,
         details = TaskDetails(
           name = Some("Concept stage: View your critiques"),
-          open = openDate(2025, 3, 19),
+          open = openDate(2025, 1, 19),
           groupSet = None,
           individual = true,
           description = Some(
@@ -333,6 +372,15 @@ object Cosc370 {
         ))
       ))
       _ = println(s"Working video task has id ${workingVideo.id}")
+
+      // These only work because we're using a local database - they don't make network calls
+      users <- {
+        for 
+          u <- createTestUsers()
+          reg <- regUser(course, u)
+        yield println(reg)
+      }.collect
+
 
     yield
       println("Done")

@@ -203,7 +203,10 @@ object CritModel {
             task = blankFor(ct.task)
           )
         )
-        TaskOutputDAO.saveSafe(unsaved)
+        for 
+          to <- TaskOutputDAO.saveSafe(unsaved)
+          pushed <- TaskRecordDAO.pushTaskOutput(task.id, by, to.id)
+        yield to
       case _ =>
         RefFailed(UserError("I can only create critiques for critique tasks"))
     }
@@ -315,6 +318,24 @@ object CritModel {
     } yield parentMatch
     case _ => true.itself
   }
+
+
+  // Finds the least critiqued TaskOutputs
+  private def leastCritiqued(critiqueTask:Task, aboutTask:TaskId):Ref[Seq[TaskOutput]] = {
+    for 
+      outputs <- TaskOutputDAO.byTask(aboutTask.lazily).withFilter(_.finalised.nonEmpty).collect
+      existingCrits <- TaskOutputDAO.byTask(critiqueTask.itself).collect
+
+      // Sort by how many critiques have already been allocated to these
+      sorted = Random.shuffle(outputs).sortBy(o =>
+        existingCrits.count(_ match
+          case api.TaskOutput(_, _, _, _, Critique(TargetTaskOutput(toId), _), _, _, _) => o == toId
+          case _ => false
+        )
+      )
+    yield sorted
+  }
+
 
 
   /**
